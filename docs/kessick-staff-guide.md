@@ -1,0 +1,28 @@
+# Staff guide: manage the dealer portal without code
+
+Sign in with an approved staff account. **Overview** (`/admin`) is for super admins and staff admins only; other staff roles should use the workspaces available in their navigation. The sidebar and individual pages enforce role/capability access. If a workspace is missing or access is denied, ask a staff administrator to confirm your role rather than using a direct link.
+
+## Common tasks
+
+| Goal | Where to go | What to do |
+| --- | --- | --- |
+| Review builder/dealer accounts | **Users** (`/admin/users`) | Select dealer accounts and filter **Pending**. Review the account before approving; use Suspend to block access when needed. Assign a sales rep or groups in account details. Only super admins can add or manage staff roles. |
+| Target an audience | **Groups** (`/admin/groups`) | Create a group, then **Manage members** to select dealer accounts. Use that group when targeting content or notices. |
+| Publish resources, forms, training, and announcements | **Content** (`/admin/content`) | Choose **New content** and the matching content type (Docs & resources, Forms & requests, Training, or Announcements). For forms, add fields with the visual form builder. Set visibility to everyone, groups, or selected dealers; save a draft and publish when ready. Check the dealer-facing page after publishing. |
+| Review builder requests | **Content → Forms & requests** | Super admins and staff admins can search submitted responses, filter by form, and export the displayed responses as CSV. Keep exports private: they contain builder-provided answers and contact details. Content managers can edit forms but cannot read responses. Response assignment, internal notes, and resolution statuses are not yet supported. |
+| Set wholesale prices | **Pricing** (`/admin/pricing`) | Use **New Override** to set a custom wholesale amount for a SKU and a dealer or group. Review the target carefully before saving. This is an override workspace, not a general price-book editor. |
+| Change visibility rules | **Access Rules** (`/admin/access`) | Review existing capability rules; use **New Rule** to allow or deny a capability for a dealer or group. This is separate from choosing an audience on a content record. |
+| Contact dealers | **Notifications** (`/admin/notifications`) | Compose a targeted notice for everyone, groups, or selected dealers. Save draft, schedule, or send now; optionally require acknowledgement. Open recipient history to check in-app reads, acknowledgements, and push attempts. For a lasting dealer-facing announcement, use **Content → Announcements** instead. |
+| Maintain AI source material | **Concierge Knowledge** (`/admin/knowledge`) | Upload a PDF or TXT, inspect and correct extracted text, choose staff-only or approved-dealer audience, save for review, then explicitly activate. Use **Test concierge** to check the answer and citation. This does not add a dealer download to Resources or retrain the model. |
+| Identify AI knowledge gaps | **Concierge Insights** (`/admin/concierge-insights`) | Select a UTC date range, review aggregate answer outcomes, source usage and knowledge gaps, or download CSV. These are operational counts, not transcripts or marketing conclusions. |
+| Investigate changes | **Audit Log** (`/admin/audit`) | Search/filter recorded administrative actions and their targets. |
+
+## Permissions and operational limits
+
+- The Overview and its figures are restricted to super admins and staff admins. The numbers come from the overview response; **dealer total minus approved** is *not* a reliable pending count (suspended dealers exist). Filter Users by Pending for actual approval work.
+- Users, Groups, Access Rules, Pricing, Insights and Audit are administrative workspaces. Content managers can work with Content, Notifications and Concierge Knowledge where permitted, but cannot use this Overview. Sales reps have narrower access. A visible link is not a grant of permission.
+- Content publication and notification sending are distinct actions. A saved draft is not visible to dealers; target and publish/send intentionally. A notification's in-app delivery record does not prove the device received a push. Push requires working device subscriptions and server configuration; inspect actual push status, and verify on a device before promising push delivery.
+- Use the draft preview before publishing. Training and launch kits require a valid web link when published. Link validation checks format, not whether an external destination is reachable or whether builders have permission there.
+- Form fields support short and long answers, email, number, date, and choices. Give fields unique keys; choice fields require options. Form definitions and their targeting save together. Unpublish linked forms to stop new requests rather than deleting their response history.
+- AI answers require an available provider and credit-consent configuration; uploading knowledge alone does not turn on live AI. Activation makes eligible material searchable, not guaranteed to appear in every answer. Staff-only sources must not be shared with dealers. See [Concierge knowledge](kessick-concierge-knowledge.md) for the review and audience process.
+- Resource uploads accept only the file types shown in the Content editor; use an external URL for unsupported types. No UI step in this guide deploys code or applies database migrations. If a feature reports a migration or service error, escalate to the technical owner rather than trying to fix it from the staff portal.

@@ -1,0 +1,9 @@
+- [Kessick product imagery](kessick-product-image-cors.md) — catalog photos are references; room placement must use dimensionally accurate elevations.
+- [Private image finalization](private-image-finalization.md) — never serve an object that remains mutable through a signed upload URL; finalize an exact generation first.
+- [Cloud editor session lifecycle](cloud-editor-session-lifecycle.md) — initialize fresh, then preserve the mounted editor through background fetch failures.
+- [Legacy claim retries](legacy-claim-retries.md) — resume against the current cloud snapshot and patch only migration-owned fields; never replay an old local snapshot.
+- [XR demo boundary](kessick-xr-demo-boundary.md) — keep the photo compositor separate from production XR; meeting simulations must stay visibly labeled as future concepts.
+- [Canvas regression inspection](canvas-regression-inspection.md) — visual placement tests must inspect live Konva nodes, not mirrored geometry or hardcoded render claims.
+- [Portal migration boundaries](portal-migration-boundaries.md) — old/new content paths must share denials; sign-in must not undo no-code staff revocation.
+- [Clerk role test fixtures](clerk-role-test-fixtures.md) — bind fixtures to the current API account; direct role changes do not refresh browser caches.
+- [ORM JSON boundaries](orm-json-boundaries.md) — prototype-safe validation maps need normalization before Drizzle; test query compilation as well as validation.

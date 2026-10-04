@@ -1,0 +1,1994 @@
+{
+  "source": "Kessick Wine Cellars public Towers Catalog + Styles Brochure",
+  "generated_at": "2026-08-09T15:29:16Z",
+  "generated_for": "AR room visualization / Replit webapp product feed",
+  "brand": "Kessick Wine Cellars",
+  "website": "https://kessickwinecellars.com/",
+  "catalogs": [
+    "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+    "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf"
+  ],
+  "standards": {
+    "tower_depth_in": 11.75,
+    "tower_heights_in": [
+      77.25,
+      88.5
+    ],
+    "tower_widths_in": [
+      18,
+      28,
+      42
+    ],
+    "tower_niche_widths_in": [
+      28,
+      36
+    ],
+    "woods": [
+      "Walnut",
+      "White Oak",
+      "Sapele Mahogany"
+    ],
+    "hardware": [
+      "Satin Black",
+      "Brushed Aluminum",
+      "Gold"
+    ]
+  },
+  "disclaimer": "Tower Series SKUs/dims/bottle capacities scraped from the public Towers Catalog (depth always 11.75\"). Signature Series entries are product lines with planning-default dimensions only. Wholesale/trade brand \u2014 not a public e-commerce cart feed. Verify critical SKUs against the PDF before production use.",
+  "product_count": 46,
+  "tower_count": 38,
+  "signature_series_count": 8,
+  "products": [
+    {
+      "id": "tower-1877-et-r-p",
+      "sku": "1877.ET.R-P",
+      "catalog_ref": "ET1",
+      "name": "Kessick Tower 1877.ET.R-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 73,
+      "width_in": 18.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 18\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1877-et-r-i",
+      "sku": "1877.ET.R-I",
+      "catalog_ref": "ET2",
+      "name": "Kessick Tower 1877.ET.R-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 81,
+      "width_in": 18.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 18\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1877-et-p-p",
+      "sku": "1877.ET.P-P",
+      "catalog_ref": "ET3",
+      "name": "Kessick Tower 1877.ET.P-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 52,
+      "width_in": 18.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Parallel metal hardware, label forward wine storage 3 deep \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 18\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1877-et-i-p",
+      "sku": "1877.ET.I-P",
+      "catalog_ref": "ET4",
+      "name": "Kessick Tower 1877.ET.I-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 60,
+      "width_in": 18.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 18\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1877-et-i-i",
+      "sku": "1877.ET.I-I",
+      "catalog_ref": "ET5",
+      "name": "Kessick Tower 1877.ET.I-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 68,
+      "width_in": 18.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 18\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1888-et-r-p",
+      "sku": "1888.ET.R-P",
+      "catalog_ref": "ET6",
+      "name": "Kessick Tower 1888.ET.R-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 85,
+      "width_in": 18.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 18\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1888-et-r-i",
+      "sku": "1888.ET.R-I",
+      "catalog_ref": "ET7",
+      "name": "Kessick Tower 1888.ET.R-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 93,
+      "width_in": 18.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 18\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1888-et-p-p",
+      "sku": "1888.ET.P-P",
+      "catalog_ref": "ET8",
+      "name": "Kessick Tower 1888.ET.P-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 64,
+      "width_in": 18.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Parallel metal hardware, label forward wine storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 18\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1888-et-i-p",
+      "sku": "1888.ET.I-P",
+      "catalog_ref": "ET9",
+      "name": "Kessick Tower 1888.ET.I-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 72,
+      "width_in": 18.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 18\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-1888-et-i-i",
+      "sku": "1888.ET.I-I",
+      "catalog_ref": "ET10",
+      "name": "Kessick Tower 1888.ET.I-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 80,
+      "width_in": 18.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "18\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 18\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-r-p",
+      "sku": "2877.ET.R-P",
+      "catalog_ref": "ET11",
+      "name": "Kessick Tower 2877.ET.R-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 108,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-r-i",
+      "sku": "2877.ET.R-I",
+      "catalog_ref": "ET12",
+      "name": "Kessick Tower 2877.ET.R-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 120,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-p-p",
+      "sku": "2877.ET.P-P",
+      "catalog_ref": "ET13",
+      "name": "Kessick Tower 2877.ET.P-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 78,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Parallel metal hardware, label forward wine storage 3 deep \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-i-p",
+      "sku": "2877.ET.I-P",
+      "catalog_ref": "ET14",
+      "name": "Kessick Tower 2877.ET.I-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 90,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-i-i",
+      "sku": "2877.ET.I-I",
+      "catalog_ref": "ET15",
+      "name": "Kessick Tower 2877.ET.I-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 102,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-r-p",
+      "sku": "2888.ET.R-P",
+      "catalog_ref": "ET16",
+      "name": "Kessick Tower 2888.ET.R-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 126,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-r-i",
+      "sku": "2888.ET.R-I",
+      "catalog_ref": "ET17",
+      "name": "Kessick Tower 2888.ET.R-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 138,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-p-p",
+      "sku": "2888.ET.P-P",
+      "catalog_ref": "ET18",
+      "name": "Kessick Tower 2888.ET.P-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 96,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Parallel metal hardware, label forward wine storage 3 deep \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-i-p",
+      "sku": "2888.ET.I-P",
+      "catalog_ref": "ET19",
+      "name": "Kessick Tower 2888.ET.I-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 108,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-i-i",
+      "sku": "2888.ET.I-I",
+      "catalog_ref": "ET20",
+      "name": "Kessick Tower 2888.ET.I-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 120,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4277-et-r-p",
+      "sku": "4277.ET.R-P",
+      "catalog_ref": "ET21",
+      "name": "Kessick Tower 4277.ET.R-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 162,
+      "width_in": 42.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 42\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4277-et-r-i",
+      "sku": "4277.ET.R-I",
+      "catalog_ref": "ET22",
+      "name": "Kessick Tower 4277.ET.R-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 180,
+      "width_in": 42.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 42\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4277-et-p-p",
+      "sku": "4277.ET.P-P",
+      "catalog_ref": "ET23",
+      "name": "Kessick Tower 4277.ET.P-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 117,
+      "width_in": 42.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Parallel metal hardware, label forward wine storage 3 deep \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 42\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4277-et-i-p",
+      "sku": "4277.ET.I-P",
+      "catalog_ref": "ET24",
+      "name": "Kessick Tower 4277.ET.I-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 135,
+      "width_in": 42.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 42\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4277-et-i-i",
+      "sku": "4277.ET.I-I",
+      "catalog_ref": "ET25",
+      "name": "Kessick Tower 4277.ET.I-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 153,
+      "width_in": 42.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 42\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4288-et-r-p",
+      "sku": "4288.ET.R-P",
+      "catalog_ref": "ET26",
+      "name": "Kessick Tower 4288.ET.R-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 189,
+      "width_in": 42.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 42\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4288-et-r-i",
+      "sku": "4288.ET.R-I",
+      "catalog_ref": "ET27",
+      "name": "Kessick Tower 4288.ET.R-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 207,
+      "width_in": 42.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Rectangle Bins for loose bulk wine or wood case storage \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 42\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4288-et-p-p",
+      "sku": "4288.ET.P-P",
+      "catalog_ref": "ET28",
+      "name": "Kessick Tower 4288.ET.P-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 144,
+      "width_in": 42.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Parallel metal hardware, label forward wine storage 3 deep \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 42\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4288-et-i-p",
+      "sku": "4288.ET.I-P",
+      "catalog_ref": "ET29",
+      "name": "Kessick Tower 4288.ET.I-P",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 162,
+      "width_in": 42.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit Parallel metal wine hardware, label forward wine storage 3 deep 42\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-4288-et-i-i",
+      "sku": "4288.ET.I-I",
+      "catalog_ref": "ET30",
+      "name": "Kessick Tower 4288.ET.I-I",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 180,
+      "width_in": 42.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "42\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit \u2018Champagne\u2019 spaced individual columns \u2013 includes 3\u201d base platform",
+        "Display Row unit Parallel wine hardware with LED lighting option",
+        "Upper unit \u2018Champagne\u2019 spaced individual columns 42\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-cn",
+      "sku": "2877.ET.CN",
+      "catalog_ref": "ET31",
+      "name": "Kessick Tower 2877.ET.CN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 48,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Cabinet with Drawer \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2877-et-dn",
+      "sku": "2877.ET.DN",
+      "catalog_ref": "ET32",
+      "name": "Kessick Tower 2877.ET.DN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 68,
+      "width_in": 28.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Diamond Bins \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche 28\u201d W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-cn",
+      "sku": "2888.ET.CN",
+      "catalog_ref": "ET33",
+      "name": "Kessick Tower 2888.ET.CN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 60,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Cabinet with Drawer \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche \u2013 magnum spaced Parallel on top 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-2888-et-dn",
+      "sku": "2888.ET.DN",
+      "catalog_ref": "ET34",
+      "name": "Kessick Tower 2888.ET.DN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 80,
+      "width_in": 28.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "28\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Diamond Bins \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche \u2013 magnum spaced Parallel on top 28\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-3677-et-cn",
+      "sku": "3677.ET.CN",
+      "catalog_ref": "ET35",
+      "name": "Kessick Tower 3677.ET.CN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 48,
+      "width_in": 36.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "36\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Cabinet with Drawer \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche 36W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-3677-et-dn",
+      "sku": "3677.ET.DN",
+      "catalog_ref": "ET36",
+      "name": "Kessick Tower 3677.ET.DN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 90,
+      "width_in": 36.0,
+      "height_in": 77.25,
+      "depth_in": 11.75,
+      "dimensions_raw": "36\" W x 77.25\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Diamond Bins \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche 36W x 77.25\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-3688-et-cn",
+      "sku": "3688.ET.CN",
+      "catalog_ref": "ET37",
+      "name": "Kessick Tower 3688.ET.CN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 64,
+      "width_in": 36.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "36\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Cabinet with Drawer \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche \u2013 magnum spaced Parallel on top 36W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "tower-3688-et-dn",
+      "sku": "3688.ET.DN",
+      "catalog_ref": "ET38",
+      "name": "Kessick Tower 3688.ET.DN",
+      "series": "Tower Series",
+      "category": "tower",
+      "product_type": "modular_tower",
+      "bottle_capacity": 106,
+      "width_in": 36.0,
+      "height_in": 88.5,
+      "depth_in": 11.75,
+      "dimensions_raw": "36\" W x 88.5\" H x 11.75\" D",
+      "unit": "inches",
+      "materials": [
+        "Walnut wood",
+        "White Oak wood",
+        "Sapele Mahogany wood"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain and Clear - Gray",
+        "Stain and Clear - Walnut",
+        "Stain and Clear - Espresso"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Base unit Diamond Bins \u2013 includes 3\u201d base platform",
+        "1.5\u201d Counter T op",
+        "Upper unit Square Niche \u2013 magnum spaced Parallel on top 36\u201d W x 88.5\u201d H x 11.75\u201d D"
+      ],
+      "customizable": false,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/Towers-Room-Renders-B2-1.jpg",
+      "product_url": "https://kessickwinecellars.com/towerseries/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2023/03/Towers-Catalog-DIGITAL.pdf",
+      "notes": "Standardized Tower Series component \u2014 not custom-modified. Depth is always 11.75\"."
+    },
+    {
+      "id": "series-elevation",
+      "sku": "ELEVATION",
+      "catalog_ref": null,
+      "name": "Elevation Series",
+      "series": "Elevation",
+      "category": "signature_series",
+      "product_type": "display_elevation",
+      "bottle_capacity": null,
+      "width_in": 24,
+      "height_in": 108,
+      "depth_in": 8,
+      "dimensions_raw": "24\" W x 108\" H x 8\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Contemporary metal-rod and acrylic cradle display",
+        "Neck-out and label-forward options",
+        "Optional LED display lighting"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2021/05/feature_elevate_background-e1629408556153.jpg",
+      "product_url": "https://kessickwinecellars.com/elevation/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-estate",
+      "sku": "ESTATE",
+      "catalog_ref": null,
+      "name": "Estate Series",
+      "series": "Estate",
+      "category": "signature_series",
+      "product_type": "semi_custom_cabinetry",
+      "bottle_capacity": null,
+      "width_in": 24,
+      "height_in": 84,
+      "depth_in": 12,
+      "dimensions_raw": "24\" W x 84\" H x 12\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Fully assembled semi-custom wine cabinetry",
+        "Frameless box construction",
+        "Traditional to contemporary styles"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2021/05/feature_estate_background.jpg",
+      "product_url": "https://kessickwinecellars.com/estate/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-forma",
+      "sku": "FORMA",
+      "catalog_ref": null,
+      "name": "Forma Series",
+      "series": "Forma",
+      "category": "signature_series",
+      "product_type": "contemporary_wine_wall",
+      "bottle_capacity": null,
+      "width_in": 48,
+      "height_in": 96,
+      "depth_in": 6,
+      "dimensions_raw": "48\" W x 96\" H x 6\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Contemporary wine wall forms"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/10/NOgFFnvw-1.jpeg",
+      "product_url": "https://kessickwinecellars.com/forma/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-parallel",
+      "sku": "PARALLEL",
+      "catalog_ref": null,
+      "name": "Parallel Series",
+      "series": "Parallel",
+      "category": "signature_series",
+      "product_type": "architectural_wine_wall",
+      "bottle_capacity": null,
+      "width_in": 48,
+      "height_in": 96,
+      "depth_in": 4,
+      "dimensions_raw": "48\" W x 96\" H x 4\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Horizontal architectural wine walls",
+        "Parallel metal wine hardware"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2021/05/feature_parallel_background.jpg",
+      "product_url": "https://kessickwinecellars.com/parallel/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-reserve",
+      "sku": "RESERVE",
+      "catalog_ref": null,
+      "name": "Reserve Series",
+      "series": "Reserve",
+      "category": "signature_series",
+      "product_type": "semi_custom_cabinetry",
+      "bottle_capacity": null,
+      "width_in": 30,
+      "height_in": 90,
+      "depth_in": 12,
+      "dimensions_raw": "30\" W x 90\" H x 12\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Refined high-end residential cabinetry"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2021/05/feature_style_reserve_v2.jpg",
+      "product_url": "https://kessickwinecellars.com/reserve/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-somm",
+      "sku": "SOMM",
+      "catalog_ref": null,
+      "name": "Somm Series",
+      "series": "Somm",
+      "category": "signature_series",
+      "product_type": "semi_custom_cabinetry",
+      "bottle_capacity": null,
+      "width_in": 36,
+      "height_in": 96,
+      "depth_in": 12,
+      "dimensions_raw": "36\" W x 96\" H x 12\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Display-forward wine storage"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2025/01/Somm-Render-Cropped.jpg",
+      "product_url": "https://kessickwinecellars.com/somm/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-wine-as-art",
+      "sku": "WINE-AS-ART",
+      "catalog_ref": null,
+      "name": "Wine as Art",
+      "series": "Wine as Art",
+      "category": "signature_series",
+      "product_type": "feature_display",
+      "bottle_capacity": null,
+      "width_in": 60,
+      "height_in": 96,
+      "depth_in": 6,
+      "dimensions_raw": "60\" W x 96\" H x 6\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Feature displays where the bottle is the artwork"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2021/05/feature_wine_as_art_background.jpg",
+      "product_url": "https://kessickwinecellars.com/wine-as-art/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    },
+    {
+      "id": "series-wine-wall",
+      "sku": "WINE-WALL",
+      "catalog_ref": null,
+      "name": "Wine Wall",
+      "series": "Wine Wall",
+      "category": "signature_series",
+      "product_type": "modular_wine_wall",
+      "bottle_capacity": null,
+      "width_in": 72,
+      "height_in": 96,
+      "depth_in": 6,
+      "dimensions_raw": "72\" W x 96\" H x 6\" D (planning default)",
+      "unit": "inches",
+      "materials": [
+        "Walnut",
+        "White Oak",
+        "Sapele Mahogany"
+      ],
+      "finishes": [
+        "Unfinished wood",
+        "Clear finish",
+        "Stain options"
+      ],
+      "hardware_finishes": [
+        "Satin Black",
+        "Brushed Aluminum",
+        "Gold"
+      ],
+      "features": [
+        "Modular wine wall display systems"
+      ],
+      "customizable": true,
+      "fully_assembled": true,
+      "image_url": "https://kessickwinecellars.com/wp-content/uploads/2021/05/feature_wine_as_art_background.jpg",
+      "product_url": "https://kessickwinecellars.com/wine-wall/",
+      "catalog_pdf": "https://kessickwinecellars.com/wp-content/uploads/2025/10/2024-Kessick-Styles-Brochure.pdf",
+      "notes": "Semi-custom product line \u2014 planning-default dimensions only; final sizes are project-specific. Show a clear disclaimer in AR when placing these."
+    }
+  ]
+}

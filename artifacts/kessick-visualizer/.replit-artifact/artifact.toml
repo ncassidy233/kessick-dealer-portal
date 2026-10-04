@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Kessick Dealer Portal"
+description = "Private Kessick trade portal for verified dealers and staff: projects, custom pricing, resources, training, and targeted announcements. Legacy AR experience preserved on hold."
+version = "1.0.0"
+id = "artifacts/kessick-visualizer"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23780
+
+[services.development]
+run = "pnpm --filter @workspace/kessick-visualizer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kessick-visualizer", "run", "build" ]
+run = [ "node", "scripts/serve-secure-static.mjs", "artifacts/kessick-visualizer/dist/public" ]
+
+
+[services.production.health.startup]
+path = "/"
+
+[services.env]
+PORT = "23780"
+BASE_PATH = "/"

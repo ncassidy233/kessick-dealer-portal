@@ -1,0 +1,2512 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: catalog
+    description: Approved public catalog releases
+  - name: pricebook
+    description: Protected wholesale pricebooks
+  - name: accounts
+  - name: organizations
+  - name: projects
+  - name: invitations
+  - name: audit
+  - name: concierge
+    description: Authenticated, grounded Kessick AI and external connection operations
+  - name: mcp
+    description: Minimal read-first MCP JSON-RPC adapter
+  - name: dealer-portal
+    description: Secure dealer portal and staff administration
+  - name: portal-v2
+    description: Authenticated Portal v2 bootstrap, administration, content, and notifications
+paths:
+  /staff/concierge/knowledge:
+    get:
+      operationId: listConciergeKnowledge
+      responses:
+        "200":
+          description: Staff-only documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeList" }
+  /staff/concierge/knowledge/export:
+    get:
+      operationId: exportConciergeKnowledge
+      parameters:
+        - { in: query, name: format, schema: { type: string, enum: [json, txt] } }
+      responses:
+        "200": { description: Metadata and text download }
+  /staff/concierge/knowledge/uploads/request:
+    post:
+      operationId: requestKnowledgeUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/KnowledgeUploadInput" }
+      responses:
+        "200":
+          description: Actor-bound upload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeUploadTicket" }
+  /staff/concierge/knowledge/uploads/{uploadId}:
+    parameters:
+      - { in: path, name: uploadId, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: putKnowledgeUpload
+      description: Raw PDF or TXT; X-Kessick-CSRF must equal 1.
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema: { $ref: "#/components/schemas/KnowledgeBytes" }
+          text/plain:
+            schema: { $ref: "#/components/schemas/KnowledgeBytes" }
+      responses:
+        "200": { description: Bytes stored }
+  /staff/concierge/knowledge/uploads/{uploadId}/complete:
+    parameters:
+      - { in: path, name: uploadId, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: completeKnowledgeUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/KnowledgeCompletionInput" }
+      responses:
+        "201":
+          description: Review or error document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeDocument" }
+  /staff/concierge/knowledge/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getConciergeKnowledge
+      responses:
+        "200":
+          description: Document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeDocument" }
+    patch:
+      operationId: updateConciergeKnowledge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/KnowledgeEditInput" }
+      responses:
+        "200":
+          description: Returned to review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeDocument" }
+    delete:
+      operationId: deleteConciergeKnowledge
+      responses:
+        "200": { description: Logically deleted }
+  /staff/concierge/knowledge/{id}/status:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: setConciergeKnowledgeStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/KnowledgeStatusInput" }
+      responses:
+        "200":
+          description: Updated document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeDocument" }
+  /staff/concierge/insights:
+    get:
+      operationId: getConciergeInsights
+      parameters:
+        - { in: query, name: from, schema: { type: string, format: date } }
+        - { in: query, name: to, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Admin-only aggregate counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeInsights" }
+  /staff/concierge/insights/export:
+    get:
+      operationId: exportConciergeInsights
+      parameters:
+        - { in: query, name: from, schema: { type: string, format: date } }
+        - { in: query, name: to, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Formula-safe CSV }
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /catalog/releases/current:
+    get:
+      operationId: getCurrentCatalogRelease
+      tags: [catalog]
+      summary: Get the current approved public catalog release
+      description: Returns approved public product metadata and local asset references. Pricing is never included.
+      responses:
+        "200":
+          description: Current catalog release
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicCatalogRelease"
+        "503":
+          description: No valid approved catalog release is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /pricebooks/current:
+    get:
+      operationId: getCurrentPricebook
+      tags: [pricebook]
+      summary: Get the current protected wholesale pricebook
+      description: Requires established server-side dealer or Kessick authorization. This endpoint fails closed when no authorization integration exists.
+      responses:
+        "200":
+          description: Authorized pricebook
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtectedPricebook"
+        "403":
+          description: Wholesale pricebook access is unavailable or forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: No approved pricebook is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /account:
+    get:
+      operationId: getAccount
+      tags: [accounts]
+      responses:
+        "200": { description: Current account context, content: { application/json: { schema: { $ref: "#/components/schemas/AccountContext" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: updateAccount
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: { displayName: { type: ["string", "null"], maxLength: 120 } }
+              required: [displayName]
+      responses:
+        "200": { description: Updated account, content: { application/json: { schema: { $ref: "#/components/schemas/AccountContext" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /dealer-applications:
+    post:
+      operationId: createDealerApplication
+      tags: [organizations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                organizationName: { type: string, minLength: 2, maxLength: 160 }
+              required: [organizationName]
+      responses:
+        "201": { description: Pending dealer organization, content: { application/json: { schema: { $ref: "#/components/schemas/Organization" } } } }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /organizations/current:
+    get:
+      operationId: getCurrentOrganization
+      tags: [organizations]
+      responses:
+        "200": { description: Dealer organization, content: { application/json: { schema: { $ref: "#/components/schemas/Organization" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /organizations/current/members:
+    get:
+      operationId: listOrganizationMembers
+      tags: [organizations]
+      responses:
+        "200": { description: Organization members, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/OrganizationMember" } } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createOrganizationMember
+      tags: [organizations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                email: { type: string, pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", maxLength: 320 }
+                membershipRole: { type: string, enum: [owner, member] }
+              required: [email, membershipRole]
+      responses:
+        "201": { description: Added organization member, content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationMember" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /organizations/current/members/{membershipId}:
+    patch:
+      operationId: updateOrganizationMember
+      tags: [organizations]
+      parameters:
+        - { name: membershipId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                status: { type: string, enum: [approved, suspended] }
+                membershipRole: { type: string, enum: [owner, member] }
+      responses:
+        "200": { description: Updated membership, content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationMember" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /organizations/current/membership/accept:
+    post:
+      operationId: acceptCurrentOrganizationMembership
+      tags: [organizations]
+      summary: Accept a pending dealer team invitation
+      responses:
+        "200": { description: Accepted dealer membership and updated account context, content: { application/json: { schema: { $ref: "#/components/schemas/AccountContext" } } } }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /organizations/current/membership:
+    delete:
+      operationId: declineCurrentOrganizationMembership
+      tags: [organizations]
+      summary: Decline a pending dealer team invitation
+      responses:
+        "204": { description: Dealer membership invitation declined }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      responses:
+        "200": { description: Authorized projects, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Project" } } } } }
+    post:
+      operationId: createProject
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectWrite" }
+      responses:
+        "201": { description: Created project, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /projects/import:
+    post:
+      operationId: importLocalProject
+      tags: [projects]
+      summary: Deliberately claim a reviewed local project without overwriting cloud work
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - { $ref: "#/components/schemas/ProjectWrite" }
+                - type: object
+                  properties:
+                    localProjectId: { type: string, minLength: 1, maxLength: 160 }
+                  required: [localProjectId]
+      responses:
+        "200": { description: Existing claimed project, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "201": { description: Imported project, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /projects/{projectId}:
+    parameters:
+      - { name: projectId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+    get:
+      operationId: getProject
+      tags: [projects]
+      responses:
+        "200": { description: Project, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: updateProject
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - { $ref: "#/components/schemas/ProjectWrite" }
+                - type: object
+                  properties: { version: { type: integer, minimum: 1 } }
+                  required: [version]
+      responses:
+        "200": { description: Updated project, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      operationId: archiveProject
+      tags: [projects]
+      responses:
+        "204": { description: Archived }
+  /projects/{projectId}/invitations:
+    parameters:
+      - { name: projectId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+    get:
+      operationId: listProjectInvitations
+      tags: [invitations]
+      responses:
+        "200": { description: Invitations, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Invitation" } } } } }
+    post:
+      operationId: createProjectInvitation
+      tags: [invitations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: { email: { type: string, pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", maxLength: 320 } }
+              required: [email]
+      responses:
+        "201": { description: Invitation and one-time claim token, content: { application/json: { schema: { $ref: "#/components/schemas/InvitationCreated" } } } }
+  /invitations/accept:
+    post:
+      operationId: acceptProjectInvitation
+      tags: [invitations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: { token: { type: string, minLength: 32, maxLength: 256 } }
+              required: [token]
+      responses:
+        "200": { description: Accepted invitation, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /invitations/{invitationId}:
+    delete:
+      operationId: revokeProjectInvitation
+      tags: [invitations]
+      parameters:
+        - { name: invitationId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+      responses:
+        "204": { description: Revoked }
+  /projects/{projectId}/images:
+    parameters:
+      - { name: projectId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+    get:
+      operationId: listProjectImages
+      tags: [projects]
+      responses:
+        "200": { description: Images, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ProjectImage" } } } } }
+    post:
+      operationId: requestProjectImageUpload
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                fileName: { type: string, minLength: 1, maxLength: 255 }
+                contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                byteSize: { type: integer, minimum: 1, maximum: 15728640 }
+              required: [fileName, contentType, byteSize]
+      responses:
+        "200": { description: Direct private upload target, content: { application/json: { schema: { $ref: "#/components/schemas/ImageUploadTarget" } } } }
+  /projects/{projectId}/images/complete:
+    post:
+      operationId: completeProjectImageUpload
+      tags: [projects]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                uploadId: { type: string, pattern: "^[0-9a-f-]{36}$" }
+              required: [uploadId]
+      responses:
+        "201": { description: Registered image, content: { application/json: { schema: { $ref: "#/components/schemas/ProjectImage" } } } }
+  /project-images/{imageId}/content:
+    get:
+      operationId: getProjectImageContent
+      tags: [projects]
+      parameters:
+        - { name: imageId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+      responses:
+        "200": { description: Authorized private image bytes, content: { image/jpeg: { schema: { type: string, format: binary } }, image/png: { schema: { type: string, format: binary } }, image/webp: { schema: { type: string, format: binary } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /project-images/{imageId}:
+    delete:
+      operationId: deleteProjectImage
+      tags: [projects]
+      parameters:
+        - { name: imageId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+      responses:
+        "204": { description: Deleted }
+  /audit-events:
+    get:
+      operationId: listAuditEvents
+      tags: [audit]
+      parameters:
+        - { name: projectId, in: query, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Authorized audit events, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AuditEvent" } } } } }
+  /staff/dealer-organizations:
+    get:
+      operationId: listDealerOrganizationsForStaff
+      tags: [organizations]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, approved, suspended] } }
+      responses:
+        "200": { description: Dealer organizations, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Organization" } } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /staff/dealer-organizations/{organizationId}/status:
+    patch:
+      operationId: updateDealerOrganizationStatus
+      tags: [organizations]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-f-]{36}$" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: { status: { type: string, enum: [approved, suspended] } }
+              required: [status]
+      responses:
+        "200": { description: Updated organization, content: { application/json: { schema: { $ref: "#/components/schemas/Organization" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /dealer-portal/dashboard:
+    get:
+      operationId: getDealerPortalDashboard
+      tags: [dealer-portal]
+      responses:
+        "200": { description: Dashboard summary, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+  /dealer-portal/pricing:
+    get:
+      operationId: getDealerPortalPricing
+      tags: [dealer-portal]
+      responses:
+        "200": { description: Resolved pricing, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/forms:
+    get:
+      operationId: listDealerPortalForms
+      tags: [dealer-portal]
+      responses:
+        "200": { description: Visible forms, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/forms/{formId}/submissions:
+    post:
+      operationId: submitDealerPortalForm
+      tags: [dealer-portal]
+      parameters: [{ name: formId, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalFormSubmissionInput" } } } }
+      responses: { "201": { description: Submitted, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/resources:
+    get:
+      operationId: listDealerPortalResources
+      tags: [dealer-portal]
+      responses:
+        "200": { description: Visible resources, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/resources/{resourceId}/file:
+    get:
+      operationId: downloadDealerPortalResource
+      tags: [dealer-portal]
+      parameters: [{ name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        "200": { description: Protected resource file, content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /dealer-portal/notifications:
+    get:
+      operationId: listDealerPortalNotifications
+      tags: [dealer-portal]
+      responses:
+        "200": { description: Notifications, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/notifications/{notificationId}/read:
+    post:
+      operationId: markDealerPortalNotificationRead
+      tags: [dealer-portal]
+      parameters: [{ name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Read notification, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/notifications/read-all:
+    post:
+      operationId: markAllDealerPortalNotificationsRead
+      tags: [dealer-portal]
+      responses: { "204": { description: Notifications marked read } }
+  /dealer-portal/access:
+    get:
+      operationId: getDealerPortalAccess
+      tags: [dealer-portal]
+      responses: { "200": { description: Resolved access, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /dealer-portal/push-subscriptions:
+    post:
+      operationId: registerDealerPortalPushSubscription
+      tags: [dealer-portal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PushSubscriptionInput" } } } }
+      responses: { "201": { description: Registered, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+    delete:
+      operationId: deleteDealerPortalPushSubscription
+      tags: [dealer-portal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PushSubscriptionDeleteInput" } } } }
+      responses: { "204": { description: Deleted } }
+  /dealer-portal/push-config:
+    get:
+      operationId: getDealerPortalPushConfiguration
+      tags: [dealer-portal]
+      responses: { "200": { description: Push configuration status, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/users:
+    get:
+      operationId: listPortalUsers
+      tags: [dealer-portal]
+      responses: { "200": { description: Users, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/users/invite:
+    post:
+      operationId: invitePortalUser
+      tags: [dealer-portal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalUserInviteInput" } } } }
+      responses: { "201": { description: Pending account, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/users/{id}/status:
+    patch:
+      operationId: updatePortalUserStatus
+      tags: [dealer-portal]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalUserStatusInput" } } } }
+      responses: { "200": { description: Updated user, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/groups:
+    get:
+      operationId: listPortalGroups
+      tags: [dealer-portal]
+      responses: { "200": { description: Groups, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } }
+    post:
+      operationId: createPortalGroup
+      tags: [dealer-portal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalGroupInput" } } } }
+      responses: { "201": { description: Created group, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/groups/{id}:
+    patch:
+      operationId: updatePortalGroup
+      tags: [dealer-portal]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalGroupInput" } } } }
+      responses: { "200": { description: Updated group, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/groups/{id}/users:
+    post:
+      operationId: assignPortalUserGroup
+      tags: [dealer-portal]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalGroupAssignmentInput" } } } }
+      responses: { "201": { description: Assigned, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/access-rules:
+    get: { operationId: listPortalAccessRules, tags: [dealer-portal], responses: { "200": { description: Rules, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+    post: { operationId: upsertPortalAccessRule, tags: [dealer-portal], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "201": { description: Rule, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/price-overrides:
+    get: { operationId: listPortalPriceOverrides, tags: [dealer-portal], responses: { "200": { description: Overrides, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+    post: { operationId: upsertPortalPriceOverride, tags: [dealer-portal], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "201": { description: Override, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/forms:
+    get: { operationId: listPortalForms, tags: [dealer-portal], responses: { "200": { description: Forms, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+    post: { operationId: createPortalForm, tags: [dealer-portal], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "201": { description: Form, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/form-submissions:
+    get:
+      operationId: listPortalFormSubmissions
+      tags: [dealer-portal]
+      responses: { "200": { description: Dealer form responses, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/forms/{id}:
+    patch: { operationId: updatePortalForm, tags: [dealer-portal], parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "200": { description: Updated form, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+    delete: { operationId: deletePortalForm, tags: [dealer-portal], parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }], responses: { "204": { description: Deleted } } }
+  /staff/portal/resources:
+    get: { operationId: listPortalResources, tags: [dealer-portal], responses: { "200": { description: Resources, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+    post: { operationId: createPortalResource, tags: [dealer-portal], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "201": { description: Resource, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/resource-uploads/request:
+    post:
+      operationId: requestPortalResourceUpload
+      tags: [dealer-portal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalResourceUploadRequest" } } } }
+      responses: { "200": { description: Upload target, content: { application/json: { schema: { $ref: "#/components/schemas/PortalResourceUploadTarget" } } } } }
+  /staff/portal/resource-uploads/complete:
+    post:
+      operationId: completePortalResourceUpload
+      tags: [dealer-portal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PortalResourceUploadCompletion" } } } }
+      responses: { "201": { description: Uploaded resource, content: { application/json: { schema: { type: object, additionalProperties: true } } } } }
+  /staff/portal/resources/{id}:
+    get:
+      operationId: downloadPortalResourceForStaff
+      tags: [dealer-portal]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Protected resource file, content: { application/octet-stream: { schema: { type: string, format: binary } } } } }
+    patch: { operationId: updatePortalResource, tags: [dealer-portal], parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "200": { description: Updated resource, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+    delete: { operationId: deletePortalResource, tags: [dealer-portal], parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }], responses: { "204": { description: Deleted } } }
+  /staff/portal/notifications:
+    get: { operationId: listPortalNotifications, tags: [dealer-portal], responses: { "200": { description: Notifications, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+    post: { operationId: sendPortalNotification, tags: [dealer-portal], requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }, responses: { "201": { description: Sent notification, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+  /staff/portal/audit:
+    get: { operationId: listPortalAudit, tags: [dealer-portal], responses: { "200": { description: Portal audit events, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AuditEvent" } } } } } } }
+  /staff/portal/seed:
+    post: { operationId: seedPortalDemo, tags: [dealer-portal], responses: { "200": { description: Seed result, content: { application/json: { schema: { type: object, additionalProperties: true } } } } } }
+  /v1/concierge/usage:
+    get:
+      operationId: getConciergeUsagePolicy
+      tags: [concierge]
+      summary: Review AI credit usage and request limits
+      security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
+      responses:
+        "200":
+          description: Current limits and billing notice
+          content: { application/json: { schema: { type: object, additionalProperties: true } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/concierge/catalog/search:
+    get:
+      operationId: searchConciergeCatalog
+      tags: [concierge]
+      summary: Search only the approved public Kessick catalog
+      security: [{ KessickOAuth: [catalog:read] }, { ConciergeBearer: [] }]
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+      responses:
+        "200":
+          description: Approved catalog grounding records with release provenance
+          content: { application/json: { schema: { type: object, additionalProperties: true } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/concierge/projects:
+    get:
+      operationId: listConciergeProjects
+      tags: [concierge]
+      summary: List projects authorized for the connected user
+      security: [{ KessickOAuth: [project:read] }, { ConciergeBearer: [] }]
+      responses:
+        "200": { description: Authorized projects, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Project" } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/concierge/projects/{projectId}:
+    get:
+      operationId: getConciergeProject
+      tags: [concierge]
+      summary: Get one authorized project with role-based redaction
+      security: [{ KessickOAuth: [project:read] }, { ConciergeBearer: [] }]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Authorized project, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/concierge/ask:
+    post:
+      operationId: askKessickConcierge
+      tags: [concierge]
+      summary: Ask Kessick AI using only authorized catalog and project facts
+      description: Consumes the workspace owner's Replit AI credits. Answers identify unknowns, include citations, and never execute a suggested action.
+      security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                message: { type: string, minLength: 1, maxLength: 4000 }
+                projectId: { type: string, format: uuid }
+                conversationId: { type: string, format: uuid }
+                acknowledgeCreditUsage: { type: boolean, const: true }
+              required: [message, acknowledgeCreditUsage]
+      responses:
+        "200":
+          description: Grounded answer, citations, and optional unexecuted reviewable action
+          content: { application/json: { schema: { $ref: "#/components/schemas/ConciergeAnswer" } } }
+        "400": { description: Invalid request or missing credit acknowledgement, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "429": { description: Request limit reached, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "503": { description: AI provider unavailable or timed out; no action was taken, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+  /v1/concierge/conversations:
+    get:
+      operationId: listConciergeConversations
+      tags: [concierge]
+      summary: List the connected user's persisted conversations in one project context
+      security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
+      parameters:
+        - { name: projectId, in: query, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 25 } }
+        - { name: before, in: query, description: Opaque exclusive cursor returned in nextCursor, schema: { type: string } }
+      responses:
+        "200":
+          description: Authorized conversations
+          content: { application/json: { schema: { $ref: "#/components/schemas/ConciergeConversationPage" } } }
+    post:
+      operationId: createConciergeConversation
+      tags: [concierge]
+      summary: Create a persisted conversation in an authorized project context
+      security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: { projectId: { type: string, format: uuid } }
+      responses:
+        "201":
+          description: Created conversation
+          content: { application/json: { schema: { $ref: "#/components/schemas/ConciergeConversation" } } }
+  /v1/concierge/conversations/{conversationId}/messages:
+    parameters:
+      - { name: conversationId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listConciergeMessages
+      tags: [concierge]
+      summary: List persisted messages, grounded citations, and reviewable actions
+      security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: before, in: query, description: Opaque exclusive cursor returned in nextCursor, schema: { type: string } }
+      responses:
+        "200":
+          description: Authorized conversation messages
+          content: { application/json: { schema: { $ref: "#/components/schemas/ConciergeMessagePage" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: sendConciergeMessage
+      tags: [concierge]
+      summary: Send a credit-acknowledged message in a persisted conversation
+      security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                content: { type: string, minLength: 1, maxLength: 4000 }
+                acknowledgeCreditUsage: { type: boolean, const: true }
+              required: [content, acknowledgeCreditUsage]
+      responses:
+        "200":
+          description: Persisted assistant response
+          content: { application/json: { schema: { $ref: "#/components/schemas/ConciergeUiMessage" } } }
+        "429": { description: Request limit reached, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "503": { description: AI unavailable; no action was taken, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+  /v1/concierge/actions/{actionId}/confirm:
+    post:
+      operationId: confirmConciergeAction
+      x-openai-isConsequential: true
+      tags: [concierge]
+      summary: Explicitly confirm a still-current authorized project action
+      description: Currently permits only a reviewed project rename. It fails if authorization or project version changed.
+      security: [{ KessickOAuth: [action:confirm] }, { ConciergeBearer: [] }]
+      parameters:
+        - { name: actionId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                confirm: { type: boolean, const: true }
+                conversationId: { type: string, format: uuid }
+              required: [confirm]
+      responses:
+        "200":
+          description: Confirmed action and updated project after explicit confirmation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  action: { $ref: "#/components/schemas/ConciergeUiAction" }
+                  project: { $ref: "#/components/schemas/Project" }
+                required: [action, project]
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/mcp:
+    post:
+      operationId: callKessickMcp
+      tags: [mcp]
+      summary: Call the Kessick read-first MCP JSON-RPC adapter
+      security: [{ KessickOAuth: [mcp:use] }, { ConciergeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                jsonrpc: { type: string, const: "2.0" }
+                id: { oneOf: [{ type: string }, { type: number }, { type: "null" }] }
+                method: { type: string }
+                params: { type: object, additionalProperties: true }
+              required: [jsonrpc, method]
+      responses:
+        "200": { description: JSON-RPC response, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /oauth/authorize:
+    get:
+      operationId: authorizeKessickOAuth
+      tags: [concierge]
+      summary: Show authenticated user OAuth consent for Custom GPT
+      parameters:
+        - { name: client_id, in: query, required: true, schema: { type: string } }
+        - { name: redirect_uri, in: query, required: true, schema: { type: string, format: uri } }
+        - { name: response_type, in: query, required: true, schema: { type: string, const: code } }
+        - { name: scope, in: query, required: true, schema: { type: string } }
+        - { name: state, in: query, schema: { type: string } }
+        - { name: code_challenge, in: query, required: true, schema: { type: string } }
+        - { name: code_challenge_method, in: query, required: true, schema: { type: string, const: S256 } }
+      responses:
+        "200": { description: Browser consent page, content: { text/html: { schema: { type: string } } } }
+        "302": { description: Redirect with authorization code after consent }
+  /oauth/token:
+    post:
+      operationId: exchangeKessickOAuthToken
+      tags: [concierge]
+      summary: Exchange a one-time PKCE code or rotate a refresh token
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type: { type: string, enum: [authorization_code, refresh_token] }
+                client_id: { type: string }
+                client_secret: { type: string }
+                code: { type: string }
+                code_verifier: { type: string }
+                redirect_uri: { type: string, format: uri }
+                refresh_token: { type: string }
+              required: [grant_type]
+      responses:
+        "200": { description: OAuth access and refresh tokens, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "400": { description: Invalid or expired grant, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+  /oauth/revoke:
+    post:
+      operationId: revokeKessickOAuthToken
+      tags: [concierge]
+      summary: Revoke an OAuth access token
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                client_id: { type: string }
+                client_secret: { type: string }
+              required: [token]
+      responses:
+        "200": { description: Revocation is intentionally idempotent }
+  /oauth/clients:
+    get:
+      operationId: listKessickOAuthClients
+      tags: [concierge]
+      summary: List OAuth clients owned by the signed-in account
+      security: [{ ConciergeBearer: [] }]
+      responses:
+        "200": { description: OAuth clients, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } }
+    post:
+      operationId: registerKessickOAuthClient
+      tags: [concierge]
+      summary: Register a scoped OAuth client as a signed-in account owner
+      security: [{ ConciergeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientName: { type: string, minLength: 1, maxLength: 120 }
+                redirectUris: { type: array, items: { type: string, format: uri }, minItems: 1, maxItems: 5 }
+                scopes: { type: array, items: { type: string }, minItems: 1, maxItems: 5 }
+              required: [clientName, redirectUris, scopes]
+      responses:
+        "201": { description: Registered client, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+  /oauth/clients/{clientId}:
+    delete:
+      operationId: revokeKessickOAuthClient
+      tags: [concierge]
+      summary: Revoke an owned OAuth client and its future authorizations
+      security: [{ ConciergeBearer: [] }]
+      parameters:
+        - { name: clientId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Revoked }
+  /portal-v2/bootstrap:
+    get:
+      operationId: getPortalV2Bootstrap
+      tags: [portal-v2]
+      summary: Get the authenticated Portal v2 session
+      responses:
+        "200":
+          description: Portal v2 session and capabilities
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2BootstrapResponse" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: updatePortalV2Bootstrap
+      tags: [portal-v2]
+      summary: Update the authenticated Portal v2 profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2BootstrapInput" }
+      responses:
+        "200":
+          description: Updated Portal v2 session and capabilities
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2BootstrapResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/admin/overview:
+    get:
+      operationId: getPortalV2AdminOverview
+      tags: [portal-v2]
+      summary: Get Portal v2 administration counts and recent audit events
+      responses:
+        "200":
+          description: Administration overview
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2AdminOverviewResponse" } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/admin/users:
+    get:
+      operationId: listPortalV2AdminUsers
+      tags: [portal-v2]
+      summary: List Portal v2 dealer and staff accounts
+      parameters:
+        - name: role
+          in: query
+          schema: { type: string, enum: [dealer, staff] }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/PortalV2AccountStatus" }
+      responses:
+        "200":
+          description: Portal v2 accounts
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2UsersResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createPortalV2AdminUser
+      tags: [portal-v2]
+      summary: Provision a Portal v2 dealer or staff account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2UserCreate" }
+      responses:
+        "201":
+          description: Provisioned account
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2UserResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /portal-v2/admin/users/{accountId}:
+    parameters:
+      - { name: accountId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updatePortalV2AdminUser
+      tags: [portal-v2]
+      summary: Update a Portal v2 account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2UserUpdate" }
+      responses:
+        "200":
+          description: Updated account
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2UserResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: suspendPortalV2AdminUser
+      tags: [portal-v2]
+      summary: Safely suspend a Portal v2 staff account
+      responses:
+        "204": { description: Staff account suspended }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/admin/users/{accountId}/rep:
+    parameters:
+      - { name: accountId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: assignPortalV2AdminUserRep
+      tags: [portal-v2]
+      summary: Assign or clear a dealer's sales representative
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2RepAssignmentInput" }
+      responses:
+        "200":
+          description: Current sales representative assignment
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2RepAssignmentResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/admin/groups:
+    get:
+      operationId: listPortalV2AdminGroups
+      tags: [portal-v2]
+      summary: List Portal v2 groups
+      responses:
+        "200":
+          description: Portal v2 groups
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2GroupsResponse" } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createPortalV2AdminGroup
+      tags: [portal-v2]
+      summary: Create a Portal v2 group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2GroupCreate" }
+      responses:
+        "201":
+          description: Created group
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2GroupResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /portal-v2/admin/groups/{groupId}:
+    parameters:
+      - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updatePortalV2AdminGroup
+      tags: [portal-v2]
+      summary: Update a Portal v2 group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2GroupUpdate" }
+      responses:
+        "200":
+          description: Updated group
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2GroupResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deletePortalV2AdminGroup
+      tags: [portal-v2]
+      summary: Delete a Portal v2 group
+      parameters:
+        - name: reassignToGroupId
+          in: query
+          description: Transfer members and targets to this group before deletion
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Group deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /portal-v2/admin/groups/{groupId}/members:
+    parameters:
+      - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: replacePortalV2AdminGroupMembers
+      tags: [portal-v2]
+      summary: Atomically replace a group's dealer memberships
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2GroupMembersReplace" }
+      responses:
+        "200":
+          description: Group and resulting memberships
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2GroupMembersResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: addPortalV2AdminGroupMember
+      tags: [portal-v2]
+      summary: Add a dealer to a Portal v2 group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2GroupMemberInput" }
+      responses:
+        "201":
+          description: Added group membership
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2GroupMembershipResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /portal-v2/admin/groups/{groupId}/members/{accountId}:
+    delete:
+      operationId: removePortalV2AdminGroupMember
+      tags: [portal-v2]
+      summary: Remove a dealer from a Portal v2 group
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: accountId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Group membership removed }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/admin/content:
+    get:
+      operationId: listPortalV2AdminContent
+      tags: [portal-v2]
+      summary: List Portal v2 content for administration
+      parameters:
+        - name: kind
+          in: query
+          schema: { $ref: "#/components/schemas/PortalV2ContentKind" }
+        - name: published
+          in: query
+          schema: { type: string, enum: ["true", "false"] }
+      responses:
+        "200":
+          description: Portal v2 content
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2ContentListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createPortalV2AdminContent
+      tags: [portal-v2]
+      summary: Create Portal v2 content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2ContentCreate" }
+      responses:
+        "201":
+          description: Created content
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2ContentResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/admin/content/{contentId}:
+    parameters:
+      - { name: contentId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updatePortalV2AdminContent
+      tags: [portal-v2]
+      summary: Update Portal v2 content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2ContentUpdate" }
+      responses:
+        "200":
+          description: Updated content
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2ContentResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deletePortalV2AdminContent
+      tags: [portal-v2]
+      summary: Delete Portal v2 content
+      responses:
+        "204": { description: Content deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/content:
+    get:
+      operationId: listPortalV2Content
+      tags: [portal-v2]
+      summary: List published Portal v2 content visible to the dealer
+      parameters:
+        - name: kind
+          in: query
+          schema: { $ref: "#/components/schemas/PortalV2ContentKind" }
+      responses:
+        "200":
+          description: Visible published content
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2ContentListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/projects:
+    get:
+      operationId: listPortalV2Projects
+      tags: [portal-v2]
+      summary: List published Portal v2 projects visible to the dealer
+      responses:
+        "200":
+          description: Visible published project content
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2ContentListResponse" } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/admin/notifications:
+    get:
+      operationId: listPortalV2AdminNotifications
+      tags: [portal-v2]
+      summary: List Portal v2 notifications for administration
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/PortalV2NotificationStatus" }
+      responses:
+        "200":
+          description: Portal v2 notifications
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationsResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createPortalV2AdminNotification
+      tags: [portal-v2]
+      summary: Create and optionally deliver a Portal v2 notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2NotificationCreate" }
+      responses:
+        "201":
+          description: Created notification
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/admin/notifications/{notificationId}:
+    parameters:
+      - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updatePortalV2AdminNotification
+      tags: [portal-v2]
+      summary: Update a draft or scheduled Portal v2 notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2NotificationUpdate" }
+      responses:
+        "200":
+          description: Updated notification
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /portal-v2/admin/notifications/{notificationId}/send:
+    post:
+      operationId: sendPortalV2AdminNotification
+      tags: [portal-v2]
+      summary: Send a draft or scheduled Portal v2 notification immediately
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Sent notification
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /portal-v2/admin/notifications/{notificationId}/history:
+    get:
+      operationId: listPortalV2AdminNotificationHistory
+      tags: [portal-v2]
+      summary: List Portal v2 notification recipients and delivery attempts
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Notification recipient history
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationHistoryResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/notifications:
+    get:
+      operationId: listPortalV2Notifications
+      tags: [portal-v2]
+      summary: List sent, unexpired notifications addressed to the dealer
+      responses:
+        "200":
+          description: Dealer notifications and recipient state
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2DealerNotificationsResponse" } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /portal-v2/notifications/{notificationId}/read:
+    post:
+      operationId: markPortalV2NotificationRead
+      tags: [portal-v2]
+      summary: Mark a Portal v2 notification as read
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Updated recipient state
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationRecipientResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/notifications/{notificationId}/acknowledge:
+    post:
+      operationId: acknowledgePortalV2Notification
+      tags: [portal-v2]
+      summary: Acknowledge a Portal v2 notification requiring acknowledgement
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Updated recipient state
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationRecipientResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /portal-v2/notification-preferences:
+    get:
+      operationId: getPortalV2NotificationPreferences
+      tags: [portal-v2]
+      summary: Get the dealer's Portal v2 notification preferences
+      responses:
+        "200":
+          description: Dealer notification preferences
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationPreferencesResponse" } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      operationId: updatePortalV2NotificationPreferences
+      tags: [portal-v2]
+      summary: Update the dealer's Portal v2 notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalV2NotificationPreferencesUpdate" }
+      responses:
+        "200":
+          description: Updated dealer notification preferences
+          content: { application/json: { schema: { $ref: "#/components/schemas/PortalV2NotificationPreferencesResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+components:
+  securitySchemes:
+    KessickOAuth:
+      type: oauth2
+      description: Authorization Code with PKCE. Users authenticate and consent in Kessick; access tokens last 15 minutes and refresh tokens are revocable.
+      flows:
+        authorizationCode:
+          authorizationUrl: /api/oauth/authorize
+          tokenUrl: /api/oauth/token
+          scopes:
+            catalog:read: Read approved public catalog facts
+            project:read: Read only projects authorized for the user
+            concierge:ask: Submit credit-acknowledged grounded requests
+            action:confirm: Confirm a reviewed action
+            mcp:use: Use the read-first MCP adapter
+    ConciergeBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: Kessick connection token
+      description: Per-user, scoped, expiring and revocable token issued only after the user authenticates with Clerk in Kessick.
+  responses:
+    BadRequest:
+      description: Invalid request
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Unauthorized:
+      description: Authentication required
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Forbidden:
+      description: Forbidden
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    NotFound:
+      description: Not found
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Conflict:
+      description: Version or state conflict
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+  schemas:
+    KnowledgeDocument:
+      type: object
+      required: [id, title, category, fileName, contentType, byteSize, extractedText, audience, status, errorMessage, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        category: { type: string }
+        fileName: { type: string }
+        contentType: { type: string, enum: [application/pdf, text/plain] }
+        byteSize: { type: integer }
+        extractedText: { type: string }
+        audience: { type: string, enum: [staff, approved_dealers] }
+        status: { type: string, enum: [review, active, archived, error] }
+        errorMessage: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    KnowledgeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/KnowledgeDocument" }
+    KnowledgeUploadTicket:
+      type: object
+      required: [uploadId, uploadUrl, expiresAt]
+      properties:
+        uploadId: { type: string, format: uuid }
+        uploadUrl: { type: string }
+        expiresAt: { type: string, format: date-time }
+    KnowledgeInsights:
+      type: object
+      required: [from, to, totals, sourceUsage, knowledgeGaps]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        totals:
+          type: object
+          required: [conversations, answered, unanswered, failed]
+          properties:
+            conversations: { type: integer }
+            answered: { type: integer }
+            unanswered: { type: integer }
+            failed: { type: integer }
+        sourceUsage:
+          type: array
+          items:
+            type: object
+            required: [sourceType, count]
+            properties:
+              sourceType: { type: string, enum: [knowledge, catalog, project, other] }
+              count: { type: integer }
+        knowledgeGaps:
+          type: array
+          items:
+            type: object
+            required: [reason, count]
+            properties:
+              reason: { type: string }
+              count: { type: integer }
+    KnowledgeBytes:
+      type: string
+      format: binary
+    KnowledgeUploadInput:
+      type: object
+      required: [fileName, contentType, byteSize]
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, enum: [application/pdf, text/plain] }
+        byteSize: { type: integer, minimum: 1, maximum: 10485760 }
+    KnowledgeCompletionInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+    KnowledgeEditInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        extractedText: { type: string, minLength: 1, maxLength: 200000 }
+        audience: { type: string, enum: [staff, approved_dealers] }
+        confirmDealerVisibility: { type: boolean }
+    KnowledgeStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [active, review, archived] }
+    PortalV2AccountStatus:
+      type: string
+      enum: [pending, approved, suspended]
+    PortalV2Role:
+      type: string
+      enum: [super_admin, staff_admin, sales_rep, content_manager, dealer, customer]
+    PortalV2Capability:
+      type: string
+      enum: [admin:overview, users:read, users:write, groups:read, groups:write, reps:write, content:read, content:write, notifications:read, notifications:write, notifications:history, pricebooks:read]
+    PortalV2ContentKind:
+      type: string
+      enum: [project, price_book, resource_category, product_series, finish, training, launch_kit, resource, form, announcement]
+    PortalV2Visibility:
+      type: string
+      enum: [everyone, groups, individuals]
+    PortalV2NotificationPriority:
+      type: string
+      enum: [low, normal, high]
+    PortalV2NotificationStatus:
+      type: string
+      enum: [draft, scheduled, sent, cancelled]
+    PortalV2NotificationDraftStatus:
+      type: string
+      enum: [draft, scheduled]
+    PortalV2PushStatus:
+      type: string
+      enum: [not_attempted, skipped_vapid, skipped_preference, sent, failed]
+    PortalV2Organization:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        status: { $ref: "#/components/schemas/PortalV2AccountStatus" }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, slug, status, createdAt]
+    PortalV2AssignedRep:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: ["string", "null"] }
+      required: [id, email, displayName]
+    PortalV2Group:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: ["string", "null"], maxLength: 500 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        memberCount: { type: integer, minimum: 0 }
+      required: [id, name, description, createdAt, updatedAt, memberCount]
+    PortalV2User:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: ["string", "null"] }
+        role: { $ref: "#/components/schemas/PortalV2Role" }
+        status: { $ref: "#/components/schemas/PortalV2AccountStatus" }
+        emailVerified: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        groups:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2Group" }
+        assignedRepId: { type: ["string", "null"], format: uuid }
+        assignedRep:
+          anyOf:
+            - { $ref: "#/components/schemas/PortalV2AssignedRep" }
+            - { type: "null" }
+      required: [id, email, displayName, role, status, emailVerified, createdAt, groups, assignedRepId]
+    PortalV2BootstrapInput:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 200 }
+    PortalV2BootstrapResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        account: { $ref: "#/components/schemas/PortalV2User" }
+        role: { $ref: "#/components/schemas/PortalV2Role" }
+        authorized: { type: boolean }
+        organization:
+          anyOf:
+            - { $ref: "#/components/schemas/PortalV2Organization" }
+            - { type: "null" }
+        groups:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2Group" }
+        capabilities:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2Capability" }
+      required: [account, role, authorized, groups, capabilities]
+    PortalV2AdminOverviewCounts:
+      type: object
+      additionalProperties: false
+      properties:
+        dealers: { type: integer, minimum: 0 }
+        approvedDealers: { type: integer, minimum: 0 }
+        staff: { type: integer, minimum: 0 }
+        groups: { type: integer, minimum: 0 }
+        content: { type: integer, minimum: 0 }
+        notifications: { type: integer, minimum: 0 }
+        unreadAcknowledgements: { type: integer, minimum: 0 }
+      required: [dealers, approvedDealers, staff, groups, content, notifications, unreadAcknowledgements]
+    PortalV2AuditMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        role: { $ref: "#/components/schemas/PortalV2Role" }
+        changed:
+          type: array
+          items: { type: string }
+        reassignToGroupId: { type: ["string", "null"], format: uuid }
+        count: { type: integer, minimum: 0 }
+        accountId: { type: string, format: uuid }
+        salesRepAccountId: { type: ["string", "null"], format: uuid }
+        kind: { $ref: "#/components/schemas/PortalV2ContentKind" }
+        recipientCount: { type: integer, minimum: 0 }
+        pushConfigured: { type: boolean }
+        status: { $ref: "#/components/schemas/PortalV2NotificationStatus" }
+    PortalV2AuditEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        actorAccountId: { type: ["string", "null"], format: uuid }
+        organizationId: { type: ["string", "null"], format: uuid }
+        projectId: { type: ["string", "null"], format: uuid }
+        action: { type: string }
+        targetType: { type: string }
+        targetId: { type: ["string", "null"] }
+        metadata: { $ref: "#/components/schemas/PortalV2AuditMetadata" }
+        createdAt: { type: string, format: date-time }
+      required: [id, actorAccountId, organizationId, projectId, action, targetType, targetId, metadata, createdAt]
+    PortalV2AdminOverviewResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        counts: { $ref: "#/components/schemas/PortalV2AdminOverviewCounts" }
+        recentAudit:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2AuditEvent" }
+      required: [counts, recentAudit]
+    PortalV2UsersResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        users:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2User" }
+      required: [users]
+    PortalV2UserCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+        displayName: { type: string, minLength: 1, maxLength: 200 }
+        role: { $ref: "#/components/schemas/PortalV2Role" }
+        status: { $ref: "#/components/schemas/PortalV2AccountStatus" }
+        organizationId: { type: string, format: uuid }
+      required: [email, role]
+    PortalV2UserUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName: { type: ["string", "null"], minLength: 1, maxLength: 200 }
+        status: { $ref: "#/components/schemas/PortalV2AccountStatus" }
+        role:
+          type: string
+          enum: [super_admin, staff_admin, sales_rep, content_manager]
+    PortalV2UserResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        user: { $ref: "#/components/schemas/PortalV2User" }
+      required: [user]
+    PortalV2RepAssignmentInput:
+      type: object
+      additionalProperties: false
+      properties:
+        salesRepAccountId: { type: ["string", "null"], format: uuid }
+      required: [salesRepAccountId]
+    PortalV2RepAssignmentResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId: { type: string, format: uuid }
+        salesRepAccountId: { type: ["string", "null"], format: uuid }
+      required: [accountId, salesRepAccountId]
+    PortalV2GroupsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        groups:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2Group" }
+      required: [groups]
+    PortalV2GroupCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: ["string", "null"], maxLength: 500 }
+      required: [name]
+    PortalV2GroupUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: ["string", "null"], maxLength: 500 }
+    PortalV2GroupResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        group: { $ref: "#/components/schemas/PortalV2Group" }
+      required: [group]
+    PortalV2GroupMembership:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        addedByAccountId: { type: ["string", "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+      required: [id, groupId, accountId, addedByAccountId, createdAt]
+    PortalV2GroupMembersReplace:
+      type: object
+      additionalProperties: false
+      properties:
+        accountIds:
+          type: array
+          maxItems: 1000
+          items: { type: string, format: uuid }
+      required: [accountIds]
+    PortalV2GroupMemberInput:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId: { type: string, format: uuid }
+      required: [accountId]
+    PortalV2GroupMembersResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        group: { $ref: "#/components/schemas/PortalV2Group" }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2GroupMembership" }
+      required: [group, members]
+    PortalV2GroupMembershipResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        membership: { $ref: "#/components/schemas/PortalV2GroupMembership" }
+      required: [membership]
+    PortalV2ContentPayload:
+      type: object
+      description: Content-specific JSON payload. Its shape is defined by the content kind.
+      additionalProperties: true
+    PortalV2ContentTargets:
+      type: object
+      additionalProperties: false
+      properties:
+        groupIds:
+          type: array
+          items: { type: string, format: uuid }
+        accountIds:
+          type: array
+          items: { type: string, format: uuid }
+      required: [groupIds, accountIds]
+    PortalV2Content:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/PortalV2ContentKind" }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: ["string", "null"], maxLength: 4000 }
+        payload: { $ref: "#/components/schemas/PortalV2ContentPayload" }
+        visibility: { $ref: "#/components/schemas/PortalV2Visibility" }
+        published: { type: boolean }
+        createdByAccountId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        targets: { $ref: "#/components/schemas/PortalV2ContentTargets" }
+      required: [id, kind, title, description, payload, visibility, published, createdByAccountId, createdAt, updatedAt, targets]
+    PortalV2ContentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        kind: { $ref: "#/components/schemas/PortalV2ContentKind" }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: ["string", "null"], maxLength: 4000 }
+        payload: { $ref: "#/components/schemas/PortalV2ContentPayload" }
+        visibility: { $ref: "#/components/schemas/PortalV2Visibility" }
+        groupIds:
+          type: array
+          maxItems: 500
+          items: { type: string, format: uuid }
+        accountIds:
+          type: array
+          maxItems: 1000
+          items: { type: string, format: uuid }
+        published: { type: boolean }
+      required: [kind, title, visibility]
+    PortalV2ContentUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        kind: { $ref: "#/components/schemas/PortalV2ContentKind" }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: ["string", "null"], maxLength: 4000 }
+        payload: { $ref: "#/components/schemas/PortalV2ContentPayload" }
+        visibility: { $ref: "#/components/schemas/PortalV2Visibility" }
+        groupIds:
+          type: array
+          maxItems: 500
+          items: { type: string, format: uuid }
+        accountIds:
+          type: array
+          maxItems: 1000
+          items: { type: string, format: uuid }
+        published: { type: boolean }
+    PortalV2ContentResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        content: { $ref: "#/components/schemas/PortalV2Content" }
+      required: [content]
+    PortalV2ContentListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2Content" }
+      required: [content]
+    PortalV2NotificationTargetInput:
+      type: object
+      additionalProperties: false
+      properties:
+        everyone: { type: boolean }
+        groupIds:
+          type: array
+          maxItems: 500
+          items: { type: string, format: uuid }
+        accountIds:
+          type: array
+          maxItems: 1000
+          items: { type: string, format: uuid }
+    PortalV2NotificationTargets:
+      type: object
+      additionalProperties: false
+      properties:
+        everyone: { type: boolean }
+        groupIds:
+          type: array
+          items: { type: string, format: uuid }
+        accountIds:
+          type: array
+          items: { type: string, format: uuid }
+      required: [everyone, groupIds, accountIds]
+    PortalV2NotificationDelivery:
+      type: object
+      additionalProperties: false
+      properties:
+        recipients: { type: integer, minimum: 0 }
+        delivered: { type: integer, minimum: 0 }
+        pushSent: { type: integer, minimum: 0 }
+        pushFailed: { type: integer, minimum: 0 }
+        pushSkipped: { type: integer, minimum: 0 }
+      required: [recipients, delivered, pushSent, pushFailed, pushSkipped]
+    PortalV2Notification:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        body: { type: string, minLength: 1, maxLength: 10000 }
+        imageUrl: { type: ["string", "null"], format: uri, maxLength: 2048, pattern: "^https?://" }
+        linkUrl: { type: ["string", "null"], format: uri, maxLength: 2048, pattern: "^https?://" }
+        priority: { $ref: "#/components/schemas/PortalV2NotificationPriority" }
+        status: { $ref: "#/components/schemas/PortalV2NotificationStatus" }
+        scheduledFor: { type: ["string", "null"], format: date-time }
+        sentAt: { type: ["string", "null"], format: date-time }
+        expiresAt: { type: ["string", "null"], format: date-time }
+        acknowledgementRequired: { type: boolean }
+        targets: { $ref: "#/components/schemas/PortalV2NotificationTargets" }
+        delivery: { $ref: "#/components/schemas/PortalV2NotificationDelivery" }
+        createdByAccountId: { type: string, format: uuid }
+        schedulerClaimedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, body, imageUrl, linkUrl, priority, status, scheduledFor, sentAt, expiresAt, acknowledgementRequired, targets, delivery, createdByAccountId, schedulerClaimedAt, createdAt, updatedAt]
+    PortalV2NotificationCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        body: { type: string, minLength: 1, maxLength: 10000 }
+        imageUrl: { type: ["string", "null"], format: uri, maxLength: 2048, pattern: "^https?://" }
+        linkUrl: { type: ["string", "null"], format: uri, maxLength: 2048, pattern: "^https?://" }
+        priority: { $ref: "#/components/schemas/PortalV2NotificationPriority" }
+        status: { $ref: "#/components/schemas/PortalV2NotificationDraftStatus" }
+        scheduledFor: { type: ["string", "null"], format: date-time }
+        expiresAt: { type: ["string", "null"], format: date-time }
+        acknowledgementRequired: { type: boolean }
+        target: { $ref: "#/components/schemas/PortalV2NotificationTargetInput" }
+      required: [title, body, target]
+    PortalV2NotificationUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        body: { type: string, minLength: 1, maxLength: 10000 }
+        imageUrl: { type: ["string", "null"], format: uri, maxLength: 2048, pattern: "^https?://" }
+        linkUrl: { type: ["string", "null"], format: uri, maxLength: 2048, pattern: "^https?://" }
+        priority: { $ref: "#/components/schemas/PortalV2NotificationPriority" }
+        status: { $ref: "#/components/schemas/PortalV2NotificationStatus" }
+        scheduledFor: { type: ["string", "null"], format: date-time }
+        expiresAt: { type: ["string", "null"], format: date-time }
+        acknowledgementRequired: { type: boolean }
+        target: { $ref: "#/components/schemas/PortalV2NotificationTargetInput" }
+    PortalV2NotificationResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        notification: { $ref: "#/components/schemas/PortalV2Notification" }
+      required: [notification]
+    PortalV2NotificationsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2Notification" }
+      required: [notifications]
+    PortalV2NotificationRecipient:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        notificationId: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        readAt: { type: ["string", "null"], format: date-time }
+        acknowledgedAt: { type: ["string", "null"], format: date-time }
+        deliveredAt: { type: string, format: date-time }
+        pushStatus: { $ref: "#/components/schemas/PortalV2PushStatus" }
+        pushAttemptedAt: { type: ["string", "null"], format: date-time }
+        pushError: { type: ["string", "null"] }
+      required: [id, notificationId, accountId, readAt, acknowledgedAt, deliveredAt, pushStatus, pushAttemptedAt, pushError]
+    PortalV2NotificationHistoryResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        recipients:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2NotificationRecipient" }
+      required: [recipients]
+    PortalV2DealerNotification:
+      type: object
+      additionalProperties: false
+      properties:
+        notification: { $ref: "#/components/schemas/PortalV2Notification" }
+        recipient: { $ref: "#/components/schemas/PortalV2NotificationRecipient" }
+      required: [notification, recipient]
+    PortalV2DealerNotificationsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/PortalV2DealerNotification" }
+      required: [notifications]
+    PortalV2NotificationRecipientResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        recipient: { $ref: "#/components/schemas/PortalV2NotificationRecipient" }
+      required: [recipient]
+    PortalV2NotificationPreferences:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId: { type: string, format: uuid }
+        inAppEnabled: { type: boolean }
+        pushEnabled: { type: boolean }
+        priorityThreshold: { $ref: "#/components/schemas/PortalV2NotificationPriority" }
+        updatedAt: { type: string, format: date-time }
+      required: [accountId, inAppEnabled, pushEnabled, priorityThreshold]
+    PortalV2NotificationPreferencesUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        inAppEnabled: { type: boolean }
+        pushEnabled: { type: boolean }
+        priorityThreshold: { $ref: "#/components/schemas/PortalV2NotificationPriority" }
+    PortalV2NotificationPreferencesResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        preferences: { $ref: "#/components/schemas/PortalV2NotificationPreferences" }
+      required: [preferences]
+    PortalResourceUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, minLength: 1 }
+        byteSize: { type: integer, minimum: 1, maximum: 26214400 }
+      required: [fileName, contentType, byteSize]
+    PortalResourceUploadTarget:
+      type: object
+      additionalProperties: false
+      properties:
+        uploadUrl: { type: string, format: uri }
+        objectPath: { type: string }
+        fileName: { type: string }
+      required: [uploadUrl, objectPath, fileName]
+    PortalResourceUploadCompletion:
+      type: object
+      additionalProperties: false
+      properties:
+        tempObjectPath: { type: string }
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, minLength: 1 }
+        byteSize: { type: integer, minimum: 1, maximum: 26214400 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        category: { type: string, minLength: 1, maxLength: 100 }
+        description: { type: ["string", "null"], maxLength: 2000 }
+        enabled: { type: boolean }
+      required: [tempObjectPath, fileName, contentType, byteSize, title, category]
+    PortalFormSubmissionInput:
+      type: object
+      additionalProperties: false
+      properties: { values: { type: object, additionalProperties: true } }
+      required: [values]
+    PushSubscriptionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        endpoint: { type: string, format: uri }
+        expirationTime: { type: ["integer", "null"] }
+        keys: { type: object, additionalProperties: false, properties: { p256dh: { type: string }, auth: { type: string } }, required: [p256dh, auth] }
+      required: [endpoint, keys]
+    PushSubscriptionDeleteInput:
+      type: object
+      additionalProperties: false
+      properties: { endpoint: { type: string, format: uri } }
+      required: [endpoint]
+    PortalUserInviteInput:
+      type: object
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        organizationId: { type: string, format: uuid }
+      required: [email, organizationId]
+    PortalUserStatusInput:
+      type: object
+      additionalProperties: false
+      properties: { status: { type: string, enum: [pending, approved, suspended] } }
+      required: [status]
+    PortalGroupInput:
+      type: object
+      additionalProperties: false
+      properties: { name: { type: string }, description: { type: ["string", "null"] } }
+      required: [name]
+    PortalGroupAssignmentInput:
+      type: object
+      additionalProperties: false
+      properties: { accountId: { type: string, format: uuid } }
+      required: [accountId]
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: string
+      required: [error]
+    Account:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        email: { type: string }
+        displayName: { type: ["string", "null"] }
+        role: { type: string, enum: [customer, dealer, staff] }
+        status: { type: string, enum: [pending, approved, suspended] }
+        emailVerified: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, email, displayName, role, status, emailVerified, createdAt]
+    AccountContext:
+      type: object
+      additionalProperties: false
+      properties:
+        account: { $ref: "#/components/schemas/Account" }
+        organization: { anyOf: [{ $ref: "#/components/schemas/Organization" }, { type: "null" }] }
+        membership: { anyOf: [{ $ref: "#/components/schemas/OrganizationMember" }, { type: "null" }] }
+      required: [account, organization, membership]
+    Organization:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        name: { type: string }
+        slug: { type: string }
+        status: { type: string, enum: [pending, approved, suspended] }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, slug, status, createdAt]
+    OrganizationMember:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        accountId: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        email: { type: string }
+        displayName: { type: ["string", "null"] }
+        membershipRole: { type: string, enum: [owner, member] }
+        status: { type: string, enum: [pending, approved, suspended] }
+      required: [id, accountId, email, displayName, membershipRole, status]
+    ProjectWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        snapshot:
+          type: object
+          additionalProperties: true
+      required: [name, snapshot]
+    Project:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        organizationId: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        name: { type: string }
+        snapshot: { type: object, additionalProperties: true }
+        version: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, organizationId, name, snapshot, version, createdAt, updatedAt]
+    Invitation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        projectId: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        email: { type: string }
+        status: { type: string, enum: [pending, accepted, revoked, expired] }
+        expiresAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+      required: [id, projectId, email, status, expiresAt, createdAt]
+    InvitationCreated:
+      allOf:
+        - { $ref: "#/components/schemas/Invitation" }
+        - type: object
+          properties: { token: { type: string } }
+          required: [token]
+    ProjectImage:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        projectId: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        fileName: { type: string }
+        contentType: { type: string }
+        byteSize: { type: integer }
+        contentUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, projectId, fileName, contentType, byteSize, contentUrl, createdAt]
+    ImageUploadTarget:
+      type: object
+      additionalProperties: false
+      properties:
+        uploadUrl: { type: string }
+        uploadId: { type: string, pattern: "^[0-9a-f-]{36}$" }
+      required: [uploadUrl, uploadId]
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: "^[0-9a-f-]{36}$" }
+        action: { type: string }
+        targetType: { type: string }
+        targetId: { type: ["string", "null"] }
+        metadata: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+      required: [id, action, targetType, targetId, metadata, createdAt]
+    CatalogAsset:
+      type: object
+      additionalProperties: false
+      properties:
+        originalUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+        sourceUrl:
+          type: string
+        sha256:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+      required: [originalUrl, thumbnailUrl, sourceUrl, sha256]
+    PublicCatalogProduct:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, minLength: 1 }
+        sku: { type: string, minLength: 1 }
+        catalogRef: { type: ["string", "null"] }
+        name: { type: string, minLength: 1 }
+        series: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        productType: { type: string, minLength: 1 }
+        bottleCapacity: { type: ["number", "null"], minimum: 0 }
+        widthIn: { type: number, exclusiveMinimum: 0 }
+        heightIn: { type: number, exclusiveMinimum: 0 }
+        depthIn: { type: number, exclusiveMinimum: 0 }
+        dimensionsRaw: { type: string }
+        unit:
+          type: string
+          enum: [inches]
+        materials:
+          type: array
+          items: { type: string }
+        finishes:
+          type: array
+          items: { type: string }
+        hardwareFinishes:
+          type: array
+          items: { type: string }
+        features:
+          type: array
+          items: { type: string }
+        customizable: { type: boolean }
+        fullyAssembled: { type: boolean }
+        productUrl: { type: string }
+        catalogPdf: { type: string }
+        notes: { type: string }
+        asset:
+          anyOf:
+            - $ref: "#/components/schemas/CatalogAsset"
+            - type: "null"
+      required:
+        - id
+        - sku
+        - catalogRef
+        - name
+        - series
+        - category
+        - productType
+        - bottleCapacity
+        - widthIn
+        - heightIn
+        - depthIn
+        - dimensionsRaw
+        - unit
+        - materials
+        - finishes
+        - hardwareFinishes
+        - features
+        - customizable
+        - fullyAssembled
+        - productUrl
+        - catalogPdf
+        - notes
+        - asset
+    CatalogProvenance:
+      type: object
+      additionalProperties: false
+      properties:
+        source: { type: string, minLength: 1 }
+        sourceUrls:
+          type: array
+          items: { type: string }
+        generatedAt:
+          type: string
+          format: date-time
+        sourceVersion: { type: ["string", "null"] }
+      required: [source, sourceUrls, generatedAt, sourceVersion]
+    PublicCatalogRelease:
+      type: object
+      additionalProperties: false
+      properties:
+        releaseId: { type: string, pattern: "^sha256:[a-f0-9]{64}$" }
+        releaseVersion: { type: ["string", "null"] }
+        effectiveFrom: { type: ["string", "null"], format: date }
+        effectiveTo: { type: ["string", "null"], format: date }
+        brand: { type: string }
+        website: { type: string }
+        disclaimer: { type: string }
+        provenance:
+          $ref: "#/components/schemas/CatalogProvenance"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicCatalogProduct"
+      required:
+        - releaseId
+        - releaseVersion
+        - effectiveFrom
+        - effectiveTo
+        - brand
+        - website
+        - disclaimer
+        - provenance
+        - products
+    PricebookLine:
+      type: object
+      additionalProperties: false
+      properties:
+        sku: { type: string }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+        wholesaleAmount:
+          type: ["number", "null"]
+          minimum: 0
+        pricingStatus:
+          type: string
+          enum: [priced, tbd, unavailable]
+      required: [sku, currency, wholesaleAmount, pricingStatus]
+    ProtectedPricebook:
+      type: object
+      additionalProperties: false
+      properties:
+        version: { type: string }
+        catalogReleaseId: { type: string }
+        effectiveFrom: { type: string, format: date }
+        effectiveTo: { type: ["string", "null"], format: date }
+        provenance:
+          $ref: "#/components/schemas/CatalogProvenance"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/PricebookLine"
+      required: [version, catalogReleaseId, effectiveFrom, effectiveTo, provenance, lines]
+    ConciergeCitation:
+      type: object
+      additionalProperties: false
+      properties:
+        sourceId: { type: string }
+        quote: { type: string }
+      required: [sourceId, quote]
+    ConciergeActionSuggestion:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [rename_project] }
+        proposedName: { type: string }
+        explanation: { type: string }
+        expectedProjectVersion: { type: integer }
+        status: { type: string, enum: [pending] }
+      required: [id, type, proposedName, explanation, expectedProjectVersion, status]
+    ConciergeAnswer:
+      type: object
+      additionalProperties: false
+      properties:
+        conversationId: { type: string, format: uuid }
+        messageId: { type: string, format: uuid }
+        status: { type: string, enum: [answered, partial, unknown] }
+        answer: { type: string }
+        citations: { type: array, items: { $ref: "#/components/schemas/ConciergeCitation" } }
+        claims: { type: array, items: { $ref: "#/components/schemas/ConciergeCitation" } }
+        action: { type: ["object", "null"], additionalProperties: true }
+        actionSuggestion:
+          anyOf:
+            - { $ref: "#/components/schemas/ConciergeActionSuggestion" }
+            - { type: "null" }
+      required: [conversationId, messageId, status, answer, citations, claims, action, actionSuggestion]
+    ConciergeConversation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        projectId: { type: ["string", "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, projectId, createdAt, updatedAt]
+    ConciergeConversationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ConciergeConversation" }
+        nextCursor: { type: [string, "null"], description: Opaque cursor for the next older page }
+      required: [items, nextCursor]
+    ConciergeUiCitation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        label: { type: string }
+        detail: { type: string }
+        factStatus: { type: string, enum: [concept, reviewed, approved, unknown] }
+      required: [id, label, detail, factStatus]
+    ConciergeUiAction:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        effects: { type: array, items: { type: string } }
+        status: { type: string, enum: [suggested, confirmed, rejected, failed] }
+        requiresConfirmation: { type: boolean }
+        expectedProjectVersion: { type: integer }
+      required: [id, title, description, effects, status, requiresConfirmation, expectedProjectVersion]
+    ConciergeUiMessage:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+        factStatus: { type: string, enum: [concept, reviewed, approved, unknown] }
+        citations: { type: array, items: { $ref: "#/components/schemas/ConciergeUiCitation" } }
+        actions: { type: array, items: { $ref: "#/components/schemas/ConciergeUiAction" } }
+      required: [id, role, content, createdAt]
+    ConciergeMessagePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ConciergeUiMessage" }
+        nextCursor: { type: [string, "null"], description: Opaque cursor for the next older page }
+      required: [items, nextCursor]

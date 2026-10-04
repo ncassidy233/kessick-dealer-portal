@@ -1,0 +1,17 @@
+{
+  "name": "Kessick Dealer Portal",
+  "short_name": "Kessick",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121210",
+  "theme_color": "#B39862",
+  "icons": [
+    {
+      "src": "assets/kessick-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

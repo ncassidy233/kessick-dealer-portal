@@ -1,0 +1,28 @@
+kind = "video"
+videoAspectRatio = "16:9"
+previewPath = "/kessick-concept-video/"
+title = "Kessick Concept Experience"
+description = "A polished 16:9 stakeholder concept video showing the Kessick Room Visualizer, 3D Product Viewer, View In Your Room journey, and dealer/design-request conversion paths."
+version = "1.0.0"
+id = "artifacts/kessick-concept-video"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/kessick-concept-video/" ]
+localPort = 21455
+
+[services.development]
+run = "pnpm --filter @workspace/kessick-concept-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kessick-concept-video", "run", "build" ]
+run = [ "node", "scripts/serve-secure-static.mjs", "artifacts/kessick-concept-video/dist/public" ]
+
+
+[services.production.health.startup]
+path = "/kessick-concept-video/"
+
+[services.env]
+PORT = "21455"
+BASE_PATH = "/kessick-concept-video/"
