@@ -1,0 +1,66 @@
+name: Publish sample admin preview
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - copilot/claude
+    paths:
+      - ".github/workflows/sample-admin-preview.yml"
+      - "artifacts/kessick-visualizer/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build standalone sample preview
+        working-directory: artifacts/kessick-visualizer
+        env:
+          BASE_PATH: /kessick-dealer-portal/
+          PORT: "5000"
+          SAMPLE_PREVIEW_ONLY: "true"
+        run: pnpm build
+      - name: Add static-hosting marker
+        run: touch artifacts/kessick-visualizer/dist/public/.nojekyll
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload preview site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts/kessick-visualizer/dist/public
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Publish preview
+        id: deployment
+        uses: actions/deploy-pages@v4
