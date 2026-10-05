@@ -33,6 +33,7 @@ import {
   PortalRole,
   PortalUser,
   removePortalGroupMember,
+  resendPortalUserInvitation,
   replacePortalGroupMembers,
   updatePortalUser,
   usePortalBootstrap,
@@ -133,6 +134,7 @@ export default function AdminUsers() {
   const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ["portal-v2", "admin", "users"] });
   const invalidateGroups = () => queryClient.invalidateQueries({ queryKey: portalQueryKeys.groups });
   const createMutation = useMutation({ mutationFn: createPortalUser });
+  const invitationMutation = useMutation({ mutationFn: resendPortalUserInvitation });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updatePortalUser>[1] }) => updatePortalUser(id, data),
   });
@@ -178,6 +180,17 @@ export default function AdminUsers() {
       resetCreate();
       invalidateUsers();
       toast.success(`${newRole === "dealer" ? "Dealer" : "Staff account"} provisioned`);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleResendInvitation = async (user: PortalUser) => {
+    try {
+      const result = await invitationMutation.mutateAsync(user.id);
+      setCreatedUser({ ...user, invitation: result.invitation });
+      setIsInviteOpen(true);
+      toast.success(`Invitation sent to ${user.email}`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -426,6 +439,17 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="flex flex-wrap justify-end gap-1">
+                          {canEdit && user.invitationEligible && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 rounded-none px-2 text-xs hover:bg-[#B39862]/15"
+                              disabled={invitationMutation.isPending}
+                              onClick={() => void handleResendInvitation(user)}
+                            >
+                              Resend invite
+                            </Button>
+                          )}
                           {user.role === "dealer" && (
                             <>
                               {hasCapability(bootstrap.data.capabilities, "groups:write") && <Button variant="ghost" size="sm" className="h-8 rounded-none px-2 text-xs hover:bg-[#B39862]/15" onClick={() => openGroups(user)}>
@@ -535,7 +559,8 @@ export default function AdminUsers() {
               <div className="border border-[#121210]/10 bg-white/70 p-4">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]"><MailPlus className="h-4 w-4" /> Invitation record</div>
                 <p className="mt-2 text-sm text-[#121210]/65">
-                  A setup email was sent. The client can set their own password there. Share this link for preview access:
+                  A setup email was sent. The client can set their own password there. Share this link for preview access.
+                  {createdUser.status === "pending" && " This account is pending; use Verify in the user list before they can enter the portal."}
                 </p>
                 {createdUser.invitation?.url ? (
                   <div className="mt-3 flex gap-2">

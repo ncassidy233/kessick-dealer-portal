@@ -131,7 +131,55 @@ async function userDto(account: typeof accountsTable.$inferSelect) {
   const [assignedRep] = assignedRepId
     ? await db.select({ id: accountsTable.id, email: accountsTable.email, displayName: accountsTable.displayName }).from(accountsTable).where(eq(accountsTable.id, assignedRepId)).limit(1)
     : [null];
-  return { ...account, portalRole: staff?.role ?? null, groups, assignedRepId, assignedRep };
+  return {
+    ...account,
+    portalRole: staff?.role ?? null,
+    groups,
+    assignedRepId,
+    assignedRep,
+    invitationEligible:
+      account.clerkUserId.startsWith("pending:") ||
+      account.clerkUserId.startsWith("invited:") ||
+      account.clerkUserId.startsWith("staff:"),
+  };
+}
+async function createPortalInvitation(
+  req: Request,
+  email: string,
+  role: "dealer" | "staff",
+  ignoreExisting = false,
+) {
+  const origin = requestSourceOrigin(req);
+  if (!origin) throw Object.assign(new Error("Request origin could not be verified."), { status: 403 });
+  const previousInvitations = ignoreExisting
+    ? (await clerk.invitations.getInvitationList({ query: email })).data.filter(
+        (invitation) =>
+          invitation.emailAddress.toLowerCase() === email.toLowerCase() &&
+          invitation.status === "pending",
+      )
+    : [];
+  const invitation = await clerk.invitations.createInvitation({
+    emailAddress: email,
+    notify: true,
+    ...(ignoreExisting ? { ignoreExisting: true } : {}),
+    redirectUrl: portalInvitationRedirectUrl(
+      origin,
+      process.env.BASE_PATH ?? "/",
+      role,
+    ),
+  });
+  await Promise.all(
+    previousInvitations
+      .filter((previous) => previous.id !== invitation.id)
+      .map(async (previous) => {
+        try {
+          await clerk.invitations.revokeInvitation(previous.id);
+        } catch (error) {
+          req.log.warn({ err: error }, "Previous Clerk invitation could not be revoked");
+        }
+      }),
+  );
+  return invitation;
 }
 async function groupDto(group: typeof portalGroupsTable.$inferSelect) {
   const [members, legacyMembers] = await Promise.all([
@@ -459,21 +507,19 @@ router.post("/portal-v2/admin/users", requireCapability("users:write"), async (r
       .where(and(eq(dealerOrganizationsTable.id, body.data.organizationId), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
     if (!organization) { res.status(404).json({ error: "Approved dealer organization not found." }); return; }
   }
-  const origin = requestSourceOrigin(req);
-  if (!origin) { res.status(403).json({ error: "Request origin could not be verified." }); return; }
   let invitation: Awaited<ReturnType<typeof clerk.invitations.createInvitation>>;
   try {
-    invitation = await clerk.invitations.createInvitation({
-      emailAddress: body.data.email,
-      notify: true,
-      redirectUrl: portalInvitationRedirectUrl(
-        origin,
-        process.env.BASE_PATH ?? "/",
-        body.data.role === "dealer" ? "dealer" : "staff",
-      ),
-    });
+    invitation = await createPortalInvitation(
+      req,
+      body.data.email,
+      body.data.role === "dealer" ? "dealer" : "staff",
+    );
   } catch (error) {
     req.log.error({ err: error }, "Clerk invitation could not be created");
+    if ((error as { status?: number }).status === 403) {
+      res.status(403).json({ error: "Request origin could not be verified." });
+      return;
+    }
     res.status(502).json({ error: "Account invitation could not be created. No account was provisioned." });
     return;
   }
@@ -523,6 +569,38 @@ router.post("/portal-v2/admin/users", requireCapability("users:write"), async (r
       invitation: { status: "pending", url: invitation.url },
     },
   });
+});
+
+router.post("/portal-v2/admin/users/:accountId/invitation", requireCapability("users:write"), async (req, res): Promise<void> => {
+  const id = uuid.safeParse(rawParam(req.params.accountId));
+  if (!id.success) { res.status(400).json({ error: "Invalid account id." }); return; }
+  const [account] = await db.select().from(accountsTable).where(eq(accountsTable.id, id.data)).limit(1);
+  const isUnclaimed = account && (
+    account.clerkUserId.startsWith("pending:") ||
+    account.clerkUserId.startsWith("invited:") ||
+    account.clerkUserId.startsWith("staff:")
+  );
+  if (!account || !isUnclaimed || account.status === "suspended") {
+    res.status(409).json({ error: "This account is not eligible for a setup invitation." });
+    return;
+  }
+  try {
+    const invitation = await createPortalInvitation(
+      req,
+      account.email,
+      account.role === "dealer" ? "dealer" : "staff",
+      true,
+    );
+    await audit(req, "portal_v2.invitation.resent", "account", account.id);
+    res.json({ invitation: { status: "pending", url: invitation.url } });
+  } catch (error) {
+    req.log.error({ err: error }, "Clerk invitation could not be resent");
+    if ((error as { status?: number }).status === 403) {
+      res.status(403).json({ error: "Request origin could not be verified." });
+      return;
+    }
+    res.status(502).json({ error: "Account invitation could not be resent." });
+  }
 });
 
 router.patch("/portal-v2/admin/users/:accountId", requireCapability("users:write"), async (req, res): Promise<void> => {
