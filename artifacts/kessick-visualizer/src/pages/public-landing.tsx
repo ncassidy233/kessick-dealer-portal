@@ -18,6 +18,9 @@ export default function PublicLanding() {
       <header className="absolute top-0 left-0 right-0 z-50 flex h-24 items-center justify-between px-6 md:px-12 bg-gradient-to-b from-[#121210]/80 to-transparent">
         <BrandLogo tone="light" className="h-6 md:h-8 w-auto" showWineCellarsName />
         <div className="flex items-center gap-6">
+          <Link href="/demo" className="text-sm font-medium uppercase tracking-widest text-[#F3F0E8] hover:text-[#B39862] transition-colors">
+            Preview
+          </Link>
           <Link href="/sign-in" className="text-sm font-medium uppercase tracking-widest text-[#F3F0E8] hover:text-[#B39862] transition-colors">
             Sign In
           </Link>
@@ -50,9 +53,15 @@ export default function PublicLanding() {
             and review new product collections in one secure environment.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md justify-center">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 w-full max-w-4xl justify-center">
+            <Button asChild size="lg" variant="outline" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold border-[#B39862]/50 text-[#F3F0E8] hover:bg-[#B39862]/10 hover:border-[#B39862] transition-colors w-full sm:w-auto">
+              <Link href="/demo">View Preview</Link>
+            </Button>
             <Button asChild size="lg" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold bg-[#B39862] text-white hover:bg-[#B39862]/90 transition-colors w-full sm:w-auto shadow-2xl">
               <Link href="/sign-in">Partner Sign In</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold border-[#B39862]/50 text-[#F3F0E8] hover:bg-[#B39862]/10 hover:border-[#B39862] transition-colors w-full sm:w-auto">
+              <Link href="/sign-up">Request Access</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold border-[#B39862]/50 text-[#F3F0E8] hover:bg-[#B39862]/10 hover:border-[#B39862] transition-colors w-full sm:w-auto">
               <Link href="/sign-up">Request Access</Link>

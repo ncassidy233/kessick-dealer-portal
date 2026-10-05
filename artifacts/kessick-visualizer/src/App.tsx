@@ -212,7 +212,7 @@ function Router() {
         <Route path="/" component={PublicLanding} />
         <Route path="/app" component={PublicLanding} />
         <Route path="/demo">
-          <AuthGuard><StaffGuard><DemoPresentationPage /></StaffGuard></AuthGuard>
+          <DemoPresentationPage />
         </Route>
         <Route path="/sign-in/*?">
           <SignInPage />
