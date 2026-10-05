@@ -40,6 +40,7 @@ import AdminContent from '@/pages/admin/content';
 import AdminNotifications from '@/pages/admin/notifications';
 import AdminAudit from '@/pages/admin/audit';
 import AdminOverview from '@/pages/admin/overview';
+import AdminPreviewPage from '@/pages/admin/preview';
 import AdminKnowledge from '@/pages/admin/knowledge';
 import AdminConciergeInsights from '@/pages/admin/concierge-insights';
 import PortalProjects from '@/pages/portal/projects';
@@ -213,6 +214,9 @@ function Router() {
         <Route path="/app" component={PublicLanding} />
         <Route path="/demo">
           <DemoPresentationPage />
+        </Route>
+        <Route path="/admin/preview">
+          <AdminPreviewPage />
         </Route>
         <Route path="/sign-in/*?">
           <SignInPage />
