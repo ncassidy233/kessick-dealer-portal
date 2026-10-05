@@ -63,13 +63,6 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
-    ...(process.env.SAMPLE_PREVIEW_ONLY === 'true'
-      ? {
-          rollupOptions: {
-            input: path.resolve(import.meta.dirname, 'admin-preview.html'),
-          },
-        }
-      : {}),
   },
   server: {
     port,
