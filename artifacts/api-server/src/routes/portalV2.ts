@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { createClerkClient } from "@clerk/backend";
 import {
   accountsTable,
   auditEventsTable,
@@ -38,6 +39,8 @@ import { approvedDealerAccountIds, isApprovedDealerAccount } from "../lib/portal
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
 import linkedFormsRouter from "./linkedForms";
 import { dealerProvisioningPlan } from "../lib/portalDealerProvisioning";
+import { portalInvitationRedirectUrl } from "../lib/portalInvitation";
+import { requestSourceOrigin } from "../security/origin";
 import {
   configurePushFromEnvironment,
   isAllowedPushEndpoint,
@@ -58,6 +61,7 @@ const accountStatus = z.enum(["pending", "approved", "suspended"]);
 const url = z.string().url().max(2048).refine((value) => ["http:", "https:"].includes(new URL(value).protocol), "Only HTTP(S) URLs are supported.");
 const pushConfiguration = configurePushFromEnvironment();
 const pushConfigured = pushConfiguration.configured;
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 type StaffRole = PortalStaffRole;
 
@@ -455,37 +459,70 @@ router.post("/portal-v2/admin/users", requireCapability("users:write"), async (r
       .where(and(eq(dealerOrganizationsTable.id, body.data.organizationId), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
     if (!organization) { res.status(404).json({ error: "Approved dealer organization not found." }); return; }
   }
-  const [account] = await db.transaction(async (tx) => {
-    const plan = body.data.role === "dealer" ? dealerProvisioningPlan(body.data.status, body.data.organizationId) : null;
-    const initialStatus = plan?.status ?? (body.data.status ?? "approved");
-    const [created] = await tx.insert(accountsTable).values({
-      clerkUserId: body.data.role === "dealer" ? `invited:${body.data.email}` : `staff:${body.data.email}`,
-      email: body.data.email, displayName: body.data.displayName ?? null,
-      role: body.data.role === "dealer" ? "dealer" : "staff",
-      status: initialStatus,
-      emailVerified: false,
-    }).returning();
-    if (body.data.role !== "dealer") await tx.insert(portalStaffProfilesTable).values({ accountId: created.id, role: body.data.role, assignedByAccountId: req.account!.id });
-    if (body.data.role === "dealer") {
-      const organizationId = body.data.organizationId ?? (await tx.insert(dealerOrganizationsTable).values({
-        name: body.data.organizationName ?? body.data.displayName ?? `${body.data.email} Dealer Account`,
-        slug: `dealer-${created.id}`,
-        status: plan!.status,
-        createdByAccountId: created.id,
-        approvedByAccountId: plan!.status === "approved" ? req.account!.id : null,
-        approvedAt: plan!.status === "approved" ? new Date() : null,
-      }).returning())[0].id;
-      await tx.insert(organizationMembershipsTable).values({
-        organizationId,
-        accountId: created.id,
-        role: plan!.membershipRole,
-        status: plan!.membershipStatus,
+  const origin = requestSourceOrigin(req);
+  if (!origin) { res.status(403).json({ error: "Request origin could not be verified." }); return; }
+  let invitation: Awaited<ReturnType<typeof clerk.invitations.createInvitation>>;
+  try {
+    invitation = await clerk.invitations.createInvitation({
+      emailAddress: body.data.email,
+      notify: true,
+      redirectUrl: portalInvitationRedirectUrl(
+        origin,
+        process.env.BASE_PATH ?? "/",
+        body.data.role === "dealer" ? "dealer" : "staff",
+      ),
+    });
+  } catch (error) {
+    req.log.error({ err: error }, "Clerk invitation could not be created");
+    res.status(502).json({ error: "Account invitation could not be created. No account was provisioned." });
+    return;
+  }
+  let account: typeof accountsTable.$inferSelect;
+  try {
+    [account] = await db.transaction(async (tx) => {
+      const plan = body.data.role === "dealer" ? dealerProvisioningPlan(body.data.status, body.data.organizationId) : null;
+      const initialStatus = plan?.status ?? (body.data.status ?? "approved");
+      const [created] = await tx.insert(accountsTable).values({
+        clerkUserId: body.data.role === "dealer" ? `invited:${body.data.email}` : `staff:${body.data.email}`,
+        email: body.data.email, displayName: body.data.displayName ?? null,
+        role: body.data.role === "dealer" ? "dealer" : "staff",
+        status: initialStatus,
+        emailVerified: false,
       });
+      if (body.data.role !== "dealer") await tx.insert(portalStaffProfilesTable).values({ accountId: created.id, role: body.data.role, assignedByAccountId: req.account!.id });
+      if (body.data.role === "dealer") {
+        const organizationId = body.data.organizationId ?? (await tx.insert(dealerOrganizationsTable).values({
+          name: body.data.organizationName ?? body.data.displayName ?? `${body.data.email} Dealer Account`,
+          slug: `dealer-${created.id}`,
+          status: plan!.status,
+          createdByAccountId: created.id,
+          approvedByAccountId: plan!.status === "approved" ? req.account!.id : null,
+          approvedAt: plan!.status === "approved" ? new Date() : null,
+        }).returning())[0].id;
+        await tx.insert(organizationMembershipsTable).values({
+          organizationId,
+          accountId: created.id,
+          role: plan!.membershipRole,
+          status: plan!.membershipStatus,
+        });
+      }
+      return [created];
+    });
+  } catch (error) {
+    try {
+      await clerk.invitations.revokeInvitation(invitation.id);
+    } catch (revokeError) {
+      req.log.error({ err: revokeError }, "Orphaned Clerk invitation could not be revoked");
     }
-    return [created];
-  });
+    throw error;
+  }
   await audit(req, "portal_v2.user.provisioned", "account", account.id, { role: body.data.role });
-  res.status(201).json({ user: await userDto(account) });
+  res.status(201).json({
+    user: {
+      ...await userDto(account),
+      invitation: { status: "pending", url: invitation.url },
+    },
+  });
 });
 
 router.patch("/portal-v2/admin/users/:accountId", requireCapability("users:write"), async (req, res): Promise<void> => {

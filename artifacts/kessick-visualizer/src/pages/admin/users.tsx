@@ -90,7 +90,7 @@ export default function AdminUsers() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [newRole, setNewRole] = useState<PortalRole>("dealer");
-  const [newStatus, setNewStatus] = useState<UserStatus>("pending");
+  const [newStatus, setNewStatus] = useState<UserStatus>("approved");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [repId, setRepId] = useState("");
   const [bulkStatus, setBulkStatus] = useState<UserStatus>("approved");
@@ -159,7 +159,7 @@ export default function AdminUsers() {
     setEmail("");
     setDisplayName("");
     setNewRole("dealer");
-    setNewStatus("pending");
+    setNewStatus("approved");
   };
 
   const handleCreate = async () => {
@@ -498,13 +498,13 @@ export default function AdminUsers() {
           <DialogHeader><DialogTitle className="text-2xl font-medium">Add {newRole === "dealer" ? "dealer" : "staff"} account</DialogTitle></DialogHeader>
           <div className="space-y-4 py-3">
             <p className="border-l-2 border-[#B39862] bg-[#B39862]/10 px-3 py-2 text-xs text-[#121210]/65">
-              This provisions portal access. It does not confirm that an email was delivered.
+              The client will receive an account setup link and choose their own password.
             </p>
             <Field label="Email address"><Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} placeholder="name@dealer.com" /></Field>
             <Field label="Display name (optional)"><Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className={inputClass} placeholder="Jordan Lee" /></Field>
             {isSuperAdmin && (
               <Field label="Role">
-                 <select value={newRole} onChange={(event) => { const nextRole = event.target.value as PortalRole; setNewRole(nextRole); setNewStatus(nextRole === "dealer" ? "pending" : "approved"); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">
+                 <select value={newRole} onChange={(event) => { const nextRole = event.target.value as PortalRole; setNewRole(nextRole); setNewStatus("approved"); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">
                   <option value="dealer">Dealer</option>
                   {roles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </select>
@@ -528,21 +528,21 @@ export default function AdminUsers() {
 
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="rounded-none border-[#121210]/15 bg-[#F3F0E8] text-[#121210] sm:max-w-lg">
-          <DialogHeader><DialogTitle className="text-2xl font-medium">Invitation status</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-2xl font-medium">Preview access ready</DialogTitle></DialogHeader>
           {createdUser && (
             <div className="space-y-4 py-3">
               <div><p className="font-medium">{createdUser.displayName || createdUser.email}</p><p className="text-sm text-[#121210]/55">{createdUser.email}</p></div>
               <div className="border border-[#121210]/10 bg-white/70 p-4">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]"><MailPlus className="h-4 w-4" /> Invitation record</div>
                 <p className="mt-2 text-sm text-[#121210]/65">
-                  Status: <strong className="text-[#121210]">{createdUser.invitation?.status || "created"}</strong>. Share the link below if one was returned.
+                  A setup email was sent. The client can set their own password there. Share this link for preview access:
                 </p>
                 {createdUser.invitation?.url ? (
                   <div className="mt-3 flex gap-2">
                     <Input readOnly value={createdUser.invitation.url} className={`${inputClass} text-xs`} />
                     <Button variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={copyInvite}><Clipboard className="h-4 w-4" /></Button>
                   </div>
-                ) : <p className="mt-3 text-xs text-[#121210]/50">No link was returned by the server. Email delivery is not claimed.</p>}
+                ) : <p className="mt-3 text-xs text-[#121210]/50">The invitation email was sent. Ask the client to check their inbox.</p>}
               </div>
             </div>
           )}
