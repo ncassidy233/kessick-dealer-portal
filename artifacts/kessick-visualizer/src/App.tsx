@@ -27,6 +27,7 @@ import { resolveOAuthAuthorizationDestination } from "@/lib/oauth-navigation";
 import DemoPresentationPage from '@/pages/demo/index';
 import { PortalLayout } from '@/components/layouts/portal-layout';
 import PortalDashboard from '@/pages/portal/dashboard';
+import DealerPortalPreview from '@/pages/portal/preview';
 import PortalPricing from '@/pages/portal/pricing';
 import PortalForms from '@/pages/portal/forms';
 import PortalResources from '@/pages/portal/resources';
@@ -217,6 +218,9 @@ function Router() {
         </Route>
         <Route path="/admin/preview">
           <AdminPreviewPage />
+        </Route>
+        <Route path="/portal/preview">
+          <DealerPortalPreview />
         </Route>
         <Route path="/sign-in/*?">
           <SignInPage />

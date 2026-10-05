@@ -303,7 +303,7 @@ function SceneProductInRoom() {
       <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
         <div className="bg-card/90 backdrop-blur border border-border px-2 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1.5 sm:gap-2 shadow-lg">
           <Home className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-          <span className="text-[10px] sm:text-xs uppercase tracking-widest font-semibold">AR Composition</span>
+          <span className="text-[10px] sm:text-xs uppercase tracking-widest font-semibold">Room Composition</span>
         </div>
       </div>
     </motion.div>
