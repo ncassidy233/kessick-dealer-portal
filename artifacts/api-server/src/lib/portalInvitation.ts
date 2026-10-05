@@ -3,7 +3,10 @@ export function portalInvitationRedirectUrl(
   basePath: string,
   role: "dealer" | "staff",
 ): string {
-  const normalizedBasePath = `/${basePath.split("/").filter(Boolean).join("/")}/`;
+  const basePathSegments = basePath.split("/").filter(Boolean);
+  const normalizedBasePath = basePathSegments.length
+    ? `/${basePathSegments.join("/")}/`
+    : "/";
   const appBase = new URL(normalizedBasePath, origin);
   const signUpUrl = new URL("sign-up", appBase);
   const destination = new URL(role === "dealer" ? "portal" : "admin", appBase);

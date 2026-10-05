@@ -488,7 +488,7 @@ router.post("/portal-v2/admin/users", requireCapability("users:write"), async (r
         role: body.data.role === "dealer" ? "dealer" : "staff",
         status: initialStatus,
         emailVerified: false,
-      });
+      }).returning();
       if (body.data.role !== "dealer") await tx.insert(portalStaffProfilesTable).values({ accountId: created.id, role: body.data.role, assignedByAccountId: req.account!.id });
       if (body.data.role === "dealer") {
         const organizationId = body.data.organizationId ?? (await tx.insert(dealerOrganizationsTable).values({
