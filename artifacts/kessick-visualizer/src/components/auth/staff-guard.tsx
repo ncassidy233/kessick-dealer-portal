@@ -38,9 +38,10 @@ export function StaffGuard({ children }: { children: ReactNode }) {
     : location.startsWith("/admin/concierge-insights")
       ? fullAdmin
       : null;
+  const staffDealerPreview = location === "/admin/dealer-view";
   const denied = roleAllowed !== null
     ? !roleAllowed
-    : (required && !session.capabilities.includes(required)) || (!required && !fullAdmin);
+    : (required && !session.capabilities.includes(required)) || (!required && !fullAdmin && !staffDealerPreview);
   if (denied) {
     const home = staffHome(session.role);
     // Never redirect to the page we are already on; that re-renders forever.

@@ -27,6 +27,7 @@ import { resolveOAuthAuthorizationDestination } from "@/lib/oauth-navigation";
 import DemoPresentationPage from '@/pages/demo/index';
 import { PortalLayout } from '@/components/layouts/portal-layout';
 import PortalDashboard from '@/pages/portal/dashboard';
+import DealerPortalPreview from '@/pages/portal/preview';
 import PortalPricing from '@/pages/portal/pricing';
 import PortalForms from '@/pages/portal/forms';
 import PortalResources from '@/pages/portal/resources';
@@ -40,6 +41,7 @@ import AdminContent from '@/pages/admin/content';
 import AdminNotifications from '@/pages/admin/notifications';
 import AdminAudit from '@/pages/admin/audit';
 import AdminOverview from '@/pages/admin/overview';
+import AdminPreviewPage from '@/pages/admin/preview';
 import AdminKnowledge from '@/pages/admin/knowledge';
 import AdminConciergeInsights from '@/pages/admin/concierge-insights';
 import PortalProjects from '@/pages/portal/projects';
@@ -212,7 +214,13 @@ function Router() {
         <Route path="/" component={PublicLanding} />
         <Route path="/app" component={PublicLanding} />
         <Route path="/demo">
-          <AuthGuard><StaffGuard><DemoPresentationPage /></StaffGuard></AuthGuard>
+          <DemoPresentationPage />
+        </Route>
+        <Route path="/admin/preview">
+          <AdminPreviewPage />
+        </Route>
+        <Route path="/portal/preview">
+          <DealerPortalPreview />
         </Route>
         <Route path="/sign-in/*?">
           <SignInPage />
@@ -316,6 +324,9 @@ function Router() {
         </Route>
 
         {/* Admin Routes */}
+        <Route path="/admin/dealer-view">
+          <AuthGuard><StaffGuard><PortalLayout><DealerPortalPreview staffViewMode /></PortalLayout></StaffGuard></AuthGuard>
+        </Route>
         <Route path="/admin">
           <AuthGuard><StaffGuard><PortalLayout><AdminOverview /></PortalLayout></StaffGuard></AuthGuard>
         </Route>
