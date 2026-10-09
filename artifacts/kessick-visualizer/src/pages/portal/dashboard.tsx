@@ -13,6 +13,7 @@ import {
   Wine,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useListDealerPortalResources } from "@workspace/api-client-react";
 import { formatDistanceToNow } from "date-fns";
 import roomImage from "@assets/kessick-room-demo.jpg";
 import { usePortalContent, usePortalNotifications, usePortalProjects } from "@/hooks/use-portal-v2";
@@ -42,6 +43,7 @@ export default function PortalDashboard() {
   const { data: seriesData } = usePortalContent("product_series");
   const { data: resourcesData } = usePortalContent("resource");
   const { data: categoriesData } = usePortalContent("resource_category");
+  const { data: legacyResourcesData } = useListDealerPortalResources();
   const [search, setSearch] = useState("");
 
   const notifications = notificationsData?.notifications ?? [];
@@ -51,8 +53,15 @@ export default function PortalDashboard() {
   const productSeries = seriesData?.content ?? [];
   const resources = resourcesData?.content ?? [];
   const resourceCategories = categoriesData?.content ?? [];
+  const legacyResources = (legacyResourcesData ?? []) as {
+    id: string;
+    title: string;
+    category?: string | null;
+    description?: string | null;
+  }[];
   const featuredAnnouncement =
     announcements.find((item) => item.payload?.featuredOnDashboard === true) ?? announcements[0];
+  const featuredAnnouncementUrl = safeWebUrl(featuredAnnouncement?.payload?.url);
   const featuredSeries = productSeries.find(
     (item) => item.payload?.featuredOnDashboard === true || item.payload?.comingSoon === true,
   );
@@ -60,6 +69,11 @@ export default function PortalDashboard() {
 
   const searchResults = useMemo<SearchResult[]>(() => {
     if (!query) return [];
+    const linkedResources = new Map(
+      resources
+        .filter((item) => typeof item.payload?.legacyId === "string")
+        .map((item) => [item.payload.legacyId as string, item]),
+    );
     const records: SearchResult[] = [
       ...projects.map((item) => ({
         id: `project-${item.id}`,
@@ -75,13 +89,23 @@ export default function PortalDashboard() {
         href: "/portal/collections",
         type: "Collection",
       })),
-      ...resources.map((item) => ({
+      ...resources.filter((item) => typeof item.payload?.legacyId !== "string").map((item) => ({
         id: `resource-${item.id}`,
         title: item.title,
         detail: item.description || "Dealer resource",
         href: "/portal/resources",
         type: "Resource",
       })),
+      ...legacyResources.map((item) => {
+        const linked = linkedResources.get(item.id);
+        return {
+          id: `legacy-resource-${item.id}`,
+          title: linked?.title ?? item.title,
+          detail: linked?.description ?? item.description ?? item.category ?? "Dealer resource",
+          href: "/portal/resources",
+          type: "Resource",
+        };
+      }),
       ...resourceCategories.map((item) => ({
         id: `category-${item.id}`,
         title: item.title,
@@ -105,7 +129,7 @@ export default function PortalDashboard() {
       })),
     ];
     return records.filter((item) => `${item.title} ${item.detail}`.toLowerCase().includes(query)).slice(0, 6);
-  }, [announcements, notifications, productSeries, projects, query, resourceCategories, resources]);
+  }, [announcements, legacyResources, notifications, productSeries, projects, query, resourceCategories, resources]);
 
   if (sessionLoading) {
     return (
@@ -180,12 +204,7 @@ export default function PortalDashboard() {
           </div>
           {query && (
             <div className="mt-2 overflow-hidden rounded-xl border border-white/10 bg-[#1a1a18] shadow-xl">
-              {searchResults.length ? searchResults.map((result) => (
-                <Link key={result.id} href={result.href} className="flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5">
-                  <span className="min-w-0"><span className="block truncate text-sm font-medium">{result.title}</span><span className="mt-1 block truncate text-xs text-white/50">{result.detail}</span></span>
-                  <span className="shrink-0 text-[9px] uppercase tracking-wider text-[#d8c18d]">{result.type}</span>
-                </Link>
-              )) : <p className="px-4 py-5 text-sm text-white/55">No published projects, resources, or notices match that search.</p>}
+              {searchResults.length ? searchResults.map((result) => <SearchResultLink key={result.id} result={result} />) : <p className="px-4 py-5 text-sm text-white/55">No published projects, resources, or notices match that search.</p>}
             </div>
           )}
         </section>
@@ -217,9 +236,15 @@ export default function PortalDashboard() {
                 <h2 className="mt-2 text-xl font-semibold sm:text-2xl">{featuredAnnouncement.title}</h2>
                 {featuredAnnouncement.description && <p className="mt-2 text-sm leading-relaxed text-black/70">{featuredAnnouncement.description}</p>}
               </div>
-              <Link href={safeWebUrl(featuredAnnouncement.payload?.url) ?? "/portal/notifications"} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
-                View announcement <ArrowRight className="h-4 w-4" />
-              </Link>
+              {featuredAnnouncementUrl ? (
+                <a href={featuredAnnouncementUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
+                  View announcement <ArrowRight className="h-4 w-4" />
+                </a>
+              ) : (
+                <Link href="/portal/notifications" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
+                  View announcement <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
             </div>
           </section>
         )}
@@ -312,5 +337,20 @@ function ToolkitLink({ href, icon: Icon, label }: { href: string; icon: typeof W
       </span>
       <span className="max-w-[6rem] text-[10px] font-medium leading-tight text-white/75 sm:text-xs">{label}</span>
     </Link>
+  );
+}
+
+function SearchResultLink({ result }: { result: SearchResult }) {
+  const content = (
+    <>
+      <span className="min-w-0"><span className="block truncate text-sm font-medium">{result.title}</span><span className="mt-1 block truncate text-xs text-white/50">{result.detail}</span></span>
+      <span className="shrink-0 text-[9px] uppercase tracking-wider text-[#d8c18d]">{result.type}</span>
+    </>
+  );
+  const className = "flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5";
+  return result.href.startsWith("https://") || result.href.startsWith("http://") ? (
+    <a href={result.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</a>
+  ) : (
+    <Link href={result.href} className={className}>{content}</Link>
   );
 }
