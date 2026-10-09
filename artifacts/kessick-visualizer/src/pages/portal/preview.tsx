@@ -302,7 +302,7 @@ function SectionContent({ section, onNavigate }: { section: PreviewSection; onNa
   );
 }
 
-export default function DealerPortalPreview() {
+export default function DealerPortalPreview({ staffViewMode = false }: { staffViewMode?: boolean }) {
   const [section, setSection] = useState<PreviewSection>("Dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -314,6 +314,7 @@ export default function DealerPortalPreview() {
 
   return (
     <div className="min-h-screen bg-[#f4f2ed] text-[#1b1b19]">
+      {staffViewMode && <div className="flex flex-wrap items-center justify-between gap-3 bg-[#171715] px-4 py-3 text-xs text-white sm:px-6"><span className="font-semibold uppercase tracking-[0.12em]">Staff-only dealer view · read-only sample, not account impersonation</span><a href="/admin" className="inline-flex h-9 items-center gap-2 bg-[#d4bd85] px-4 font-semibold text-[#171715] hover:bg-white"><ShieldCheck className="h-4 w-4" /> Staff View</a></div>}
       <div role="alert" className="sticky top-0 z-50 flex min-h-11 items-center justify-center gap-2 bg-[#8d3b2b] px-4 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white sm:text-xs">
         <span aria-hidden="true">⚠</span> SAMPLE DEALER PREVIEW · FICTIONAL DATA · NO SIGN-IN OR LIVE ACTIONS
       </div>

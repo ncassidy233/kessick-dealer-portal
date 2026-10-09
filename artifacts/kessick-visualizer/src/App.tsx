@@ -324,6 +324,9 @@ function Router() {
         </Route>
 
         {/* Admin Routes */}
+        <Route path="/admin/dealer-view">
+          <AuthGuard><StaffGuard><PortalLayout><DealerPortalPreview staffViewMode /></PortalLayout></StaffGuard></AuthGuard>
+        </Route>
         <Route path="/admin">
           <AuthGuard><StaffGuard><PortalLayout><AdminOverview /></PortalLayout></StaffGuard></AuthGuard>
         </Route>
