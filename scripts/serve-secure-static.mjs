@@ -166,10 +166,6 @@ export async function createStaticServer(
       res.writeHead(status, { "Content-Type": "text/plain; charset=utf-8" });
       res.end(req.method === "HEAD" ? undefined : message);
     };
-    if (!["GET", "HEAD"].includes(req.method ?? "")) {
-      res.setHeader("Allow", "GET, HEAD");
-      return fail(405, "Method not allowed.");
-    }
     let pathname;
     try { pathname = decodeURIComponent((req.url ?? "/").split("?")[0]); }
     catch { return fail(400, "Invalid request."); }
@@ -182,7 +178,15 @@ export async function createStaticServer(
     if (!pathname.startsWith(base)) return fail(404, "Not found.");
     const relative = pathname.slice(base.length);
     if (/^api(?:\/|$)/.test(relative)) {
+      if (!["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"].includes(req.method ?? "")) {
+        res.setHeader("Allow", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS");
+        return fail(405, "Method not allowed.");
+      }
       return proxyApiRequest(req, res, apiOrigin, base);
+    }
+    if (!["GET", "HEAD"].includes(req.method ?? "")) {
+      res.setHeader("Allow", "GET, HEAD");
+      return fail(405, "Method not allowed.");
     }
     if (/^(api|__mockup|__e2e)(\/|$)/.test(relative)) return fail(404, "Not found.");
     if (relative === "robots.txt") {
