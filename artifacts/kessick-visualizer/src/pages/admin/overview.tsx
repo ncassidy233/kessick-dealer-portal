@@ -9,7 +9,7 @@ import {
   usePortalBootstrap,
 } from "@/lib/portal-admin-api";
 
-const ivory = "bg-[#F3F0E8] text-[#121210]";
+const ivory = "bg-white text-[#121210]";
 const card = "border border-[#121210]/10 bg-white/70";
 
 export default function AdminOverview() {

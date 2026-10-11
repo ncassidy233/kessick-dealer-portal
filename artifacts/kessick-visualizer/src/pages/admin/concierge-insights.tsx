@@ -9,7 +9,7 @@ import { usePortalSession } from "@/lib/portal-session";
 import { canViewInsights, conciergeKeys, downloadInsightsCsv, errorText, getInsights } from "@/lib/concierge-knowledge-api";
 import { ErrorState } from "@/pages/admin/knowledge";
 
-const ivory = "bg-[#F3F0E8] text-[#121210]";
+const ivory = "bg-white text-[#121210]";
 const card = "border border-[#121210]/10 bg-white/70";
 const inputClass = "rounded-none border-[#121210]/15 bg-white/80 text-[#121210]";
 const btn = "inline-flex items-center justify-center gap-2 h-10 px-4 text-xs font-semibold uppercase tracking-[0.14em] transition disabled:opacity-40";

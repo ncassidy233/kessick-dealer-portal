@@ -52,7 +52,7 @@ const kindOptions: KindOption[] = [
   { value: "form", label: "Forms & requests", apiKind: "form" },
   { value: "announcement", label: "Announcements", apiKind: "announcement" },
 ];
-const ivory = "bg-[#F3F0E8] text-[#121210]";
+const ivory = "bg-white text-[#121210]";
 const card = "border border-[#121210]/10 bg-white/70";
 const inputClass = "rounded-none border-[#121210]/15 bg-white/80 text-[#121210] placeholder:text-[#121210]/45";
 
