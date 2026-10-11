@@ -1,4 +1,5 @@
 import http from "node:http";
+import https from "node:https";
 import { createReadStream } from "node:fs";
 import { realpath, stat } from "node:fs/promises";
 import path from "node:path";
@@ -37,6 +38,109 @@ export function staticHeaders() {
   };
 }
 
+const hopByHopHeaders = new Set([
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "proxy-connection",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+]);
+
+function endToEndHeaders(headers) {
+  const excluded = new Set(hopByHopHeaders);
+  for (const value of headers.connection?.split(",") ?? []) {
+    excluded.add(value.trim().toLowerCase());
+  }
+  return Object.fromEntries(
+    Object.entries(headers).filter(([name, value]) =>
+      value !== undefined && !excluded.has(name.toLowerCase()),
+    ),
+  );
+}
+
+export function normalizeApiOrigin(value) {
+  if (!value) return null;
+  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(value) ? value : `https://${value}`;
+  let url;
+  try {
+    url = new URL(candidate);
+  } catch {
+    throw new Error("API_ORIGIN must be a valid HTTPS origin.");
+  }
+  const localHttp =
+    url.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+  if (
+    (url.protocol !== "https:" && !localHttp) ||
+    url.username ||
+    url.password ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error("API_ORIGIN must be an HTTPS origin without credentials or a path.");
+  }
+  return url;
+}
+
+function proxyApiRequest(req, res, apiOrigin, base) {
+  if (!apiOrigin) {
+    res.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: "The API service is not configured." }));
+    return;
+  }
+
+  let targetPath;
+  try {
+    const incoming = new URL(req.url ?? "/", "http://static.invalid");
+    const basePrefix = base === "/" ? "" : base.slice(0, -1);
+    targetPath = `${incoming.pathname.slice(basePrefix.length)}${incoming.search}`;
+  } catch {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Invalid request.");
+    return;
+  }
+
+  const headers = endToEndHeaders(req.headers);
+  headers.host = apiOrigin.host;
+  if (req.headers.host) headers["x-forwarded-host"] = req.headers.host;
+  headers["x-forwarded-proto"] = "https";
+  const transport = apiOrigin.protocol === "https:" ? https : http;
+  const upstream = transport.request(
+    {
+      hostname: apiOrigin.hostname,
+      port: apiOrigin.port || undefined,
+      method: req.method,
+      path: targetPath,
+      headers,
+      timeout: 35_000,
+    },
+    (response) => {
+      const responseHeaders = endToEndHeaders(response.headers);
+      res.writeHead(response.statusCode ?? 502, responseHeaders);
+      response.pipe(res);
+    },
+  );
+  upstream.on("timeout", () => upstream.destroy(new Error("API request timed out.")));
+  upstream.on("error", () => {
+    if (!res.headersSent) {
+      res.writeHead(502, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "The API service is unavailable." }));
+    } else {
+      res.destroy();
+    }
+  });
+  req.on("aborted", () => upstream.destroy());
+  res.on("close", () => {
+    if (!res.writableEnded) upstream.destroy();
+  });
+  req.pipe(upstream);
+}
+
 const mime = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -48,9 +152,14 @@ const mime = {
   ".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".pdf": "application/pdf",
 };
 
-export async function createStaticServer(directory, basePath = "/") {
+export async function createStaticServer(
+  directory,
+  basePath = "/",
+  configuredApiOrigin = process.env.API_ORIGIN,
+) {
   const root = await realpath(directory);
   const base = basePath === "/" ? "/" : `/${basePath.replace(/^\/|\/$/g, "")}/`;
+  const apiOrigin = normalizeApiOrigin(configuredApiOrigin);
   const server = http.createServer(async (req, res) => {
     for (const [key, value] of Object.entries(staticHeaders())) res.setHeader(key, value);
     const fail = (status, message) => {
@@ -72,6 +181,9 @@ export async function createStaticServer(directory, basePath = "/") {
     }
     if (!pathname.startsWith(base)) return fail(404, "Not found.");
     const relative = pathname.slice(base.length);
+    if (/^api(?:\/|$)/.test(relative)) {
+      return proxyApiRequest(req, res, apiOrigin, base);
+    }
     if (/^(api|__mockup|__e2e)(\/|$)/.test(relative)) return fail(404, "Not found.");
     if (relative === "robots.txt") {
       res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
