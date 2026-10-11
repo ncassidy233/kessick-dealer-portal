@@ -107,8 +107,19 @@ function proxyApiRequest(req, res, apiOrigin, base) {
 
   const headers = endToEndHeaders(req.headers);
   headers.host = apiOrigin.host;
+  for (const header of [
+    "forwarded",
+    "x-forwarded-for",
+    "x-forwarded-host",
+    "x-forwarded-port",
+    "x-forwarded-proto",
+    "x-real-ip",
+  ]) {
+    delete headers[header];
+  }
   if (req.headers.host) headers["x-forwarded-host"] = req.headers.host;
   headers["x-forwarded-proto"] = "https";
+  if (req.socket.remoteAddress) headers["x-forwarded-for"] = req.socket.remoteAddress;
   const transport = apiOrigin.protocol === "https:" ? https : http;
   const upstream = transport.request(
     {
@@ -121,6 +132,9 @@ function proxyApiRequest(req, res, apiOrigin, base) {
     },
     (response) => {
       const responseHeaders = endToEndHeaders(response.headers);
+      for (const header of Object.keys(staticHeaders())) {
+        delete responseHeaders[header.toLowerCase()];
+      }
       res.writeHead(response.statusCode ?? 502, responseHeaders);
       response.pipe(res);
     },

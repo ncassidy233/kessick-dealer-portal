@@ -62,7 +62,7 @@ successful preview deployment is not a production app deployment.
 
 Render supplies `PORT` to both Node services. Do not set it to a fixed value.
 The frontend listens on `PORT`; its `/api` requests are forwarded to
-`API_ORIGIN`. The API health check is `/healthz`.
+`API_ORIGIN`. The API health check is `/api/healthz`.
 
 ## Database release procedure
 

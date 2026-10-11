@@ -21,7 +21,7 @@ services:
     runtime: node
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
     startCommand: pnpm --filter @workspace/api-server run start
-    healthCheckPath: /healthz
+    healthCheckPath: /api/healthz
     envVars:
       - key: NODE_ENV
         value: production

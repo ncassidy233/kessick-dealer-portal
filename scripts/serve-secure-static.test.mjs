@@ -65,6 +65,7 @@ test("production static service proxies same-origin API requests", async () => {
       host: req.headers.host,
       forwardedHost: req.headers["x-forwarded-host"],
       forwardedProto: req.headers["x-forwarded-proto"],
+      forwardedFor: req.headers["x-forwarded-for"],
       cookie: req.headers.cookie,
       csrf: req.headers["x-kessick-csrf"],
       body: Buffer.concat(chunks).toString(),
@@ -72,6 +73,8 @@ test("production static service proxies same-origin API requests", async () => {
     res.writeHead(201, {
       "Content-Type": "application/json",
       "Set-Cookie": "portal-session=example; HttpOnly; Secure",
+      "Content-Security-Policy": "default-src 'none'",
+      "X-Frame-Options": "SAMEORIGIN",
       Connection: "close",
     });
     res.end(JSON.stringify({ ok: true }));
@@ -98,11 +101,14 @@ test("production static service proxies same-origin API requests", async () => {
     assert.equal(response.status, 201);
     assert.deepEqual(await response.json(), { ok: true });
     assert.match(response.headers.get("set-cookie"), /HttpOnly/);
+    assert.match(response.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
     assert.equal(apiRequest.method, "POST");
     assert.equal(apiRequest.url, "/api/portal-v2/bootstrap?test=1");
     assert.match(apiRequest.host, /^127\.0\.0\.1:/);
     assert.equal(apiRequest.forwardedHost, `127.0.0.1:${server.address().port}`);
     assert.equal(apiRequest.forwardedProto, "https");
+    assert.equal(apiRequest.forwardedFor, "127.0.0.1");
     assert.equal(apiRequest.cookie, "session=value");
     assert.equal(apiRequest.csrf, "1");
     assert.deepEqual(JSON.parse(apiRequest.body), { projectId: "scoped" });
