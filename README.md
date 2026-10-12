@@ -44,3 +44,55 @@ Secrets, live database records, private uploaded documents, service accounts, an
 the conversation history are not transferred. The GitHub handoff begins with a
 snapshot of current source rather than Replit's checkpoint history. Original
 reference ZIP archives and internal asset metadata are excluded.
+
+## Existing Render dealer preview
+
+Keep the existing service and public URL: <https://kessick-dealer-black.onrender.com/>.
+Do not create a new service or apply a new Blueprint to replace it.
+
+In that service's **Settings → Build & Deploy**, use:
+
+- **Build command:** `pnpm install --frozen-lockfile && pnpm --filter @workspace/kessick-visualizer exec vite build --config vite.render.config.ts`
+- **Publish directory:** `artifacts/kessick-visualizer/dist/render-preview`
+- **Root directory:** repository root (leave blank).
+- **Branch:** the branch containing the approved preview changes. Changes pushed
+  to a review branch do not update a service configured to deploy `main`; merge
+  into the configured branch or explicitly select the review branch on this
+  existing service.
+- Use the pinned pnpm version from `package.json`; enable Corepack if the runner
+  does not honor `packageManager`. Do not use pnpm 12 with this pnpm 10 workspace.
+- Remove any additional CSS-writing, `sed`, or black-theme override commands
+  after the build. The repository's old `.dealer-preview-surface` overrides have
+  been removed.
+
+Then use **Manual Deploy → Clear build cache & deploy** on the existing service.
+Verify Render reports **Live**, the deployed commit matches the intended commit,
+and the existing URL displays “Your Kessick project desk.” on a lavender-gray
+background without requiring sign-in. Render dashboard access is needed to
+confirm the configured deployment branch, build command and live deployment.
+
+The isolated entry imports only public preview content, the bundled logo and
+local inspiration photograph. It does not load Clerk, call private dealer APIs,
+publish the product/pricing catalog, or include staff administration. Staff and
+dealer authorization in the full application remain unchanged. Feedback opens
+a prefilled email draft; the sender must review and send it. Teamwork uses its
+public sign-in page, with a contact action for Kessick-specific invitations.
+The voucher and Cask Collection card are explicitly unapproved examples.
+
+The supplied cover/checklist screenshots and an approved building-header
+photograph are not included in this handoff. The header currently uses the local
+inspiration photograph and says so; exact screenshot matching and replacement
+with the approved building photograph remain pending those assets.
+
+Preview regression checks use the existing Playwright framework:
+
+1. Build with the command above.
+2. Run `pnpm --filter @workspace/kessick-visualizer exec vite preview --config vite.render.config.ts --host 127.0.0.1 --port 4173`.
+3. In another terminal run `PLAYWRIGHT_DEALER_PREVIEW=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173 pnpm --filter @workspace/kessick-visualizer run test:e2e dealer-preview.spec.ts --project=desktop`.
+
+These checks exercise 320, 375, 768 and 1440px layouts, images, navigation,
+search/filtering, all resource categories, email drafts and the public/private
+boundary. The 375px screenshot is written to `/tmp/kessick-dealer-cover-375.png`.
+They validate link destinations, not external website availability; live links
+and email/telephone handlers must also be verified on an internet-connected
+device.

@@ -1,180 +1,190 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   Bell,
-  BookOpen,
-  BriefcaseBusiness,
-  CheckCircle2,
-  ChevronRight,
-  CircleDollarSign,
   ExternalLink,
   FileText,
   FolderOpen,
-  GraduationCap,
-  Headphones,
   Home,
-  Layers3,
   Mail,
   MessageSquareText,
+  Phone,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Users,
   UserRound,
   Wine,
   type LucideIcon,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
 import cellarImage from "@assets/kessick-room-demo.jpg";
+import whiteLogo from "@assets/kessick-logo-white.svg";
+import "./preview.css";
 
-type PreviewSection =
+type Section =
   | "Home"
-  | "Projects"
-  | "Collections"
-  | "Training"
-  | "Pricing"
+  | "Announcements"
+  | "Design"
   | "Resources"
-  | "Forms"
-  | "Notices"
+  | "Feedback"
   | "Account"
-  | "Support";
-
-const navigation: { label: PreviewSection; icon: LucideIcon }[] = [
-  { label: "Home", icon: Home },
-  { label: "Projects", icon: BriefcaseBusiness },
-  { label: "Collections", icon: Layers3 },
-  { label: "Training", icon: GraduationCap },
-  { label: "Pricing", icon: CircleDollarSign },
-  { label: "Resources", icon: FolderOpen },
-  { label: "Forms", icon: FileText },
-  { label: "Notices", icon: Bell },
-  { label: "Account", icon: UserRound },
-  { label: "Support", icon: Headphones },
+  | "Teamwork";
+type Entry = { title: string; detail: string; section: Section; href?: string };
+const sections: Section[] = [
+  "Home",
+  "Announcements",
+  "Design",
+  "Resources",
+  "Feedback",
+  "Account",
+  "Teamwork",
 ];
+const website = "https://kessickwinecellars.com";
+const email = "sales@kessickwinecellars.com";
+const teamworkLogin = "https://www.teamwork.com/login/";
+const designRequest = `${website}/design-request/`;
 
-const mobileNavigation: { label: PreviewSection; icon: LucideIcon }[] = [
-  { label: "Home", icon: Home },
-  { label: "Account", icon: UserRound },
-  { label: "Notices", icon: Bell },
-  { label: "Support", icon: Headphones },
-];
-
-const products = [
-  {
-    name: "Estate",
-    description: "A refined foundation for custom wine cellar design.",
-    href: "https://kessickwinecellars.com/estate/",
-  },
-  {
-    name: "Elevation",
-    description: "Contemporary wine displays designed to make a statement.",
-    href: "https://kessickwinecellars.com/elevation/",
-  },
-  {
-    name: "Wine As Art",
-    description: "A sculptural approach to presenting a wine collection.",
-    href: "https://kessickwinecellars.com/wine-as-art/",
-  },
-  {
-    name: "Forma",
-    description: "Explore Kessick's Forma wine storage collection.",
-    href: "https://kessickwinecellars.com/our-styles/",
-  },
-  {
-    name: "Towers",
-    description: "Explore Kessick styles and discuss a tower design.",
-    href: "https://kessickwinecellars.com/our-styles/",
-  },
-];
-
-const sampleProjects = [
-  {
-    name: "Hillside Residence",
-    type: "Estate · Private residence",
-    status: "Design review",
-  },
-  {
-    name: "The Tasting Room",
-    type: "Elevation · Hospitality",
-    status: "Quote requested",
-  },
-  {
-    name: "Garden District Remodel",
-    type: "Wine As Art · Renovation",
-    status: "In progress",
-  },
-];
-
-const sampleResources = [
-  {
-    title: "Renderings & inspiration",
-    category: "Design resources",
-    icon: Layers3,
-  },
-  {
-    title: "Policies & project guides",
-    category: "Dealer guidance",
-    icon: BookOpen,
-  },
-  {
-    title: "Installation & spec sheets",
-    category: "Project support",
-    icon: FileText,
-  },
-  { title: "Wood stain chart", category: "Finishes", icon: Wine },
-  {
-    title: "Catalogs & brochures",
-    category: "Product information",
-    icon: FolderOpen,
-  },
-  {
-    title: "Logos & marketing",
-    category: "Brand resources",
-    icon: ExternalLink,
-  },
-];
-
-const sampleAnnouncements = [
-  {
-    title: "New collection preview",
-    category: "New products",
-    body: "A sample announcement showing where new Kessick collections and product updates will appear.",
-  },
-  {
-    title: "A new look at custom cellars",
-    category: "Coming soon",
-    body: "Example preview content only. No release date, availability, or offer is being announced.",
-  },
-  {
-    title: "Dealer policy update",
-    category: "Policies",
-    body: "A sample policy notice. Refer to your authorized account for current dealer policies.",
-  },
-];
-
-type SearchResult = { title: string; detail: string; section: PreviewSection };
-
-function SampleBadge({ light = false }: { light?: boolean }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] ${
-        light
-          ? "border-white/20 bg-black/25 text-white/85"
-          : "border-[#ad9561]/35 bg-[#ad9561]/10 text-[#78643b]"
-      }`}
-    >
-      <CheckCircle2 className="h-3 w-3" /> Sample
-    </span>
-  );
+function emailDraft(subject: string, body = "") {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#947d4d]">
-      {children}
-    </p>
-  );
+const resources: Entry[] = [
+  {
+    title: "Renders",
+    detail:
+      "Explore public wine-cellar inspiration. Request project-specific renders from your representative.",
+    section: "Resources",
+    href: `${website}/inspiration-gallery/`,
+  },
+  {
+    title: "Policies & Guides",
+    detail:
+      "Current dealer policies and account-specific guidance require authorized access.",
+    section: "Resources",
+  },
+  {
+    title: "Installation & Specification Sheets",
+    detail:
+      "Find public installation guidance and product documentation on Kessick’s resource hub.",
+    section: "Resources",
+    href: `${website}/resources/`,
+  },
+  {
+    title: "Wood Stain Chart",
+    detail:
+      "Request the current approved stain chart and physical finish samples.",
+    section: "Resources",
+  },
+  {
+    title: "Brochures & Catalogs",
+    detail: "Browse Kessick’s public product brochures and catalogs.",
+    section: "Resources",
+    href: `${website}/resources/`,
+  },
+  {
+    title: "Approved Logos",
+    detail: "Request approved logo files and the current brand-use guidelines.",
+    section: "Resources",
+  },
+  {
+    title: "Marketing Materials",
+    detail:
+      "Request permission and approved photography for your dealer marketing.",
+    section: "Resources",
+  },
+  {
+    title: "Direct Teamwork Access",
+    detail:
+      "Sign in to Teamwork with your existing account. A Kessick workspace invitation is required.",
+    section: "Teamwork",
+    href: teamworkLogin,
+  },
+];
+const announcements: Entry[] = [
+  {
+    title: "New Products",
+    detail:
+      "Explore Kessick’s published collections, including Forma and Towers. New release announcements await staff confirmation.",
+    section: "Announcements",
+    href: `${website}/our-styles/`,
+  },
+  {
+    title: "Coming Soon",
+    detail:
+      "ESTATE SERIES · Cask Collection is a design concept only. Product name, availability and release date are not approved.",
+    section: "Announcements",
+  },
+  {
+    title: "New Policies",
+    detail:
+      "No new policy is announced in this public preview. Request current policies from Kessick.",
+    section: "Announcements",
+  },
+  {
+    title: "Special Announcements",
+    detail:
+      "The 15% voucher shown on Home is an unapproved example, not a redeemable offer.",
+    section: "Announcements",
+  },
+  {
+    title: "Kessick Cut List",
+    detail:
+      "Newsletter section reserved for Kessick Cut List. Content and publication schedule pending Kessick confirmation.",
+    section: "Announcements",
+  },
+  {
+    title: "Project Credits",
+    detail:
+      "Project credits and attribution requirements are pending staff confirmation. Request approval before publishing project photography.",
+    section: "Announcements",
+  },
+];
+const searchEntries: Entry[] = [
+  ...resources,
+  ...announcements,
+  {
+    title: "Design Request Form",
+    detail:
+      "Required project details and the official Kessick design-request workflow.",
+    section: "Design",
+  },
+  {
+    title: "Forma",
+    detail: "Explore Forma and prepare a design request.",
+    section: "Design",
+  },
+  {
+    title: "Towers",
+    detail: "Explore Towers and prepare a design request.",
+    section: "Design",
+  },
+  {
+    title: "Report an Issue",
+    detail: "Feedback, email and telephone support.",
+    section: "Feedback",
+  },
+  {
+    title: "Dealer Account",
+    detail:
+      "Request verified dealer account assistance. No private account data is displayed here.",
+    section: "Account",
+  },
+];
+const toolkit: { title: string; section: Section; icon: LucideIcon }[] = [
+  { title: "What’s New", section: "Announcements", icon: Sparkles },
+  { title: "Design Request Form", section: "Design", icon: FileText },
+  { title: "Dealer Resources", section: "Resources", icon: FolderOpen },
+  { title: "Feedback", section: "Feedback", icon: MessageSquareText },
+];
+
+function currentSection(): Section {
+  const hash = window.location.hash.slice(1);
+  return sections.find((section) => section.toLowerCase() === hash) ?? "Home";
 }
 
-function WebsiteLink({
+function PublicLink({
   href,
   children,
 }: {
@@ -183,764 +193,274 @@ function WebsiteLink({
 }) {
   return (
     <a
+      className="desk-link"
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-sm font-semibold text-[#705a31] underline-offset-4 hover:text-[#171715] hover:underline"
     >
-      {children} <ExternalLink className="h-3.5 w-3.5" />
+      {children}
+      <ExternalLink size={15} aria-hidden="true" />
     </a>
   );
 }
 
-function PageHeading({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function AccessLink({ title }: { title: string }) {
   return (
-    <div className="mb-7 border-b border-[#171715]/10 pb-5">
-      <SectionEyebrow>Dealer workspace · sample preview</SectionEyebrow>
-      <h1 className="mt-2 font-serif text-3xl font-medium tracking-tight text-[#171715] sm:text-4xl">
-        {title}
-      </h1>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#171715]/60">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-function PreviewDashboard({
-  onNavigate,
-  onSearch,
-  search,
-  results,
-}: {
-  onNavigate: (section: PreviewSection) => void;
-  onSearch: (value: string) => void;
-  search: string;
-  results: SearchResult[];
-}) {
-  return (
-    <div className="space-y-8 sm:space-y-10">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-2xl border border-[#171715]/10 bg-white p-5 shadow-[0_18px_50px_rgba(23,23,21,.05)] sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <SectionEyebrow>Workspace overview</SectionEyebrow>
-              <h2 className="mt-2 font-serif text-2xl font-medium text-[#171715] sm:text-3xl">
-                Welcome back, Alex.
-              </h2>
-              <p className="mt-2 text-sm text-[#171715]/55">
-                A considered space for your projects, inspiration, and dealer
-                support.
-              </p>
-            </div>
-            <SampleBadge />
-          </div>
-          <label htmlFor="preview-search" className="sr-only">
-            Search projects, products, resources, and notices
-          </label>
-          <div className="mt-6 flex items-center gap-3 rounded-xl border border-[#171715]/12 bg-[#f8f7f3] px-4 focus-within:border-[#ad9561]">
-            <Search className="h-4 w-4 shrink-0 text-[#947d4d]" />
-            <input
-              id="preview-search"
-              value={search}
-              onChange={(event) => onSearch(event.target.value)}
-              placeholder="Search projects, products, resources…"
-              className="h-12 w-full bg-transparent text-sm text-[#171715] outline-none placeholder:text-[#171715]/40"
-            />
-            {search && (
-              <button
-                onClick={() => onSearch("")}
-                className="text-xs text-[#171715]/50 hover:text-[#171715]"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {search.trim() && (
-            <div className="mt-2 overflow-hidden rounded-xl border border-[#171715]/10 bg-white">
-              {results.length ? (
-                results.map((result) => (
-                  <button
-                    key={`${result.section}-${result.title}`}
-                    onClick={() => onNavigate(result.section)}
-                    className="flex w-full items-center justify-between gap-4 border-b border-[#171715]/5 px-4 py-3 text-left last:border-0 hover:bg-[#f8f7f3]"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">
-                        {result.title}
-                      </span>
-                      <span className="mt-1 block truncate text-xs text-[#171715]/50">
-                        {result.detail}
-                      </span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-[#947d4d]" />
-                  </button>
-                ))
-              ) : (
-                <p className="px-4 py-4 text-sm text-[#171715]/55">
-                  No sample content matches that search.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="relative isolate flex min-h-[210px] items-end overflow-hidden rounded-2xl bg-[#171715] p-5 sm:min-h-[250px] sm:p-7">
-          <img
-            src={cellarImage}
-            alt="Kessick custom wine cellar"
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
-          <div className="flex w-full items-end justify-between gap-4">
-            <div className="text-white">
-              <SampleBadge light />
-              <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#ddc991]">
-                Crafted for your vision
-              </p>
-              <h2 className="mt-1 font-serif text-2xl">
-                Spaces worth savoring.
-              </h2>
-            </div>
-            <button
-              onClick={() => onNavigate("Collections")}
-              aria-label="Explore collections"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/20 text-white transition hover:bg-white/15"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="toolkit-title">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <SectionEyebrow>At your service</SectionEyebrow>
-            <h2
-              id="toolkit-title"
-              className="mt-1 text-xl font-semibold text-[#171715] sm:text-2xl"
-            >
-              Your Dealer Toolkit
-            </h2>
-          </div>
-          <span className="hidden text-xs text-[#171715]/45 sm:inline">
-            Preview links navigate sample content
-          </span>
-        </div>
-        <div className="grid grid-cols-4 gap-2 sm:gap-4">
-          <ToolkitShortcut
-            label="What’s New"
-            icon={Bell}
-            onClick={() => onNavigate("Notices")}
-          />
-          <ToolkitShortcut
-            label="Design Request"
-            icon={FileText}
-            onClick={() => onNavigate("Forms")}
-          />
-          <ToolkitShortcut
-            label="Dealer Resources"
-            icon={FolderOpen}
-            onClick={() => onNavigate("Resources")}
-          />
-          <ToolkitShortcut
-            label="Feedback"
-            icon={MessageSquareText}
-            onClick={() => onNavigate("Support")}
-          />
-        </div>
-      </section>
-
-      <section
-        aria-label="Special announcement"
-        className="relative isolate overflow-hidden rounded-2xl bg-[#cfb875] text-[#171715]"
-      >
-        <img
-          src={cellarImage}
-          alt=""
-          className="absolute inset-0 -z-20 h-full w-full object-cover opacity-25"
-        />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#dfc983]/95 via-[#dfc983]/85 to-[#dfc983]/45" />
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <SectionEyebrow>Special announcement</SectionEyebrow>
-              <SampleBadge />
-            </div>
-            <h2 className="mt-2 text-xl font-semibold sm:text-2xl">
-              A note from the Kessick team
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#171715]/70">
-              Sample announcement content only. This preview does not publish
-              current offers, policy changes, or product release dates.
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate("Notices")}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white hover:bg-black sm:self-center"
-          >
-            View sample notices <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-2xl border border-[#171715]/10 bg-white p-5 sm:p-6">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <SectionEyebrow>Your workspace</SectionEyebrow>
-              <h2 className="mt-1 text-xl font-semibold">Active projects</h2>
-            </div>
-            <button
-              onClick={() => onNavigate("Projects")}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[#705a31] hover:underline"
-            >
-              View sample projects <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="mt-3 divide-y divide-[#171715]/10">
-            {sampleProjects.slice(0, 2).map((project) => (
-              <button
-                key={project.name}
-                onClick={() => onNavigate("Projects")}
-                className="flex w-full items-center gap-3 py-4 text-left hover:bg-[#f8f7f3]"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-                  <BriefcaseBusiness className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">
-                    {project.name}
-                  </span>
-                  <span className="mt-1 block truncate text-xs text-[#171715]/50">
-                    {project.type}
-                  </span>
-                </span>
-                <span className="hidden rounded-full bg-[#f4f1e9] px-2.5 py-1 text-[10px] text-[#171715]/60 sm:block">
-                  {project.status}
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-[#171715]/35" />
-              </button>
-            ))}
-          </div>
-          <p className="border-t border-[#171715]/10 pt-3 text-[10px] leading-relaxed text-[#171715]/45">
-            All project names and statuses shown are fictional sample data.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-[#171715]/10 bg-white p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <SectionEyebrow>Stay in the know</SectionEyebrow>
-              <h2 className="mt-1 text-xl font-semibold">Notices & updates</h2>
-            </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <Bell className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="mt-2 text-xs text-[#171715]/50">
-            Fictional examples · no active notices
-          </p>
-          <div className="mt-4 space-y-3">
-            {sampleAnnouncements.slice(0, 2).map((notice) => (
-              <button
-                key={notice.title}
-                onClick={() => onNavigate("Notices")}
-                className="block w-full border-l-2 border-[#ad9561] py-1 pl-3 text-left"
-              >
-                <span className="block text-xs font-semibold">
-                  {notice.title}
-                </span>
-                <span className="mt-1 block text-[10px] text-[#171715]/45">
-                  {notice.category} · Sample
-                </span>
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => onNavigate("Notices")}
-            className="mt-4 flex w-full items-center justify-between border-t border-[#171715]/10 pt-3 text-xs font-semibold text-[#705a31] hover:text-[#171715]"
-          >
-            Browse sample updates <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-[#171715]/10 bg-white">
-        <div className="grid md:grid-cols-[1.05fr_.95fr]">
-          <div className="relative min-h-[220px] md:min-h-[290px]">
-            <img
-              src={cellarImage}
-              alt="Wine bottles displayed in a custom Kessick cellar"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent md:bg-gradient-to-r md:from-transparent md:to-white/35" />
-            <span className="absolute bottom-4 left-4">
-              <SampleBadge light />
-            </span>
-          </div>
-          <div className="flex flex-col justify-center p-5 sm:p-8">
-            <SectionEyebrow>Featured collection · sample</SectionEyebrow>
-            <h2 className="mt-2 font-serif text-2xl font-medium sm:text-3xl">
-              Discover the Kessick collection.
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[#171715]/55">
-              Explore Kessick's public product styles. Featured collection
-              content in this preview is illustrative and does not indicate
-              availability.
-            </p>
-            <button
-              onClick={() => onNavigate("Collections")}
-              className="mt-5 inline-flex items-center gap-2 self-start text-xs font-semibold text-[#705a31] hover:text-[#171715]"
-            >
-              Explore public collections <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ToolkitShortcut({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex min-w-0 flex-col items-center gap-2 text-center"
+    <a
+      className="desk-link"
+      href={emailDraft(
+        `Dealer resource access: ${title}`,
+        `Hello Kessick,\n\nPlease help me access ${title}.\nDealer/company:\nProject reference (if applicable):\n\nThank you.`,
+      )}
     >
-      <span className="flex h-[clamp(3.75rem,16vw,5.5rem)] w-[clamp(3.75rem,16vw,5.5rem)] items-center justify-center rounded-full border border-[#ad9561]/40 bg-white text-[#806936] shadow-[0_8px_24px_rgba(23,23,21,.06)] transition group-hover:-translate-y-0.5 group-hover:border-[#ad9561] group-hover:bg-[#f6f2e7] group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-[#947d4d]">
-        <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-      </span>
-      <span className="max-w-[6.5rem] text-[9px] font-semibold leading-tight text-[#171715]/70 sm:text-xs">
-        {label}
-      </span>
-    </button>
+      Request Access
+      <ArrowRight size={15} aria-hidden="true" />
+    </a>
   );
 }
 
-function SectionContent({
-  section,
-  onNavigate,
-}: {
-  section: PreviewSection;
-  onNavigate: (section: PreviewSection) => void;
-}) {
-  if (section === "Home") return null;
-
-  if (section === "Collections") {
-    return (
-      <div>
-        <PageHeading
-          title="Collections & finishes"
-          description="Explore a sample of product discovery in the dealer portal. Product summaries are brief; visit Kessick for current details."
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          {products.map((product, index) => (
-            <article
-              key={product.name}
-              className="group overflow-hidden rounded-xl border border-[#171715]/10 bg-white"
-            >
-              <div className="relative h-36 overflow-hidden">
-                <img
-                  src={cellarImage}
-                  alt={`${product.name} wine storage style`}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-                <span className="absolute bottom-3 left-3">
-                  <SampleBadge light />
-                </span>
-              </div>
-              <div className="p-5">
-                <p className="text-[9px] uppercase tracking-[0.16em] text-[#947d4d]">
-                  {index === 3 || index === 4
-                    ? "Style inquiry"
-                    : "Kessick collection"}
-                </p>
-                <h2 className="mt-1 text-lg font-semibold">{product.name}</h2>
-                <p className="mt-2 min-h-10 text-sm text-[#171715]/55">
-                  {product.description}
-                </p>
-                <div className="mt-4">
-                  <WebsiteLink href={product.href}>
-                    View official Kessick styles
-                  </WebsiteLink>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="mt-5 rounded-xl border border-[#ad9561]/25 bg-[#f4f1e9] p-4 text-xs leading-relaxed text-[#171715]/65">
-          A product marked Sample is for demonstration only. For a real design
-          discussion, contact Kessick directly.
-        </div>
-      </div>
-    );
+function Feedback() {
+  const [draft, setDraft] = useState("");
+  function prepareEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    const subject = `Dealer portal — ${values.get("category")}`;
+    const body = `Hello Kessick,\n\nIssue category: ${values.get("category")}\nName: ${values.get("name")}\nDealer/company: ${values.get("company")}\nReply email: ${values.get("email")}\n\n${values.get("message")}\n\nSent from the public dealer portal preview.`;
+    const href = emailDraft(subject, body);
+    setDraft(href);
+    window.location.href = href;
   }
-
-  if (section === "Projects") {
-    return (
-      <div>
-        <PageHeading
-          title="Projects"
-          description="A sample of how a dealer could review project status. These fictional examples are not connected to customers or live projects."
-        />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {sampleProjects.map((project) => (
-            <article
-              key={project.name}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <SampleBadge />
-                  <h2 className="mt-3 text-lg font-semibold">{project.name}</h2>
-                </div>
-                <span className="rounded-full bg-[#f4f1e9] px-3 py-1 text-xs text-[#171715]/65">
-                  {project.status}
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-[#171715]/55">{project.type}</p>
-              <p className="mt-5 border-t border-[#171715]/10 pt-4 text-xs text-[#171715]/45">
-                Example only · no proposal, customer details, or project files
-                are available in this public preview.
-              </p>
-            </article>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Notices") {
-    return (
-      <div>
-        <PageHeading
-          title="Announcements & notices"
-          description="This section demonstrates where Kessick-published dealer updates could appear. Every item below is fictional sample copy, not an active announcement."
-        />
-        <div className="space-y-4">
-          {sampleAnnouncements.map((notice, index) => (
-            <article
-              key={notice.title}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-                    <Bell className="h-4 w-4" />
-                  </span>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#947d4d]">
-                    {notice.category}
-                  </span>
-                </div>
-                <SampleBadge />
-              </div>
-              <h2 className="mt-4 text-lg font-semibold">{notice.title}</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#171715]/60">
-                {notice.body}
-              </p>
-              <p className="mt-4 text-[10px] text-[#171715]/40">
-                Sample notice {index + 1} · No current Kessick notice is
-                represented
-              </p>
-            </article>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Resources") {
-    return (
-      <div>
-        <PageHeading
-          title="Dealer resources"
-          description="An illustrative resource index. No private dealer documents are exposed here; use Kessick's official public resources page for current materials."
-        />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {sampleResources.map(({ title, category, icon: Icon }) => (
-            <article
-              key={title}
-              className="flex items-start gap-3 rounded-xl border border-[#171715]/10 bg-white p-4"
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#947d4d]">
-                  {category}
-                </span>
-                <h2 className="mt-1 text-sm font-semibold">{title}</h2>
-                <p className="mt-1 text-[11px] text-[#171715]/45">
-                  Sample category · no downloadable file
-                </p>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="mt-5 rounded-xl border border-[#171715]/10 bg-white p-5">
-          <p className="text-sm font-semibold">Official public resources</p>
-          <p className="mt-1 text-xs text-[#171715]/55">
-            Open Kessick's website to review public information and materials.
-          </p>
-          <div className="mt-4">
-            <WebsiteLink href="https://kessickwinecellars.com/resources/">
-              Browse Kessick resources
-            </WebsiteLink>
-          </div>
-        </div>
-        <div className="mt-3 rounded-xl border border-dashed border-[#171715]/15 p-4 text-xs leading-relaxed text-[#171715]/55">
-          Teamwork access is dealer-specific and is not linked in this public
-          sample. Sign in to your authorized account or contact your Kessick
-          representative.
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Forms") {
-    return (
-      <div>
-        <PageHeading
-          title="Design requests & forms"
-          description="Sample request categories show how project workflows can be organized. No submissions are made from this public preview."
-        />
-        <section className="mb-5 rounded-xl border border-[#ad9561]/25 bg-[#f4f1e9] p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#806936]" />
-            <div>
-              <h2 className="font-semibold">Ready to discuss a project?</h2>
-              <p className="mt-1 text-sm leading-relaxed text-[#171715]/65">
-                Use Kessick's official contact form for real design inquiries,
-                including Forma and Towers discussions.
-              </p>
-              <div className="mt-4">
-                <WebsiteLink href="https://kessickwinecellars.com/contact/">
-                  Open the Kessick contact form
-                </WebsiteLink>
-              </div>
-            </div>
-          </div>
-        </section>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            ["Design request", "Share project context with the Kessick team."],
-            ["Forma inquiry", "Discuss a Forma collection project."],
-            ["Towers inquiry", "Ask about options for a tower design."],
-          ].map(([title, description]) => (
-            <article
-              key={title}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5"
-            >
-              <SampleBadge />
-              <h2 className="mt-4 font-semibold">{title}</h2>
-              <p className="mt-2 min-h-10 text-sm leading-relaxed text-[#171715]/55">
-                {description}
-              </p>
-              <button
-                disabled
-                className="mt-5 inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-[#171715]/10 px-3 py-2 text-[10px] text-[#171715]/45"
-              >
-                Preview only · no submission <ArrowRight className="h-3 w-3" />
-              </button>
-            </article>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-[#171715]/45">
-          Actual dealer design request forms and project records remain
-          available only after authorized sign-in.
-        </p>
-      </div>
-    );
-  }
-
-  if (section === "Training") {
-    return (
-      <div>
-        <PageHeading
-          title="Training & onboarding"
-          description="A sample landing page for product orientation and design-process guidance. This preview has no private dealer courses."
-        />
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            [
-              "Product orientation",
-              "Introductory overview of Kessick product families.",
-              "https://kessickwinecellars.com/our-styles/",
-            ],
-            [
-              "Design process",
-              "Learn about the path from project concept to a custom wine cellar.",
-              "https://kessickwinecellars.com/process/",
-            ],
-          ].map(([title, description, href]) => (
-            <article
-              key={title}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6"
-            >
-              <div className="flex items-center justify-between">
-                <GraduationCap className="h-5 w-5 text-[#947d4d]" />
-                <SampleBadge />
-              </div>
-              <h2 className="mt-5 text-lg font-semibold">{title}</h2>
-              <p className="mt-2 text-sm text-[#171715]/55">{description}</p>
-              <div className="mt-5">
-                <WebsiteLink href={href}>Read public guidance</WebsiteLink>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Pricing") {
-    return (
-      <div>
-        <PageHeading
-          title="Wholesale pricing"
-          description="A sample of where dealer pricebooks would appear. Account-specific pricing stays private and is not displayed in a public preview."
-        />
-        <section className="rounded-xl border border-[#ad9561]/30 bg-white p-5 sm:p-7">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#806936]" />
-            <div>
-              <h2 className="font-semibold">
-                Dealer-specific pricing stays private
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#171715]/60">
-                This sample has no wholesale rates, SKUs, discount details, or
-                pricebook files. Approved dealer accounts see only the pricing
-                authorized for them.
-              </p>
-            </div>
-          </div>
-        </section>
-        <div className="mt-4 rounded-xl border border-[#171715]/10 bg-white p-5">
-          <SampleBadge />
-          <h3 className="mt-4 font-semibold">Example pricebook area</h3>
-          <p className="mt-2 text-sm text-[#171715]/55">
-            A private dealer view may list current catalogs and account pricing
-            after an authorized sign-in.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Support") {
-    return (
-      <div>
-        <PageHeading
-          title="Report an issue & get support"
-          description="For real assistance, use Kessick's published contact options. This sample preview does not submit tickets or send feedback."
-        />
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-[#171715]/10 bg-white p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <MessageSquareText className="h-4 w-4" />
-            </span>
-            <h2 className="mt-4 font-semibold">Feedback & design requests</h2>
-            <p className="mt-2 text-sm text-[#171715]/55">
-              Send a note through Kessick's official contact page.
-            </p>
-            <div className="mt-4">
-              <WebsiteLink href="https://kessickwinecellars.com/contact/">
-                Contact Kessick
-              </WebsiteLink>
-            </div>
-          </article>
-          <article className="rounded-xl border border-[#171715]/10 bg-white p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <Mail className="h-4 w-4" />
-            </span>
-            <h2 className="mt-4 font-semibold">Email Kessick</h2>
-            <p className="mt-2 text-sm text-[#171715]/55">
-              Reach the Kessick team by email.
-            </p>
-            <a
-              href="mailto:sales@kessickwinecellars.com"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#705a31] hover:underline"
-            >
-              sales@kessickwinecellars.com{" "}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </article>
-          <article className="rounded-xl border border-[#171715]/10 bg-white p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <Headphones className="h-4 w-4" />
-            </span>
-            <h2 className="mt-4 font-semibold">Call Kessick</h2>
-            <p className="mt-2 text-sm text-[#171715]/55">
-              Speak to the Kessick Wine Cellars team.
-            </p>
-            <a
-              href="tel:+18642971911"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#705a31] hover:underline"
-            >
-              864.297.1911 <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </article>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <PageHeading
-        title="Sample dealer account"
-        description="A fictional account card illustrates how the dealer profile may appear. No real person, company, or email address is represented."
-      />
-      <section className="max-w-2xl rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-            <UserRound className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="font-semibold">Alex Morgan</h2>
-            <p className="text-sm text-[#171715]/55">
-              Example Cellars LLC · alex@example.test
-            </p>
-          </div>
-          <div className="ml-auto">
-            <SampleBadge />
-          </div>
+    <>
+      <p>
+        Share feedback or report a problem. This preview prepares an email; it
+        does not submit a ticket or store your details.
+      </p>
+      <form className="desk-form" onSubmit={prepareEmail}>
+        <label>
+          Issue category
+          <select
+            name="category"
+            required
+            defaultValue="Portal or access issue"
+          >
+            <option>Portal or access issue</option>
+            <option>Design request</option>
+            <option>Product or installation question</option>
+            <option>Document access</option>
+            <option>Order or project support</option>
+            <option>General feedback</option>
+          </select>
+        </label>
+        <div className="desk-form-row">
+          <label>
+            Your name
+            <input name="name" autoComplete="name" maxLength={100} required />
+          </label>
+          <label>
+            Dealer / company
+            <input
+              name="company"
+              autoComplete="organization"
+              maxLength={120}
+              required
+            />
+          </label>
         </div>
-        <div className="mt-6 grid gap-4 border-t border-[#171715]/10 pt-5 sm:grid-cols-2">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#171715]/45">
-              Account status
-            </p>
-            <p className="mt-1 text-sm">Sample approved dealer</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#171715]/45">
-              Account access
-            </p>
-            <p className="mt-1 text-sm">Illustrative only · no sign-in</p>
-          </div>
-        </div>
-        <p className="mt-5 border-t border-[#171715]/10 pt-4 text-xs leading-relaxed text-[#171715]/45">
-          All profile details are fictional. This page does not connect to
-          dealer records.
+        <label>
+          Reply email
+          <input
+            type="email"
+            name="email"
+            autoComplete="email"
+            maxLength={200}
+            required
+          />
+        </label>
+        <label>
+          How can we help?
+          <textarea name="message" rows={5} maxLength={2000} required />
+        </label>
+        <p className="desk-note">
+          Please do not include passwords, payment information, private
+          documents or customer details.
         </p>
-      </section>
-    </div>
+        <button className="desk-primary" type="submit">
+          <Mail size={17} aria-hidden="true" />
+          Open email draft
+        </button>
+      </form>
+      {draft && (
+        <div className="desk-callout" role="status">
+          Email draft requested — not sent. Review and send it in your email
+          app. If nothing opened, <a href={draft}>open the prepared draft</a> or
+          contact Kessick below.
+        </div>
+      )}
+      <div className="desk-contact">
+        <a href={`mailto:${email}`}>
+          <Mail size={18} aria-hidden="true" />
+          Email Kessick
+        </a>
+        <a href="tel:+18642971911">
+          <Phone size={18} aria-hidden="true" />
+          864.297.1911
+        </a>
+        <PublicLink href={`${website}/contact/`}>
+          Contact Kessick online
+        </PublicLink>
+      </div>
+    </>
+  );
+}
+
+function SectionContent({ section }: { section: Section }) {
+  if (section === "Resources")
+    return (
+      <>
+        <p>
+          Public Kessick information is linked below. Restricted documents,
+          prices and project files stay in authorized dealer accounts.
+        </p>
+        <div className="desk-card-grid">
+          {resources.map((resource) => (
+            <article className="desk-card" key={resource.title}>
+              <FolderOpen size={23} aria-hidden="true" />
+              <h2>{resource.title}</h2>
+              <p>{resource.detail}</p>
+              {resource.href ? (
+                <PublicLink href={resource.href}>
+                  {resource.section === "Teamwork"
+                    ? "Open Teamwork sign-in"
+                    : "View public resources"}
+                </PublicLink>
+              ) : (
+                <AccessLink title={resource.title} />
+              )}
+            </article>
+          ))}
+        </div>
+      </>
+    );
+  if (section === "Announcements")
+    return (
+      <>
+        <p>
+          Public product information and clearly marked content awaiting
+          approval. Account-targeted announcements and notifications remain
+          private.
+        </p>
+        <div className="desk-card-grid">
+          {announcements.map((item) => (
+            <article className="desk-card" key={item.title}>
+              <span className="desk-status">
+                {item.href
+                  ? "Public product information"
+                  : "Pending confirmation"}
+              </span>
+              <h2>{item.title}</h2>
+              <p>{item.detail}</p>
+              {item.href ? (
+                <PublicLink href={item.href}>
+                  Explore Kessick collections
+                </PublicLink>
+              ) : (
+                <AccessLink title={item.title} />
+              )}
+            </article>
+          ))}
+        </div>
+      </>
+    );
+  if (section === "Design")
+    return (
+      <>
+        <p>
+          Start your project through Kessick’s official design-request workflow,
+          not a sample submission form.
+        </p>
+        <div className="desk-card-grid">
+          <article className="desk-card">
+            <Wine size={24} aria-hidden="true" />
+            <h2>Forma</h2>
+            <p>
+              Explore Kessick’s Forma collection and share your project
+              requirements with the design team.
+            </p>
+            <PublicLink href={`${website}/forma/`}>Explore Forma</PublicLink>
+            <PublicLink href={designRequest}>Request a Forma design</PublicLink>
+          </article>
+          <article className="desk-card">
+            <Wine size={24} aria-hidden="true" />
+            <h2>Towers</h2>
+            <p>
+              Explore Kessick’s Tower Series in the official styles collection
+              and discuss the right configuration for your project.
+            </p>
+            <PublicLink href={`${website}/our-styles/`}>
+              Explore Towers
+            </PublicLink>
+            <PublicLink href={designRequest}>
+              Request a Towers design
+            </PublicLink>
+          </article>
+        </div>
+        <article className="desk-card desk-checklist">
+          <h2>Prepare your project details</h2>
+          <p>
+            Have these details ready; Kessick’s official form confirms the
+            required fields.
+          </p>
+          <ul>
+            <li>Dealer/company name and contact information</li>
+            <li>Project location, type and desired timeline</li>
+            <li>Room dimensions, ceiling height and dimensioned plans</li>
+            <li>Doors, windows, obstructions and site photographs</li>
+            <li>Desired bottle capacity and collection / style</li>
+            <li>Wood, finish, lighting and other design preferences</li>
+            <li>Budget guidance and installation requirements</li>
+          </ul>
+          <PublicLink href={designRequest}>
+            Open official Design Request Form
+          </PublicLink>
+        </article>
+      </>
+    );
+  if (section === "Feedback") return <Feedback />;
+  if (section === "Teamwork")
+    return (
+      <article className="desk-card">
+        <Users size={30} aria-hidden="true" />
+        <h2>Your Teamwork account</h2>
+        <p>
+          Use your existing Teamwork account and Kessick workspace invitation.
+          This public preview does not create an account or grant project
+          access.
+        </p>
+        <PublicLink href={teamworkLogin}>Open Teamwork sign-in</PublicLink>
+        <p>Need your dealer-specific workspace link or an invitation?</p>
+        <AccessLink title="Kessick Teamwork workspace invitation" />
+      </article>
+    );
+  return (
+    <article className="desk-card">
+      <ShieldCheck size={30} aria-hidden="true" />
+      <h2>Verified dealer access</h2>
+      <p>
+        You are viewing the public project desk, not signed in to a dealer
+        account. No customer records, dealer prices or private documents are
+        available here.
+      </p>
+      <p>
+        Contact Kessick for your verified account sign-in link, account changes
+        or dealer approval. Staff manage accounts and document permissions in
+        the separately protected staff portal.
+      </p>
+      <AccessLink title="verified dealer account and sign-in link" />
+      <PublicLink href={`${website}/become-a-dealer/`}>
+        Become a Kessick dealer
+      </PublicLink>
+    </article>
   );
 }
 
@@ -949,214 +469,305 @@ export default function DealerPortalPreview({
 }: {
   staffViewMode?: boolean;
 }) {
-  const [section, setSection] = useState<PreviewSection>("Home");
+  const [section, setSection] = useState<Section>(currentSection);
   const [search, setSearch] = useState("");
-
-  const searchResults = useMemo(() => {
+  const [filter, setFilter] = useState("All");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    const handleHash = () => {
+      setSection(currentSection());
+      setSearch("");
+    };
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    heading.current?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [section]);
+  const results = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return [];
-    const entries: SearchResult[] = [
-      ...sampleProjects.map((project) => ({
-        title: project.name,
-        detail: `${project.type} · ${project.status} · Sample`,
-        section: "Projects" as const,
-      })),
-      ...products.map((product) => ({
-        title: product.name,
-        detail: `${product.description} · Sample`,
-        section: "Collections" as const,
-      })),
-      ...sampleResources.map((resource) => ({
-        title: resource.title,
-        detail: `${resource.category} · Sample category`,
-        section: "Resources" as const,
-      })),
-      ...sampleAnnouncements.map((notice) => ({
-        title: notice.title,
-        detail: `${notice.category} · Sample notice`,
-        section: "Notices" as const,
-      })),
-      {
-        title: "Design request",
-        detail: "Sample form · no public submission",
-        section: "Forms",
-      },
-      {
-        title: "Feedback",
-        detail: "Official Kessick contact options",
-        section: "Support",
-      },
-      {
-        title: "Account profile",
-        detail: "Fictional sample account",
-        section: "Account",
-      },
-    ];
-    return entries
-      .filter((entry) =>
+    return searchEntries.filter(
+      (entry) =>
+        (filter === "All" || entry.section === filter) &&
         `${entry.title} ${entry.detail}`.toLowerCase().includes(query),
-      )
-      .slice(0, 6);
-  }, [search]);
-
-  const navigate = (next: PreviewSection) => {
+    );
+  }, [search, filter]);
+  function navigate(next: Section) {
     setSection(next);
     setSearch("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
+    window.location.hash = next.toLowerCase();
+  }
+  const title = {
+    Home: "Your Kessick project desk.",
+    Announcements: "What’s New",
+    Design: "Design Request Form",
+    Resources: "Dealer Resources",
+    Feedback: "Report an Issue",
+    Account: "Dealer Account",
+    Teamwork: "Teamwork Account",
+  }[section];
   return (
-    <div className="dealer-preview-surface min-h-screen bg-[#10100f] pb-20 text-[#f4f0e8] md:pb-0">
+    <div className="dealer-cover">
+      <a className="desk-skip" href="#desk-content">
+        Skip to content
+      </a>
       {staffViewMode && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#171715] px-4 py-3 text-xs text-white sm:px-6">
-          <span className="font-semibold uppercase tracking-[0.12em]">
-            Staff-only dealer view · read-only sample, not account impersonation
-          </span>
-          <a
-            href="/admin"
-            className="inline-flex h-9 items-center gap-2 rounded-full bg-[#d4bd85] px-4 font-semibold text-[#171715] hover:bg-white"
-          >
-            <ShieldCheck className="h-4 w-4" /> Staff View
-          </a>
+        <div className="desk-staff-notice">
+          Read-only public dealer view · not account impersonation{" "}
+          <a href="/admin">Return to staff portal</a>
         </div>
       )}
-      <div
-        role="alert"
-        className="sticky top-0 z-50 flex min-h-9 items-center justify-center gap-2 bg-[#6e3025] px-4 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-white sm:text-[10px]"
-      >
-        <span aria-hidden="true">•</span> SAMPLE DEALER PREVIEW · FICTIONAL DATA
-        · NO SIGN-IN OR LIVE ACTIONS
-      </div>
-      <div className="mx-auto flex min-h-[calc(100vh-2.25rem)] max-w-[1600px]">
-        <aside className="sticky top-9 hidden h-[calc(100vh-2.25rem)] w-[250px] shrink-0 flex-col border-r border-white/10 bg-[#171715] text-white md:flex">
-          <div className="border-b border-white/10 px-6 py-6">
-            <BrandLogo tone="light" className="h-6 w-auto" />
-            <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/45">
-              Dealer portal · sample
-            </p>
-          </div>
-          <nav
-            aria-label="Sample dealer portal sections"
-            className="flex-1 space-y-1 overflow-y-auto p-3"
-          >
-            {navigation.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                aria-current={section === label ? "page" : undefined}
-                onClick={() => navigate(label)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-medium transition ${section === label ? "bg-[#ad9561]/20 text-white" : "text-white/55 hover:bg-white/5 hover:text-white"}`}
-              >
-                <Icon
-                  className={`h-4 w-4 ${section === label ? "text-[#d9c58e]" : ""}`}
-                />
-                {label}
-              </button>
-            ))}
-          </nav>
-          <div className="m-4 rounded-lg border border-[#ad9561]/25 bg-[#ad9561]/10 p-3 text-[10px] leading-relaxed text-white/65">
-            Everything shown here is fictional. No dealer records, pricing, or
-            private documents are connected.
-          </div>
-        </aside>
-
-        <main className="min-w-0 flex-1">
-          <header className="flex h-14 items-center justify-between border-b border-white/10 bg-[#171715] px-4 text-white sm:px-6 md:h-[72px] md:px-8">
-            <div className="flex min-w-0 items-center gap-3">
-              <BrandLogo tone="light" className="h-5 w-auto md:hidden" />
-              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d9c58e] md:block">
-                Dealer workspace
-              </span>
-              <span className="truncate text-xs font-medium text-white/75">
-                Alex Morgan{" "}
-                <span className="hidden text-white/35 sm:inline">
-                  · Example Cellars LLC
-                </span>
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("Notices")}
-              aria-label="Open sample notices"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/80 hover:bg-white/10"
+      <div className="desk-shell">
+        <header
+          className={`desk-header ${section !== "Home" ? "desk-header-compact" : ""}`}
+          style={{
+            backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.44), rgba(0,0,0,.87)), url(${cellarImage})`,
+          }}
+        >
+          <div className="desk-topbar">
+            <a
+              href="#account"
+              onClick={() => navigate("Account")}
+              className="desk-profile"
+              aria-label="Dealer profile"
             >
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d9c58e]" />
-            </button>
-          </header>
-
-          <section className="relative isolate overflow-visible bg-[#171715] text-white">
-            <img
-              src={cellarImage}
-              alt=""
-              className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
-            />
-            <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#171715]/95 via-[#171715]/75 to-[#171715]/35" />
-            <div className="mx-auto flex min-h-[260px] max-w-7xl flex-col justify-center px-4 py-8 sm:min-h-[300px] sm:px-7 sm:py-10 lg:px-10">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#d9c58e]">
-                  Kessick Wine Cellars
-                </span>
-                <SampleBadge light />
-              </div>
-              <h1 className="mt-3 max-w-2xl font-serif text-3xl font-medium leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-                Your Kessick project desk.
-              </h1>
-              <p className="mt-3 max-w-xl text-xs leading-relaxed text-white/70 sm:text-sm">
-                A dedicated workspace for projects, product inspiration, and
-                dealer support.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-white/60">
-                <span className="inline-flex items-center gap-1.5">
-                  <UserRound className="h-3.5 w-3.5 text-[#d9c58e]" /> Alex
-                  Morgan
-                </span>
-                <span className="hidden h-3 w-px bg-white/20 sm:block" />
-                <span>Example Cellars LLC</span>
-              </div>
-            </div>
-          </section>
-
-          <div className="mx-auto max-w-7xl space-y-7 px-4 pb-9 pt-6 sm:px-7 sm:pt-8 lg:px-10">
-            {section === "Home" ? (
-              <PreviewDashboard
-                onNavigate={navigate}
-                onSearch={setSearch}
-                search={search}
-                results={searchResults}
-              />
-            ) : (
-              <SectionContent section={section} onNavigate={navigate} />
-            )}
-            <footer className="border-t border-[#171715]/10 pt-5 text-[10px] leading-relaxed text-[#171715]/45 sm:text-xs">
-              Public sample preview only. No dealer account or private content
-              is connected. Public product links open the official Kessick Wine
-              Cellars website.
-              <span className="ml-2">
-                <WebsiteLink href="https://kessickwinecellars.com/">
-                  Visit Kessick Wine Cellars
-                </WebsiteLink>
+              <span className="desk-avatar">
+                <UserRound size={22} aria-hidden="true" />
               </span>
-            </footer>
+              <span>
+                Dealer portal<small>Public preview</small>
+              </span>
+            </a>
+            <a
+              href="#announcements"
+              onClick={() => navigate("Announcements")}
+              className="desk-bell"
+              aria-label="Notifications and announcements"
+            >
+              <Bell size={23} aria-hidden="true" />
+            </a>
           </div>
-        </main>
-      </div>
-      <nav
-        aria-label="Sample dealer mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#171715]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur-md md:hidden"
-      >
-        {mobileNavigation.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            aria-current={section === label ? "page" : undefined}
-            onClick={() => navigate(label)}
-            className={`flex min-h-12 flex-col items-center justify-center gap-1 ${section === label ? "text-[#d9c58e]" : "text-white/45"}`}
+          <a
+            className="desk-brand"
+            href="#home"
+            onClick={() => navigate("Home")}
+            aria-label="Kessick Home"
           >
-            <Icon className="h-[18px] w-[18px]" />
-            <span className="text-[9px] font-semibold leading-none">
-              {label === "Notices" ? "Notices" : label}
-            </span>
-          </button>
-        ))}
-      </nav>
+            <img
+              src={whiteLogo}
+              width="180"
+              height="50"
+              alt="Kessick Wine Storage Systems"
+            />
+          </a>
+          <h1 ref={heading} tabIndex={-1}>
+            {title}
+          </h1>
+          {section === "Home" && (
+            <p className="desk-intro">
+              A place for inspiration, project support,
+              <br />
+              and everything you need to create something extraordinary.
+            </p>
+          )}
+          <div className="desk-search">
+            <Search size={19} aria-hidden="true" />
+            <input
+              aria-label="Search dealer toolkit"
+              placeholder="Search your dealer toolkit…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <button
+              type="button"
+              aria-label="Filter search"
+              aria-expanded={filtersOpen}
+              aria-controls="desk-search-filters"
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              <SlidersHorizontal size={19} aria-hidden="true" />
+            </button>
+          </div>
+          {filtersOpen && (
+            <div id="desk-search-filters" className="desk-filters">
+              <label>
+                Search in
+                <select
+                  value={filter}
+                  onChange={(event) => setFilter(event.target.value)}
+                >
+                  <option>All</option>
+                  <option value="Resources">Dealer Resources</option>
+                  <option value="Design">Design Requests</option>
+                  <option value="Announcements">Announcements</option>
+                  <option value="Feedback">Feedback</option>
+                </select>
+              </label>
+            </div>
+          )}
+          {search.trim() && (
+            <div
+              className="desk-search-results"
+              role="region"
+              aria-label="Search results"
+            >
+              <p role="status">
+                {results.length
+                  ? `${results.length} result${results.length === 1 ? "" : "s"}`
+                  : "No results. Try “Forma”, “stain” or “feedback”."}
+              </p>
+              {results.map((result) => (
+                <a
+                  key={`${result.section}-${result.title}`}
+                  href={`#${result.section.toLowerCase()}`}
+                  onClick={() => navigate(result.section)}
+                >
+                  <span>
+                    {result.title}
+                    <small>{result.detail}</small>
+                  </span>
+                  <ArrowRight size={16} aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          )}
+        </header>
+        <main id="desk-content" tabIndex={-1}>
+          {section === "Home" ? (
+            <>
+              <figure className="desk-cellar">
+                <img
+                  src={cellarImage}
+                  width="1440"
+                  height="960"
+                  alt="Wine-cellar room inspiration with warm wood cabinetry and display racks"
+                />
+                <figcaption>Wine-cellar inspiration</figcaption>
+              </figure>
+              <section
+                className="desk-toolkit"
+                aria-labelledby="toolkit-heading"
+              >
+                <h2 id="toolkit-heading">Your Dealer Toolkit</h2>
+                <div className="desk-toolkit-grid">
+                  {toolkit.map(
+                    ({ title: label, section: destination, icon: Icon }) => (
+                      <a
+                        key={label}
+                        href={`#${destination.toLowerCase()}`}
+                        onClick={() => navigate(destination)}
+                      >
+                        <span className="desk-metal">
+                          <Icon
+                            size={28}
+                            strokeWidth={1.35}
+                            aria-hidden="true"
+                          />
+                        </span>
+                        <span>{label}</span>
+                      </a>
+                    ),
+                  )}
+                </div>
+              </section>
+              <a
+                className="desk-voucher"
+                href="#announcements"
+                onClick={() => navigate("Announcements")}
+              >
+                <span className="desk-voucher-value">
+                  15%<small>VOUCHER</small>
+                </span>
+                <span>
+                  <strong>
+                    A little inspiration.
+                    <br />A little extra possibility.
+                  </strong>
+                  <span className="desk-voucher-disclaimer">
+                    UNAPPROVED EXAMPLE · NOT REDEEMABLE
+                  </span>
+                  <small>Offer and terms require Kessick confirmation.</small>
+                </span>
+                <ArrowRight size={19} aria-hidden="true" />
+              </a>
+              <a
+                className="desk-feature"
+                href="#announcements"
+                onClick={() => navigate("Announcements")}
+              >
+                <span className="desk-feature-eyebrow">Coming Soon</span>
+                <span className="desk-feature-series">ESTATE SERIES</span>
+                <span className="desk-feature-name">Cask Collection</span>
+                <span className="desk-feature-rule" />
+                <span className="desk-feature-concept">
+                  DESIGN CONCEPT · NOT AN APPROVED RELEASE
+                </span>
+                <span className="desk-feature-link">
+                  Explore the concept
+                  <ArrowRight size={17} aria-hidden="true" />
+                </span>
+              </a>
+              <p className="desk-preview-note">
+                Public design preview. Header photograph awaits Kessick’s
+                approved building image. Private dealer content requires
+                authorized access.
+              </p>
+            </>
+          ) : (
+            <section className="desk-page">
+              <a
+                className="desk-back"
+                href="#home"
+                onClick={() => navigate("Home")}
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+                Project desk
+              </a>
+              <SectionContent section={section} />
+            </section>
+          )}
+        </main>
+        <nav className="desk-bottom-nav" aria-label="Dealer navigation">
+          <a
+            href="#home"
+            onClick={() => navigate("Home")}
+            aria-current={section === "Home" ? "page" : undefined}
+          >
+            <Home size={22} aria-hidden="true" />
+            <span>Home</span>
+          </a>
+          <a
+            href="#account"
+            onClick={() => navigate("Account")}
+            aria-current={section === "Account" ? "page" : undefined}
+            aria-label="Dealer Account"
+          >
+            <UserRound size={22} aria-hidden="true" />
+            <span>Account</span>
+          </a>
+          <a href={`mailto:${email}`} aria-label="Email Kessick">
+            <Mail size={22} aria-hidden="true" />
+            <span>Email</span>
+          </a>
+          <a
+            href="#teamwork"
+            onClick={() => navigate("Teamwork")}
+            aria-current={section === "Teamwork" ? "page" : undefined}
+            aria-label="Teamwork Account"
+          >
+            <Users size={22} aria-hidden="true" />
+            <span>Teamwork</span>
+          </a>
+        </nav>
+      </div>
     </div>
   );
 }
