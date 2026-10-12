@@ -154,39 +154,17 @@
   color-scheme: light;
 }
 
+/*
+  Dealer preview surface.
+  The dealer-facing preview follows Cindi McNew's light, lavender-gray
+  app-cover design. The previous build-time overrides that forced this
+  interface black have been removed so the component renders in its
+  intended light palette. The pale lavender-gray background is applied
+  here so it also covers the area behind the centered app shell.
+*/
 .dealer-preview-surface {
-  background: #10100f;
-  color-scheme: dark;
-}
-
-.dealer-preview-surface [class*="bg-white"],
-.dealer-preview-surface [class*="bg-[#f"],
-.dealer-preview-surface [class*="bg-[#F"] {
-  background-color: #1a1a18 !important;
-}
-
-.dealer-preview-surface [class*="text-[#171715]"],
-.dealer-preview-surface [class*="text-[#121210]"] {
-  color: #f4f0e8 !important;
-}
-
-.dealer-preview-surface [class*="text-[#171715]/"],
-.dealer-preview-surface [class*="text-[#121210]/"] {
-  color: rgb(244 240 232 / 68%) !important;
-}
-
-.dealer-preview-surface [class*="text-[#705a31]"],
-.dealer-preview-surface [class*="text-[#715b32]"],
-.dealer-preview-surface [class*="text-[#806936]"],
-.dealer-preview-surface [class*="text-[#78643b]"],
-.dealer-preview-surface [class*="text-[#947d4d]"] {
-  color: #d9c58e !important;
-}
-
-.dealer-preview-surface [class*="border-[#171715]"],
-.dealer-preview-surface [class*="border-[#121210]"],
-.dealer-preview-surface [class*="border-black/"] {
-  border-color: rgb(255 255 255 / 12%) !important;
+  background: #e7e6ee;
+  color-scheme: light;
 }
 
 @layer base {

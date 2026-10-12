@@ -1,180 +1,275 @@
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
+  ArrowUpRight,
   Bell,
   BookOpen,
-  BriefcaseBusiness,
-  CheckCircle2,
+  ChevronLeft,
   ChevronRight,
-  CircleDollarSign,
+  Download,
   ExternalLink,
   FileText,
   FolderOpen,
-  GraduationCap,
-  Headphones,
-  Home,
-  Layers3,
+  Images,
   Mail,
   MessageSquareText,
+  Palette,
+  Phone,
   Search,
   ShieldCheck,
-  UserRound,
-  Wine,
+  SlidersHorizontal,
+  Sparkles,
+  Users,
   type LucideIcon,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
 import cellarImage from "@assets/kessick-room-demo.jpg";
+import logoWhite from "@assets/kessick-logo-white.svg";
 
-type PreviewSection =
+/* ------------------------------------------------------------------ *
+ * Kessick Dealer Portal — public sample preview
+ *
+ * Recreates Cindi McNew's mobile app-cover design with real, interactive
+ * React components (not a screenshot). The layout is mobile-first and
+ * centered inside a pale lavender-gray surface so it reads like an app
+ * cover on every viewport while remaining fully responsive.
+ *
+ * This is a PUBLIC preview: no sign-in, no private pricing/documents,
+ * no fake "submitted successfully" messages. Real actions open the
+ * official Kessick website, an email draft, or a phone dialer.
+ * ------------------------------------------------------------------ */
+
+const KESSICK_SITE = "https://kessickwinecellars.com/";
+const KESSICK_DESIGN_REQUEST = "https://kessickwinecellars.com/design-request/";
+const KESSICK_STYLES = "https://kessickwinecellars.com/our-styles/";
+const KESSICK_RESOURCES = "https://kessickwinecellars.com/";
+const KESSICK_EMAIL = "sales@kessickwinecellars.com";
+const KESSICK_PHONE_DISPLAY = "864.297.1911";
+const KESSICK_PHONE_TEL = "+18642971911";
+const TEAMWORK_SITE = "https://www.teamwork.com/";
+
+type Section =
   | "Home"
-  | "Projects"
-  | "Collections"
-  | "Training"
-  | "Pricing"
+  | "Announcements"
+  | "DesignRequest"
   | "Resources"
-  | "Forms"
-  | "Notices"
-  | "Account"
-  | "Support";
+  | "Support"
+  | "Account";
 
-const navigation: { label: PreviewSection; icon: LucideIcon }[] = [
-  { label: "Home", icon: Home },
-  { label: "Projects", icon: BriefcaseBusiness },
-  { label: "Collections", icon: Layers3 },
-  { label: "Training", icon: GraduationCap },
-  { label: "Pricing", icon: CircleDollarSign },
-  { label: "Resources", icon: FolderOpen },
-  { label: "Forms", icon: FileText },
-  { label: "Notices", icon: Bell },
-  { label: "Account", icon: UserRound },
-  { label: "Support", icon: Headphones },
+/** Accepts both lucide-react icons and the local inline SVG icons below. */
+type IconType = React.ComponentType<{ className?: string }>;
+
+type NavItem =
+  | { kind: "section"; label: string; icon: IconType; section: Section }
+  | { kind: "link"; label: string; icon: IconType; href: string };
+
+const bottomNav: NavItem[] = [
+  { kind: "section", label: "Home", icon: HomeIcon, section: "Home" },
+  { kind: "section", label: "Account", icon: Users, section: "Account" },
+  { kind: "link", label: "Email", icon: Mail, href: `mailto:${KESSICK_EMAIL}` },
+  { kind: "link", label: "Teamwork", icon: Briefcase, href: TEAMWORK_SITE },
 ];
 
-const mobileNavigation: { label: PreviewSection; icon: LucideIcon }[] = [
-  { label: "Home", icon: Home },
-  { label: "Account", icon: UserRound },
-  { label: "Notices", icon: Bell },
-  { label: "Support", icon: Headphones },
-];
-
-const products = [
-  {
-    name: "Estate",
-    description: "A refined foundation for custom wine cellar design.",
-    href: "https://kessickwinecellars.com/estate/",
-  },
-  {
-    name: "Elevation",
-    description: "Contemporary wine displays designed to make a statement.",
-    href: "https://kessickwinecellars.com/elevation/",
-  },
-  {
-    name: "Wine As Art",
-    description: "A sculptural approach to presenting a wine collection.",
-    href: "https://kessickwinecellars.com/wine-as-art/",
-  },
-  {
-    name: "Forma",
-    description: "Explore Kessick's Forma wine storage collection.",
-    href: "https://kessickwinecellars.com/our-styles/",
-  },
-  {
-    name: "Towers",
-    description: "Explore Kessick styles and discuss a tower design.",
-    href: "https://kessickwinecellars.com/our-styles/",
-  },
-];
-
-const sampleProjects = [
-  {
-    name: "Hillside Residence",
-    type: "Estate · Private residence",
-    status: "Design review",
-  },
-  {
-    name: "The Tasting Room",
-    type: "Elevation · Hospitality",
-    status: "Quote requested",
-  },
-  {
-    name: "Garden District Remodel",
-    type: "Wine As Art · Renovation",
-    status: "In progress",
-  },
-];
-
-const sampleResources = [
-  {
-    title: "Renderings & inspiration",
-    category: "Design resources",
-    icon: Layers3,
-  },
-  {
-    title: "Policies & project guides",
-    category: "Dealer guidance",
-    icon: BookOpen,
-  },
-  {
-    title: "Installation & spec sheets",
-    category: "Project support",
-    icon: FileText,
-  },
-  { title: "Wood stain chart", category: "Finishes", icon: Wine },
-  {
-    title: "Catalogs & brochures",
-    category: "Product information",
-    icon: FolderOpen,
-  },
-  {
-    title: "Logos & marketing",
-    category: "Brand resources",
-    icon: ExternalLink,
-  },
-];
-
-const sampleAnnouncements = [
-  {
-    title: "New collection preview",
-    category: "New products",
-    body: "A sample announcement showing where new Kessick collections and product updates will appear.",
-  },
-  {
-    title: "A new look at custom cellars",
-    category: "Coming soon",
-    body: "Example preview content only. No release date, availability, or offer is being announced.",
-  },
-  {
-    title: "Dealer policy update",
-    category: "Policies",
-    body: "A sample policy notice. Refer to your authorized account for current dealer policies.",
-  },
-];
-
-type SearchResult = { title: string; detail: string; section: PreviewSection };
-
-function SampleBadge({ light = false }: { light?: boolean }) {
+/* Small inline icons kept local so the bundle stays lean. */
+function HomeIcon({ className }: { className?: string }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] ${
-        light
-          ? "border-white/20 bg-black/25 text-white/85"
-          : "border-[#ad9561]/35 bg-[#ad9561]/10 text-[#78643b]"
-      }`}
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
     >
-      <CheckCircle2 className="h-3 w-3" /> Sample
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.5V21h14V9.5" />
+    </svg>
+  );
+}
+function Briefcase({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+type Toolkit = { label: string; icon: LucideIcon; section: Section };
+
+const toolkit: Toolkit[] = [
+  { label: "What’s New", icon: Sparkles, section: "Announcements" },
+  { label: "Design Request Form", icon: FileText, section: "DesignRequest" },
+  { label: "Dealer Resources", icon: FolderOpen, section: "Resources" },
+  { label: "Feedback", icon: MessageSquareText, section: "Support" },
+];
+
+/* ---- Announcements content (Oct 8 outline) ---- */
+const announcementGroups: {
+  category: string;
+  pending?: boolean;
+  items: { title: string; body: string; href?: string }[];
+}[] = [
+  {
+    category: "New Products",
+    items: [
+      {
+        title: "Explore current Kessick collections",
+        body: "Estate, Elevation, Forma, Towers and Wine As Art styles are published on the Kessick website.",
+        href: KESSICK_STYLES,
+      },
+    ],
+  },
+  {
+    category: "Coming Soon",
+    items: [
+      {
+        title: "ESTATE SERIES · Cask Collection",
+        body: "Concept preview only. This collection is an unapproved example and is not yet released — details are pending Kessick confirmation.",
+      },
+    ],
+  },
+  {
+    category: "New Policies",
+    items: [
+      {
+        title: "Dealer policy updates",
+        body: "Published dealer policy changes will appear here. Refer to your authorized account for current, binding policies.",
+      },
+    ],
+  },
+  {
+    category: "Special Announcements",
+    items: [
+      {
+        title: "15% dealer voucher (example)",
+        body: "Powder-blue voucher shown on the home screen is an unapproved example. No offer is live until Kessick confirms it.",
+      },
+    ],
+  },
+  {
+    category: "Kessick Cut List Newsletter",
+    pending: true,
+    items: [
+      {
+        title: "Newsletter section — pending content",
+        body: "The Kessick Cut List newsletter will live here once content is confirmed with the Kessick team.",
+      },
+    ],
+  },
+  {
+    category: "Project Credits",
+    pending: true,
+    items: [
+      {
+        title: "Project credits — pending staff confirmation",
+        body: "Credit and recognition details for completed projects will be added after staff confirm the information.",
+      },
+    ],
+  },
+];
+
+/* ---- Dealer Resources (Oct 8 outline) ---- */
+type Resource = {
+  title: string;
+  icon: IconType;
+  public?: string; // public link available
+  restricted?: boolean; // requires Request Access
+  note: string;
+};
+
+const resources: Resource[] = [
+  {
+    title: "Renders",
+    icon: Images,
+    restricted: true,
+    note: "Project renders are dealer-specific. Request access from the Kessick team.",
+  },
+  {
+    title: "Policies & Guides",
+    icon: BookOpen,
+    public: KESSICK_RESOURCES,
+    note: "Dealer policies and project guides. Public guidance on the Kessick website.",
+  },
+  {
+    title: "Installation & Specification Sheets",
+    icon: FileText,
+    restricted: true,
+    note: "Technical install and spec sheets. Request access for the latest files.",
+  },
+  {
+    title: "Wood Stain Chart",
+    icon: Palette,
+    public: KESSICK_STYLES,
+    note: "Finish and wood stain options. See finishes on the Kessick website.",
+  },
+  {
+    title: "Brochures & Catalogs",
+    icon: FolderOpen,
+    public: KESSICK_SITE,
+    note: "Product brochures and catalogs. Browse collections on Kessick's site.",
+  },
+  {
+    title: "Approved Logos",
+    icon: Download,
+    restricted: true,
+    note: "Brand-approved Kessick logos. Request the current logo pack.",
+  },
+  {
+    title: "Marketing Materials",
+    icon: Images,
+    restricted: true,
+    note: "Co-branded marketing assets. Request access from your rep.",
+  },
+  {
+    title: "Direct Teamwork Access",
+    icon: Briefcase,
+    public: TEAMWORK_SITE,
+    note: "Dealer project collaboration runs in Teamwork. Open Teamwork or request access.",
+  },
+];
+
+/* ---- Report an issue categories ---- */
+const issueCategories = [
+  "Product / spec question",
+  "Order or delivery",
+  "Design request help",
+  "Website / portal issue",
+  "Billing or account",
+  "Something else",
+];
+
+type SearchHit = { title: string; detail: string; section: Section };
+
+/* ------------------------------------------------------------------ */
+
+function PendingBadge({ children = "Pending" }: { children?: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-[#b8923f]/40 bg-[#f6edda] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#7a5c1e]">
+      {children}
     </span>
   );
 }
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
+function ExampleBadge({ children = "Example" }: { children?: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#947d4d]">
+    <span className="inline-flex items-center gap-1 rounded-full border border-[#5f7fa6]/40 bg-[#dde8f3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#3c5a80]">
       {children}
-    </p>
+    </span>
   );
 }
 
-function WebsiteLink({
+function WebLink({
   href,
   children,
 }: {
@@ -186,976 +281,811 @@ function WebsiteLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-sm font-semibold text-[#705a31] underline-offset-4 hover:text-[#171715] hover:underline"
+      className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6d5a30] underline-offset-4 hover:underline"
     >
       {children} <ExternalLink className="h-3.5 w-3.5" />
     </a>
   );
 }
 
-function PageHeading({
+function SectionHeader({
   title,
-  description,
+  onBack,
+  children,
 }: {
   title: string;
-  description: string;
+  onBack: () => void;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-7 border-b border-[#171715]/10 pb-5">
-      <SectionEyebrow>Dealer workspace · sample preview</SectionEyebrow>
-      <h1 className="mt-2 font-serif text-3xl font-medium tracking-tight text-[#171715] sm:text-4xl">
+    <div className="mb-5">
+      <button
+        onClick={onBack}
+        className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-[#6d5a30] hover:underline"
+      >
+        <ChevronLeft className="h-4 w-4" /> Back to home
+      </button>
+      <h1 className="font-serif text-2xl font-semibold text-[#1b1b19]">
         {title}
       </h1>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#171715]/60">
-        {description}
-      </p>
+      {children ? (
+        <p className="mt-1.5 text-sm leading-relaxed text-[#1b1b19]/60">
+          {children}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function PreviewDashboard({
-  onNavigate,
-  onSearch,
+/* ---------------------------- Home ---------------------------------- */
+
+function Home({
   search,
+  setSearch,
   results,
+  onNavigate,
 }: {
-  onNavigate: (section: PreviewSection) => void;
-  onSearch: (value: string) => void;
   search: string;
-  results: SearchResult[];
+  setSearch: (v: string) => void;
+  results: SearchHit[];
+  onNavigate: (s: Section) => void;
 }) {
   return (
-    <div className="space-y-8 sm:space-y-10">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-2xl border border-[#171715]/10 bg-white p-5 shadow-[0_18px_50px_rgba(23,23,21,.05)] sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <SectionEyebrow>Workspace overview</SectionEyebrow>
-              <h2 className="mt-2 font-serif text-2xl font-medium text-[#171715] sm:text-3xl">
-                Welcome back, Alex.
-              </h2>
-              <p className="mt-2 text-sm text-[#171715]/55">
-                A considered space for your projects, inspiration, and dealer
-                support.
-              </p>
-            </div>
-            <SampleBadge />
-          </div>
-          <label htmlFor="preview-search" className="sr-only">
-            Search projects, products, resources, and notices
-          </label>
-          <div className="mt-6 flex items-center gap-3 rounded-xl border border-[#171715]/12 bg-[#f8f7f3] px-4 focus-within:border-[#ad9561]">
-            <Search className="h-4 w-4 shrink-0 text-[#947d4d]" />
-            <input
-              id="preview-search"
-              value={search}
-              onChange={(event) => onSearch(event.target.value)}
-              placeholder="Search projects, products, resources…"
-              className="h-12 w-full bg-transparent text-sm text-[#171715] outline-none placeholder:text-[#171715]/40"
-            />
-            {search && (
-              <button
-                onClick={() => onSearch("")}
-                className="text-xs text-[#171715]/50 hover:text-[#171715]"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {search.trim() && (
-            <div className="mt-2 overflow-hidden rounded-xl border border-[#171715]/10 bg-white">
-              {results.length ? (
-                results.map((result) => (
-                  <button
-                    key={`${result.section}-${result.title}`}
-                    onClick={() => onNavigate(result.section)}
-                    className="flex w-full items-center justify-between gap-4 border-b border-[#171715]/5 px-4 py-3 text-left last:border-0 hover:bg-[#f8f7f3]"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">
-                        {result.title}
-                      </span>
-                      <span className="mt-1 block truncate text-xs text-[#171715]/50">
-                        {result.detail}
-                      </span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-[#947d4d]" />
-                  </button>
-                ))
-              ) : (
-                <p className="px-4 py-4 text-sm text-[#171715]/55">
-                  No sample content matches that search.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="relative isolate flex min-h-[210px] items-end overflow-hidden rounded-2xl bg-[#171715] p-5 sm:min-h-[250px] sm:p-7">
-          <img
-            src={cellarImage}
-            alt="Kessick custom wine cellar"
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
-          <div className="flex w-full items-end justify-between gap-4">
-            <div className="text-white">
-              <SampleBadge light />
-              <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#ddc991]">
-                Crafted for your vision
-              </p>
-              <h2 className="mt-1 font-serif text-2xl">
-                Spaces worth savoring.
-              </h2>
-            </div>
-            <button
-              onClick={() => onNavigate("Collections")}
-              aria-label="Explore collections"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/20 text-white transition hover:bg-white/15"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="toolkit-title">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <SectionEyebrow>At your service</SectionEyebrow>
-            <h2
-              id="toolkit-title"
-              className="mt-1 text-xl font-semibold text-[#171715] sm:text-2xl"
-            >
-              Your Dealer Toolkit
-            </h2>
-          </div>
-          <span className="hidden text-xs text-[#171715]/45 sm:inline">
-            Preview links navigate sample content
-          </span>
-        </div>
-        <div className="grid grid-cols-4 gap-2 sm:gap-4">
-          <ToolkitShortcut
-            label="What’s New"
-            icon={Bell}
-            onClick={() => onNavigate("Notices")}
-          />
-          <ToolkitShortcut
-            label="Design Request"
-            icon={FileText}
-            onClick={() => onNavigate("Forms")}
-          />
-          <ToolkitShortcut
-            label="Dealer Resources"
-            icon={FolderOpen}
-            onClick={() => onNavigate("Resources")}
-          />
-          <ToolkitShortcut
-            label="Feedback"
-            icon={MessageSquareText}
-            onClick={() => onNavigate("Support")}
-          />
-        </div>
-      </section>
-
-      <section
-        aria-label="Special announcement"
-        className="relative isolate overflow-hidden rounded-2xl bg-[#cfb875] text-[#171715]"
-      >
+    <div className="space-y-6">
+      {/* Dark photographic header */}
+      <header className="relative isolate -mx-4 -mt-4 overflow-hidden rounded-b-[28px] bg-[#15130f] px-5 pb-7 pt-5 text-white shadow-[0_18px_40px_rgba(21,19,15,0.28)] sm:-mx-6 sm:px-7">
         <img
           src={cellarImage}
           alt=""
-          className="absolute inset-0 -z-20 h-full w-full object-cover opacity-25"
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#dfc983]/95 via-[#dfc983]/85 to-[#dfc983]/45" />
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <SectionEyebrow>Special announcement</SectionEyebrow>
-              <SampleBadge />
-            </div>
-            <h2 className="mt-2 text-xl font-semibold sm:text-2xl">
-              A note from the Kessick team
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#171715]/70">
-              Sample announcement content only. This preview does not publish
-              current offers, policy changes, or product release dates.
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate("Notices")}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white hover:bg-black sm:self-center"
-          >
-            View sample notices <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-2xl border border-[#171715]/10 bg-white p-5 sm:p-6">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <SectionEyebrow>Your workspace</SectionEyebrow>
-              <h2 className="mt-1 text-xl font-semibold">Active projects</h2>
-            </div>
-            <button
-              onClick={() => onNavigate("Projects")}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[#705a31] hover:underline"
-            >
-              View sample projects <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="mt-3 divide-y divide-[#171715]/10">
-            {sampleProjects.slice(0, 2).map((project) => (
-              <button
-                key={project.name}
-                onClick={() => onNavigate("Projects")}
-                className="flex w-full items-center gap-3 py-4 text-left hover:bg-[#f8f7f3]"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-                  <BriefcaseBusiness className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">
-                    {project.name}
-                  </span>
-                  <span className="mt-1 block truncate text-xs text-[#171715]/50">
-                    {project.type}
-                  </span>
-                </span>
-                <span className="hidden rounded-full bg-[#f4f1e9] px-2.5 py-1 text-[10px] text-[#171715]/60 sm:block">
-                  {project.status}
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-[#171715]/35" />
-              </button>
-            ))}
-          </div>
-          <p className="border-t border-[#171715]/10 pt-3 text-[10px] leading-relaxed text-[#171715]/45">
-            All project names and statuses shown are fictional sample data.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-[#171715]/10 bg-white p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <SectionEyebrow>Stay in the know</SectionEyebrow>
-              <h2 className="mt-1 text-xl font-semibold">Notices & updates</h2>
-            </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <Bell className="h-4 w-4" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#15130f]/78 via-[#15130f]/82 to-[#15130f]/92" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/10 text-sm font-semibold text-white">
+              AM
             </span>
-          </div>
-          <p className="mt-2 text-xs text-[#171715]/50">
-            Fictional examples · no active notices
-          </p>
-          <div className="mt-4 space-y-3">
-            {sampleAnnouncements.slice(0, 2).map((notice) => (
-              <button
-                key={notice.title}
-                onClick={() => onNavigate("Notices")}
-                className="block w-full border-l-2 border-[#ad9561] py-1 pl-3 text-left"
-              >
-                <span className="block text-xs font-semibold">
-                  {notice.title}
-                </span>
-                <span className="mt-1 block text-[10px] text-[#171715]/45">
-                  {notice.category} · Sample
-                </span>
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => onNavigate("Notices")}
-            className="mt-4 flex w-full items-center justify-between border-t border-[#171715]/10 pt-3 text-xs font-semibold text-[#705a31] hover:text-[#171715]"
-          >
-            Browse sample updates <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-[#171715]/10 bg-white">
-        <div className="grid md:grid-cols-[1.05fr_.95fr]">
-          <div className="relative min-h-[220px] md:min-h-[290px]">
             <img
-              src={cellarImage}
-              alt="Wine bottles displayed in a custom Kessick cellar"
-              className="absolute inset-0 h-full w-full object-cover"
+              src={logoWhite}
+              alt="Kessick Wine Cellars"
+              className="h-5 w-auto"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent md:bg-gradient-to-r md:from-transparent md:to-white/35" />
-            <span className="absolute bottom-4 left-4">
-              <SampleBadge light />
-            </span>
           </div>
-          <div className="flex flex-col justify-center p-5 sm:p-8">
-            <SectionEyebrow>Featured collection · sample</SectionEyebrow>
-            <h2 className="mt-2 font-serif text-2xl font-medium sm:text-3xl">
-              Discover the Kessick collection.
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[#171715]/55">
-              Explore Kessick's public product styles. Featured collection
-              content in this preview is illustrative and does not indicate
-              availability.
-            </p>
+          <button
+            onClick={() => onNavigate("Announcements")}
+            aria-label="Notifications"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/5 text-white hover:bg-white/15"
+          >
+            <Bell className="h-5 w-5" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#d9bf7e]" />
+          </button>
+        </div>
+
+        <h1 className="mt-7 font-serif text-[32px] font-semibold leading-[1.1] tracking-tight sm:text-4xl">
+          Your Kessick
+          <br />
+          project desk.
+        </h1>
+        <p className="mt-2 max-w-sm text-sm italic leading-relaxed text-white/75">
+          Everything you need to design, specify, and present a Kessick wine
+          cellar — in one place.
+        </p>
+
+        {/* Black search bar with magnifier + filter icon */}
+        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/12 bg-black/55 px-4 py-3 backdrop-blur">
+          <Search className="h-5 w-5 shrink-0 text-white/60" />
+          <label htmlFor="dealer-search" className="sr-only">
+            Search the dealer portal
+          </label>
+          <input
+            id="dealer-search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search resources, products, forms…"
+            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/45"
+          />
+          <button
+            type="button"
+            aria-label="Filters"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 text-white/70 hover:bg-white/10"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+
+        {search.trim() ? (
+          <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-[#1d1b16]">
+            {results.length ? (
+              results.map((r) => (
+                <button
+                  key={`${r.section}-${r.title}`}
+                  onClick={() => {
+                    onNavigate(r.section);
+                    setSearch("");
+                  }}
+                  className="flex w-full items-center justify-between gap-3 border-b border-white/5 px-4 py-3 text-left last:border-0 hover:bg-white/5"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-white">
+                      {r.title}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-white/50">
+                      {r.detail}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
+                </button>
+              ))
+            ) : (
+              <p className="px-4 py-4 text-sm text-white/55">
+                No results for “{search.trim()}”.
+              </p>
+            )}
+          </div>
+        ) : null}
+      </header>
+
+      {/* Wide wine-cellar photograph */}
+      <section className="relative overflow-hidden rounded-3xl">
+        <img
+          src={cellarImage}
+          alt="Luxury custom Kessick wine cellar"
+          className="h-44 w-full object-cover sm:h-52"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+          <p className="font-serif text-lg font-medium text-white drop-shadow">
+            Spaces worth savoring.
+          </p>
+          <WebLinkDark href={KESSICK_STYLES}>Explore styles</WebLinkDark>
+        </div>
+      </section>
+
+      {/* Your Dealer Toolkit */}
+      <section>
+        <h2 className="mb-4 font-serif text-xl font-semibold text-[#1b1b19]">
+          Your Dealer Toolkit
+        </h2>
+        <div className="grid grid-cols-4 gap-2 sm:gap-4">
+          {toolkit.map(({ label, icon: Icon, section }) => (
             <button
-              onClick={() => onNavigate("Collections")}
-              className="mt-5 inline-flex items-center gap-2 self-start text-xs font-semibold text-[#705a31] hover:text-[#171715]"
+              key={label}
+              onClick={() => onNavigate(section)}
+              className="group flex min-w-0 flex-col items-center gap-2 text-center"
             >
-              Explore public collections <ArrowRight className="h-4 w-4" />
+              <span
+                className="flex h-[clamp(3.5rem,18vw,4.5rem)] w-[clamp(3.5rem,18vw,4.5rem)] items-center justify-center rounded-full border border-[#c9ccd6] text-[#4a4e59] shadow-[0_6px_16px_rgba(27,27,25,0.12)] transition group-hover:-translate-y-0.5 group-active:translate-y-0"
+                style={{
+                  background:
+                    "linear-gradient(145deg,#ffffff 0%,#e9eaf0 45%,#c7cad4 100%)",
+                }}
+              >
+                <Icon className="h-6 w-6" />
+              </span>
+              <span className="text-[10px] font-semibold leading-tight text-[#1b1b19]/80 sm:text-xs">
+                {label}
+              </span>
             </button>
-          </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Powder-blue 15% voucher banner (unapproved example) */}
+      <section className="overflow-hidden rounded-3xl border border-[#9fb9d6] bg-gradient-to-br from-[#cfe0f0] to-[#aecae6] p-5 text-[#1f3c5e]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] font-semibold uppercase tracking-wider">
+            Dealer voucher
+          </span>
+          <ExampleBadge>Example · pending approval</ExampleBadge>
+        </div>
+        <p className="mt-3 font-serif text-3xl font-bold leading-none">
+          15% off
+        </p>
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-[#1f3c5e]/80">
+          Sample promotional banner only. This 15% voucher is an unapproved
+          example and is <strong>not a live offer</strong> until Kessick
+          confirms it.
+        </p>
+      </section>
+
+      {/* Black ESTATE SERIES / Cask Collection concept card */}
+      <section className="overflow-hidden rounded-3xl bg-[#111010] text-white">
+        <div className="relative h-36 w-full overflow-hidden">
+          <img
+            src={cellarImage}
+            alt=""
+            className="h-full w-full object-cover opacity-60"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#111010] via-[#111010]/50 to-transparent" />
+          <span className="absolute left-4 top-4">
+            <ExampleBadge>Concept · pending approval</ExampleBadge>
+          </span>
+        </div>
+        <div className="p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d9bf7e]">
+            Coming Soon · Estate Series
+          </p>
+          <h3 className="mt-2 font-serif text-2xl font-semibold">
+            Cask Collection
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-white/65">
+            Concept preview only. This featured collection is a design concept
+            and is not approved or available yet.
+          </p>
+          <button
+            onClick={() => onNavigate("Announcements")}
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10"
+          >
+            View announcements <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </section>
     </div>
   );
 }
 
-function ToolkitShortcut({
-  label,
-  icon: Icon,
-  onClick,
+function WebLinkDark({
+  href,
+  children,
 }: {
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
+  href: string;
+  children: React.ReactNode;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className="group flex min-w-0 flex-col items-center gap-2 text-center"
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1b1b19] hover:bg-white"
     >
-      <span className="flex h-[clamp(3.75rem,16vw,5.5rem)] w-[clamp(3.75rem,16vw,5.5rem)] items-center justify-center rounded-full border border-[#ad9561]/40 bg-white text-[#806936] shadow-[0_8px_24px_rgba(23,23,21,.06)] transition group-hover:-translate-y-0.5 group-hover:border-[#ad9561] group-hover:bg-[#f6f2e7] group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-[#947d4d]">
-        <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-      </span>
-      <span className="max-w-[6.5rem] text-[9px] font-semibold leading-tight text-[#171715]/70 sm:text-xs">
-        {label}
-      </span>
-    </button>
+      {children} <ArrowUpRight className="h-3.5 w-3.5" />
+    </a>
   );
 }
 
-function SectionContent({
-  section,
-  onNavigate,
-}: {
-  section: PreviewSection;
-  onNavigate: (section: PreviewSection) => void;
-}) {
-  if (section === "Home") return null;
+/* ------------------------ Announcements ----------------------------- */
 
-  if (section === "Collections") {
-    return (
-      <div>
-        <PageHeading
-          title="Collections & finishes"
-          description="Explore a sample of product discovery in the dealer portal. Product summaries are brief; visit Kessick for current details."
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          {products.map((product, index) => (
-            <article
-              key={product.name}
-              className="group overflow-hidden rounded-xl border border-[#171715]/10 bg-white"
-            >
-              <div className="relative h-36 overflow-hidden">
-                <img
-                  src={cellarImage}
-                  alt={`${product.name} wine storage style`}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-                <span className="absolute bottom-3 left-3">
-                  <SampleBadge light />
-                </span>
-              </div>
-              <div className="p-5">
-                <p className="text-[9px] uppercase tracking-[0.16em] text-[#947d4d]">
-                  {index === 3 || index === 4
-                    ? "Style inquiry"
-                    : "Kessick collection"}
-                </p>
-                <h2 className="mt-1 text-lg font-semibold">{product.name}</h2>
-                <p className="mt-2 min-h-10 text-sm text-[#171715]/55">
-                  {product.description}
-                </p>
-                <div className="mt-4">
-                  <WebsiteLink href={product.href}>
-                    View official Kessick styles
-                  </WebsiteLink>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="mt-5 rounded-xl border border-[#ad9561]/25 bg-[#f4f1e9] p-4 text-xs leading-relaxed text-[#171715]/65">
-          A product marked Sample is for demonstration only. For a real design
-          discussion, contact Kessick directly.
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Projects") {
-    return (
-      <div>
-        <PageHeading
-          title="Projects"
-          description="A sample of how a dealer could review project status. These fictional examples are not connected to customers or live projects."
-        />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {sampleProjects.map((project) => (
-            <article
-              key={project.name}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <SampleBadge />
-                  <h2 className="mt-3 text-lg font-semibold">{project.name}</h2>
-                </div>
-                <span className="rounded-full bg-[#f4f1e9] px-3 py-1 text-xs text-[#171715]/65">
-                  {project.status}
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-[#171715]/55">{project.type}</p>
-              <p className="mt-5 border-t border-[#171715]/10 pt-4 text-xs text-[#171715]/45">
-                Example only · no proposal, customer details, or project files
-                are available in this public preview.
-              </p>
-            </article>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Notices") {
-    return (
-      <div>
-        <PageHeading
-          title="Announcements & notices"
-          description="This section demonstrates where Kessick-published dealer updates could appear. Every item below is fictional sample copy, not an active announcement."
-        />
-        <div className="space-y-4">
-          {sampleAnnouncements.map((notice, index) => (
-            <article
-              key={notice.title}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-                    <Bell className="h-4 w-4" />
-                  </span>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#947d4d]">
-                    {notice.category}
-                  </span>
-                </div>
-                <SampleBadge />
-              </div>
-              <h2 className="mt-4 text-lg font-semibold">{notice.title}</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#171715]/60">
-                {notice.body}
-              </p>
-              <p className="mt-4 text-[10px] text-[#171715]/40">
-                Sample notice {index + 1} · No current Kessick notice is
-                represented
-              </p>
-            </article>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Resources") {
-    return (
-      <div>
-        <PageHeading
-          title="Dealer resources"
-          description="An illustrative resource index. No private dealer documents are exposed here; use Kessick's official public resources page for current materials."
-        />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {sampleResources.map(({ title, category, icon: Icon }) => (
-            <article
-              key={title}
-              className="flex items-start gap-3 rounded-xl border border-[#171715]/10 bg-white p-4"
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#947d4d]">
-                  {category}
-                </span>
-                <h2 className="mt-1 text-sm font-semibold">{title}</h2>
-                <p className="mt-1 text-[11px] text-[#171715]/45">
-                  Sample category · no downloadable file
-                </p>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="mt-5 rounded-xl border border-[#171715]/10 bg-white p-5">
-          <p className="text-sm font-semibold">Official public resources</p>
-          <p className="mt-1 text-xs text-[#171715]/55">
-            Open Kessick's website to review public information and materials.
-          </p>
-          <div className="mt-4">
-            <WebsiteLink href="https://kessickwinecellars.com/resources/">
-              Browse Kessick resources
-            </WebsiteLink>
-          </div>
-        </div>
-        <div className="mt-3 rounded-xl border border-dashed border-[#171715]/15 p-4 text-xs leading-relaxed text-[#171715]/55">
-          Teamwork access is dealer-specific and is not linked in this public
-          sample. Sign in to your authorized account or contact your Kessick
-          representative.
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Forms") {
-    return (
-      <div>
-        <PageHeading
-          title="Design requests & forms"
-          description="Sample request categories show how project workflows can be organized. No submissions are made from this public preview."
-        />
-        <section className="mb-5 rounded-xl border border-[#ad9561]/25 bg-[#f4f1e9] p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#806936]" />
-            <div>
-              <h2 className="font-semibold">Ready to discuss a project?</h2>
-              <p className="mt-1 text-sm leading-relaxed text-[#171715]/65">
-                Use Kessick's official contact form for real design inquiries,
-                including Forma and Towers discussions.
-              </p>
-              <div className="mt-4">
-                <WebsiteLink href="https://kessickwinecellars.com/contact/">
-                  Open the Kessick contact form
-                </WebsiteLink>
-              </div>
-            </div>
-          </div>
-        </section>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            ["Design request", "Share project context with the Kessick team."],
-            ["Forma inquiry", "Discuss a Forma collection project."],
-            ["Towers inquiry", "Ask about options for a tower design."],
-          ].map(([title, description]) => (
-            <article
-              key={title}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5"
-            >
-              <SampleBadge />
-              <h2 className="mt-4 font-semibold">{title}</h2>
-              <p className="mt-2 min-h-10 text-sm leading-relaxed text-[#171715]/55">
-                {description}
-              </p>
-              <button
-                disabled
-                className="mt-5 inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-[#171715]/10 px-3 py-2 text-[10px] text-[#171715]/45"
-              >
-                Preview only · no submission <ArrowRight className="h-3 w-3" />
-              </button>
-            </article>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-[#171715]/45">
-          Actual dealer design request forms and project records remain
-          available only after authorized sign-in.
-        </p>
-      </div>
-    );
-  }
-
-  if (section === "Training") {
-    return (
-      <div>
-        <PageHeading
-          title="Training & onboarding"
-          description="A sample landing page for product orientation and design-process guidance. This preview has no private dealer courses."
-        />
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            [
-              "Product orientation",
-              "Introductory overview of Kessick product families.",
-              "https://kessickwinecellars.com/our-styles/",
-            ],
-            [
-              "Design process",
-              "Learn about the path from project concept to a custom wine cellar.",
-              "https://kessickwinecellars.com/process/",
-            ],
-          ].map(([title, description, href]) => (
-            <article
-              key={title}
-              className="rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6"
-            >
-              <div className="flex items-center justify-between">
-                <GraduationCap className="h-5 w-5 text-[#947d4d]" />
-                <SampleBadge />
-              </div>
-              <h2 className="mt-5 text-lg font-semibold">{title}</h2>
-              <p className="mt-2 text-sm text-[#171715]/55">{description}</p>
-              <div className="mt-5">
-                <WebsiteLink href={href}>Read public guidance</WebsiteLink>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (section === "Pricing") {
-    return (
-      <div>
-        <PageHeading
-          title="Wholesale pricing"
-          description="A sample of where dealer pricebooks would appear. Account-specific pricing stays private and is not displayed in a public preview."
-        />
-        <section className="rounded-xl border border-[#ad9561]/30 bg-white p-5 sm:p-7">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#806936]" />
-            <div>
-              <h2 className="font-semibold">
-                Dealer-specific pricing stays private
+function Announcements({ onBack }: { onBack: () => void }) {
+  return (
+    <div>
+      <SectionHeader title="Announcements" onBack={onBack}>
+        New products, coming-soon concepts, policy updates, and special
+        announcements. Example and pending items are labeled.
+      </SectionHeader>
+      <div className="space-y-4">
+        {announcementGroups.map((group) => (
+          <article
+            key={group.category}
+            className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-[#6d5a30]">
+                {group.category}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#171715]/60">
-                This sample has no wholesale rates, SKUs, discount details, or
-                pricebook files. Approved dealer accounts see only the pricing
-                authorized for them.
-              </p>
+              {group.pending ? <PendingBadge /> : null}
+            </div>
+            <div className="mt-3 space-y-3">
+              {group.items.map((item) => (
+                <div
+                  key={item.title}
+                  className="border-l-2 border-[#c9ab62] pl-3"
+                >
+                  <p className="text-sm font-semibold text-[#1b1b19]">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-[#1b1b19]/60">
+                    {item.body}
+                  </p>
+                  {item.href ? (
+                    <div className="mt-2">
+                      <WebLink href={item.href}>Open on kessickwinecellars.com</WebLink>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------- Design Request ----------------------------- */
+
+function DesignRequest({ onBack }: { onBack: () => void }) {
+  return (
+    <div>
+      <SectionHeader title="Design Request Form" onBack={onBack}>
+        Start a Forma or Towers design request through Kessick's official
+        workflow. Submissions are handled on the Kessick website.
+      </SectionHeader>
+
+      <section className="rounded-2xl border border-[#c9ab62]/40 bg-[#f7f2e6] p-5">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#6d5a30]" />
+          <div>
+            <h2 className="font-semibold text-[#1b1b19]">
+              Submit through Kessick's official form
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-[#1b1b19]/65">
+              The official design-request workflow collects your project
+              details securely. This public preview links you straight to it.
+            </p>
+            <div className="mt-3">
+              <WebLink href={KESSICK_DESIGN_REQUEST}>
+                Open the Kessick design request
+              </WebLink>
             </div>
           </div>
-        </section>
-        <div className="mt-4 rounded-xl border border-[#171715]/10 bg-white p-5">
-          <SampleBadge />
-          <h3 className="mt-4 font-semibold">Example pricebook area</h3>
-          <p className="mt-2 text-sm text-[#171715]/55">
-            A private dealer view may list current catalogs and account pricing
-            after an authorized sign-in.
-          </p>
         </div>
-      </div>
-    );
-  }
+      </section>
 
-  if (section === "Support") {
-    return (
-      <div>
-        <PageHeading
-          title="Report an issue & get support"
-          description="For real assistance, use Kessick's published contact options. This sample preview does not submit tickets or send feedback."
-        />
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-[#171715]/10 bg-white p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <MessageSquareText className="h-4 w-4" />
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {[
+          {
+            name: "Forma",
+            body: "Request a Forma collection design.",
+          },
+          {
+            name: "Towers",
+            body: "Request a tower-style design.",
+          },
+        ].map((style) => (
+          <a
+            key={style.name}
+            href={KESSICK_DESIGN_REQUEST}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5 transition hover:border-[#c9ab62]"
+          >
+            <h3 className="font-serif text-lg font-semibold text-[#1b1b19]">
+              {style.name}
+            </h3>
+            <p className="mt-1 text-sm text-[#1b1b19]/60">{style.body}</p>
+            <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#6d5a30]">
+              Start request <ArrowRight className="h-4 w-4" />
             </span>
-            <h2 className="mt-4 font-semibold">Feedback & design requests</h2>
-            <p className="mt-2 text-sm text-[#171715]/55">
-              Send a note through Kessick's official contact page.
-            </p>
-            <div className="mt-4">
-              <WebsiteLink href="https://kessickwinecellars.com/contact/">
-                Contact Kessick
-              </WebsiteLink>
-            </div>
-          </article>
-          <article className="rounded-xl border border-[#171715]/10 bg-white p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <Mail className="h-4 w-4" />
-            </span>
-            <h2 className="mt-4 font-semibold">Email Kessick</h2>
-            <p className="mt-2 text-sm text-[#171715]/55">
-              Reach the Kessick team by email.
-            </p>
-            <a
-              href="mailto:sales@kessickwinecellars.com"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#705a31] hover:underline"
-            >
-              sales@kessickwinecellars.com{" "}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </article>
-          <article className="rounded-xl border border-[#171715]/10 bg-white p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-              <Headphones className="h-4 w-4" />
-            </span>
-            <h2 className="mt-4 font-semibold">Call Kessick</h2>
-            <p className="mt-2 text-sm text-[#171715]/55">
-              Speak to the Kessick Wine Cellars team.
-            </p>
-            <a
-              href="tel:+18642971911"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#705a31] hover:underline"
-            >
-              864.297.1911 <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </article>
-        </div>
+          </a>
+        ))}
       </div>
-    );
-  }
+
+      <section className="mt-4 rounded-2xl border border-[#1b1b19]/10 bg-white p-5">
+        <h2 className="font-semibold text-[#1b1b19]">
+          Project details you'll need
+        </h2>
+        <ul className="mt-3 space-y-2 text-sm text-[#1b1b19]/65">
+          {[
+            "Room dimensions and photos or drawings",
+            "Collection / style of interest (e.g. Forma, Towers)",
+            "Desired wood species and finish / stain",
+            "Bottle capacity and refrigeration needs",
+            "Project timeline and installation location",
+          ].map((line) => (
+            <li key={line} className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c9ab62]" />
+              {line}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/* -------------------------- Resources ------------------------------- */
+
+function Resources({ onBack }: { onBack: () => void }) {
+  return (
+    <div>
+      <SectionHeader title="Dealer Resources" onBack={onBack}>
+        Renders, guides, spec sheets, finishes, brochures, logos, marketing, and
+        Teamwork access. Restricted files use a Request Access action instead of
+        a fake download.
+      </SectionHeader>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {resources.map((r) => {
+          const Icon = r.icon;
+          const requestHref = `mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
+            `Resource access request: ${r.title}`,
+          )}&body=${encodeURIComponent(
+            `Hello Kessick team,\n\nI'd like access to the "${r.title}" dealer resource.\n\nDealer / company:\nContact name:\n\nThank you.`,
+          )}`;
+          return (
+            <article
+              key={r.title}
+              className="flex flex-col rounded-2xl border border-[#1b1b19]/10 bg-white p-4"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-[#1b1b19]">
+                    {r.title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[#1b1b19]/55">
+                    {r.note}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {r.public ? (
+                  <a
+                    href={r.public}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#1b1b19] px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                  >
+                    Open <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                ) : null}
+                {r.restricted ? (
+                  <a
+                    href={requestHref}
+                    className="inline-flex items-center gap-1 rounded-full border border-[#1b1b19]/20 px-3 py-1.5 text-xs font-semibold text-[#1b1b19] hover:border-[#c9ab62]"
+                  >
+                    Request access <Mail className="h-3.5 w-3.5" />
+                  </a>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------- Support -------------------------------- */
+
+function Support({ onBack }: { onBack: () => void }) {
+  const [category, setCategory] = useState(issueCategories[0]);
+  const [message, setMessage] = useState("");
+
+  const mailtoHref = `mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
+    `Dealer portal — ${category}`,
+  )}&body=${encodeURIComponent(
+    `Issue category: ${category}\n\n${message || "Describe the issue here…"}\n\n— Sent from the Kessick dealer portal`,
+  )}`;
 
   return (
     <div>
-      <PageHeading
-        title="Sample dealer account"
-        description="A fictional account card illustrates how the dealer profile may appear. No real person, company, or email address is represented."
-      />
-      <section className="max-w-2xl rounded-xl border border-[#171715]/10 bg-white p-5 sm:p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ad9561]/10 text-[#806936]">
-            <UserRound className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="font-semibold">Alex Morgan</h2>
-            <p className="text-sm text-[#171715]/55">
-              Example Cellars LLC · alex@example.test
-            </p>
-          </div>
-          <div className="ml-auto">
-            <SampleBadge />
-          </div>
-        </div>
-        <div className="mt-6 grid gap-4 border-t border-[#171715]/10 pt-5 sm:grid-cols-2">
+      <SectionHeader title="Report an Issue & Feedback" onBack={onBack}>
+        Send feedback by email, reach the Kessick team, or call support. This
+        preview opens a real, prefilled email draft — it never shows a fake
+        "submitted" message.
+      </SectionHeader>
+
+      <section className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5">
+        <h2 className="font-semibold text-[#1b1b19]">Feedback form</h2>
+        <div className="mt-4 space-y-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#171715]/45">
-              Account status
-            </p>
-            <p className="mt-1 text-sm">Sample approved dealer</p>
+            <label
+              htmlFor="issue-category"
+              className="block text-xs font-semibold uppercase tracking-wide text-[#6d5a30]"
+            >
+              Issue category
+            </label>
+            <select
+              id="issue-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-[#1b1b19]/15 bg-[#faf9f6] px-3 py-2.5 text-sm text-[#1b1b19] outline-none focus:border-[#c9ab62]"
+            >
+              {issueCategories.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#171715]/45">
-              Account access
-            </p>
-            <p className="mt-1 text-sm">Illustrative only · no sign-in</p>
+            <label
+              htmlFor="issue-message"
+              className="block text-xs font-semibold uppercase tracking-wide text-[#6d5a30]"
+            >
+              Details
+            </label>
+            <textarea
+              id="issue-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              placeholder="Tell us what's happening…"
+              className="mt-1.5 w-full rounded-xl border border-[#1b1b19]/15 bg-[#faf9f6] px-3 py-2.5 text-sm text-[#1b1b19] outline-none focus:border-[#c9ab62]"
+            />
           </div>
+          <a
+            href={mailtoHref}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1b1b19] px-5 py-3 text-sm font-semibold text-white hover:bg-black sm:w-auto"
+          >
+            <Mail className="h-4 w-4" /> Open email draft
+          </a>
+          <p className="text-xs text-[#1b1b19]/45">
+            Your email app opens with these details prefilled so you can review
+            and send. Nothing is submitted from this public preview.
+          </p>
         </div>
-        <p className="mt-5 border-t border-[#171715]/10 pt-4 text-xs leading-relaxed text-[#171715]/45">
-          All profile details are fictional. This page does not connect to
-          dealer records.
-        </p>
       </section>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <a
+          href={`mailto:${KESSICK_EMAIL}`}
+          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
+            <Mail className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-[#1b1b19]">
+              Email Kessick
+            </span>
+            <span className="block truncate text-xs text-[#1b1b19]/55">
+              {KESSICK_EMAIL}
+            </span>
+          </span>
+        </a>
+        <a
+          href={`tel:${KESSICK_PHONE_TEL}`}
+          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
+            <Phone className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-[#1b1b19]">
+              Call support
+            </span>
+            <span className="block truncate text-xs text-[#1b1b19]/55">
+              {KESSICK_PHONE_DISPLAY}
+            </span>
+          </span>
+        </a>
+      </div>
     </div>
   );
 }
+
+/* --------------------------- Account -------------------------------- */
+
+function Account({ onBack }: { onBack: () => void }) {
+  return (
+    <div>
+      <SectionHeader title="Dealer Account" onBack={onBack}>
+        A sample dealer profile. No real person, pricing, or private records are
+        shown in this public preview.
+      </SectionHeader>
+      <section className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c9ab62]/15 text-sm font-semibold text-[#6d5a30]">
+            AM
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-semibold text-[#1b1b19]">Alex Morgan</h2>
+            <p className="truncate text-sm text-[#1b1b19]/55">
+              Example Cellars LLC · sample profile
+            </p>
+          </div>
+        </div>
+        <dl className="mt-5 grid gap-4 border-t border-[#1b1b19]/10 pt-5 sm:grid-cols-2">
+          <div>
+            <dt className="text-[11px] uppercase tracking-wide text-[#1b1b19]/45">
+              Account status
+            </dt>
+            <dd className="mt-0.5 text-sm text-[#1b1b19]">
+              Sample approved dealer
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] uppercase tracking-wide text-[#1b1b19]/45">
+              Access
+            </dt>
+            <dd className="mt-0.5 text-sm text-[#1b1b19]">
+              Illustrative only · no sign-in
+            </dd>
+          </div>
+        </dl>
+      </section>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <a
+          href={TEAMWORK_SITE}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
+            <Briefcase className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-[#1b1b19]">
+              Teamwork Account
+            </span>
+            <span className="block truncate text-xs text-[#1b1b19]/55">
+              Open dealer project collaboration
+            </span>
+          </span>
+        </a>
+        <a
+          href={KESSICK_SITE}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
+            <ExternalLink className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-[#1b1b19]">
+              Kessick Wine Cellars
+            </span>
+            <span className="block truncate text-xs text-[#1b1b19]/55">
+              Visit the official website
+            </span>
+          </span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------- Shell --------------------------------- */
 
 export default function DealerPortalPreview({
   staffViewMode = false,
 }: {
   staffViewMode?: boolean;
 }) {
-  const [section, setSection] = useState<PreviewSection>("Home");
+  const [section, setSection] = useState<Section>("Home");
   const [search, setSearch] = useState("");
 
-  const searchResults = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return [];
-    const entries: SearchResult[] = [
-      ...sampleProjects.map((project) => ({
-        title: project.name,
-        detail: `${project.type} · ${project.status} · Sample`,
-        section: "Projects" as const,
+  const results = useMemo<SearchHit[]>(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    const entries: SearchHit[] = [
+      ...toolkit.map((t) => ({
+        title: t.label,
+        detail: "Dealer toolkit",
+        section: t.section,
       })),
-      ...products.map((product) => ({
-        title: product.name,
-        detail: `${product.description} · Sample`,
-        section: "Collections" as const,
+      ...announcementGroups.map((g) => ({
+        title: g.category,
+        detail: "Announcements",
+        section: "Announcements" as const,
       })),
-      ...sampleResources.map((resource) => ({
-        title: resource.title,
-        detail: `${resource.category} · Sample category`,
+      ...resources.map((r) => ({
+        title: r.title,
+        detail: "Dealer resource",
         section: "Resources" as const,
       })),
-      ...sampleAnnouncements.map((notice) => ({
-        title: notice.title,
-        detail: `${notice.category} · Sample notice`,
-        section: "Notices" as const,
-      })),
       {
-        title: "Design request",
-        detail: "Sample form · no public submission",
-        section: "Forms",
+        title: "Forma design request",
+        detail: "Design Request Form",
+        section: "DesignRequest",
       },
       {
-        title: "Feedback",
-        detail: "Official Kessick contact options",
+        title: "Towers design request",
+        detail: "Design Request Form",
+        section: "DesignRequest",
+      },
+      {
+        title: "Report an issue",
+        detail: "Feedback & support",
         section: "Support",
       },
       {
-        title: "Account profile",
-        detail: "Fictional sample account",
-        section: "Account",
+        title: "Wood stain chart",
+        detail: "Finishes",
+        section: "Resources",
       },
     ];
     return entries
-      .filter((entry) =>
-        `${entry.title} ${entry.detail}`.toLowerCase().includes(query),
-      )
-      .slice(0, 6);
+      .filter((e) => `${e.title} ${e.detail}`.toLowerCase().includes(q))
+      .slice(0, 7);
   }, [search]);
 
-  const navigate = (next: PreviewSection) => {
+  const navigate = (next: Section) => {
     setSection(next);
     setSearch("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="dealer-preview-surface min-h-screen bg-[#10100f] pb-20 text-[#f4f0e8] md:pb-0">
-      {staffViewMode && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#171715] px-4 py-3 text-xs text-white sm:px-6">
-          <span className="font-semibold uppercase tracking-[0.12em]">
-            Staff-only dealer view · read-only sample, not account impersonation
+    <div className="dealer-preview-surface min-h-screen pb-24 text-[#1b1b19]">
+      {staffViewMode ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-[#171715] px-4 py-2 text-xs text-white">
+          <span className="font-semibold uppercase tracking-wide">
+            Staff-only dealer view · read-only sample
           </span>
           <a
             href="/admin"
-            className="inline-flex h-9 items-center gap-2 rounded-full bg-[#d4bd85] px-4 font-semibold text-[#171715] hover:bg-white"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#d4bd85] px-3 font-semibold text-[#171715] hover:bg-white"
           >
             <ShieldCheck className="h-4 w-4" /> Staff View
           </a>
         </div>
-      )}
+      ) : null}
+
+      {/* Public sample notice */}
       <div
-        role="alert"
-        className="sticky top-0 z-50 flex min-h-9 items-center justify-center gap-2 bg-[#6e3025] px-4 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-white sm:text-[10px]"
+        role="note"
+        className="bg-[#2c2a24] px-4 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-[#e9e2cf]"
       >
-        <span aria-hidden="true">•</span> SAMPLE DEALER PREVIEW · FICTIONAL DATA
-        · NO SIGN-IN OR LIVE ACTIONS
+        Public sample preview · example data · no sign-in or live actions
       </div>
-      <div className="mx-auto flex min-h-[calc(100vh-2.25rem)] max-w-[1600px]">
-        <aside className="sticky top-9 hidden h-[calc(100vh-2.25rem)] w-[250px] shrink-0 flex-col border-r border-white/10 bg-[#171715] text-white md:flex">
-          <div className="border-b border-white/10 px-6 py-6">
-            <BrandLogo tone="light" className="h-6 w-auto" />
-            <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/45">
-              Dealer portal · sample
-            </p>
-          </div>
-          <nav
-            aria-label="Sample dealer portal sections"
-            className="flex-1 space-y-1 overflow-y-auto p-3"
-          >
-            {navigation.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                aria-current={section === label ? "page" : undefined}
-                onClick={() => navigate(label)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-medium transition ${section === label ? "bg-[#ad9561]/20 text-white" : "text-white/55 hover:bg-white/5 hover:text-white"}`}
-              >
-                <Icon
-                  className={`h-4 w-4 ${section === label ? "text-[#d9c58e]" : ""}`}
-                />
-                {label}
-              </button>
-            ))}
-          </nav>
-          <div className="m-4 rounded-lg border border-[#ad9561]/25 bg-[#ad9561]/10 p-3 text-[10px] leading-relaxed text-white/65">
-            Everything shown here is fictional. No dealer records, pricing, or
-            private documents are connected.
-          </div>
-        </aside>
 
-        <main className="min-w-0 flex-1">
-          <header className="flex h-14 items-center justify-between border-b border-white/10 bg-[#171715] px-4 text-white sm:px-6 md:h-[72px] md:px-8">
-            <div className="flex min-w-0 items-center gap-3">
-              <BrandLogo tone="light" className="h-5 w-auto md:hidden" />
-              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d9c58e] md:block">
-                Dealer workspace
-              </span>
-              <span className="truncate text-xs font-medium text-white/75">
-                Alex Morgan{" "}
-                <span className="hidden text-white/35 sm:inline">
-                  · Example Cellars LLC
-                </span>
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("Notices")}
-              aria-label="Open sample notices"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/80 hover:bg-white/10"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d9c58e]" />
-            </button>
-          </header>
+      {/* Centered mobile app shell */}
+      <div className="mx-auto w-full max-w-[460px] px-4 pt-4 sm:max-w-[520px] sm:px-6">
+        {section === "Home" ? (
+          <Home
+            search={search}
+            setSearch={setSearch}
+            results={results}
+            onNavigate={navigate}
+          />
+        ) : section === "Announcements" ? (
+          <Announcements onBack={() => navigate("Home")} />
+        ) : section === "DesignRequest" ? (
+          <DesignRequest onBack={() => navigate("Home")} />
+        ) : section === "Resources" ? (
+          <Resources onBack={() => navigate("Home")} />
+        ) : section === "Support" ? (
+          <Support onBack={() => navigate("Home")} />
+        ) : (
+          <Account onBack={() => navigate("Home")} />
+        )}
 
-          <section className="relative isolate overflow-visible bg-[#171715] text-white">
-            <img
-              src={cellarImage}
-              alt=""
-              className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
-            />
-            <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#171715]/95 via-[#171715]/75 to-[#171715]/35" />
-            <div className="mx-auto flex min-h-[260px] max-w-7xl flex-col justify-center px-4 py-8 sm:min-h-[300px] sm:px-7 sm:py-10 lg:px-10">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#d9c58e]">
-                  Kessick Wine Cellars
-                </span>
-                <SampleBadge light />
-              </div>
-              <h1 className="mt-3 max-w-2xl font-serif text-3xl font-medium leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-                Your Kessick project desk.
-              </h1>
-              <p className="mt-3 max-w-xl text-xs leading-relaxed text-white/70 sm:text-sm">
-                A dedicated workspace for projects, product inspiration, and
-                dealer support.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-white/60">
-                <span className="inline-flex items-center gap-1.5">
-                  <UserRound className="h-3.5 w-3.5 text-[#d9c58e]" /> Alex
-                  Morgan
-                </span>
-                <span className="hidden h-3 w-px bg-white/20 sm:block" />
-                <span>Example Cellars LLC</span>
-              </div>
-            </div>
-          </section>
-
-          <div className="mx-auto max-w-7xl space-y-7 px-4 pb-9 pt-6 sm:px-7 sm:pt-8 lg:px-10">
-            {section === "Home" ? (
-              <PreviewDashboard
-                onNavigate={navigate}
-                onSearch={setSearch}
-                search={search}
-                results={searchResults}
-              />
-            ) : (
-              <SectionContent section={section} onNavigate={navigate} />
-            )}
-            <footer className="border-t border-[#171715]/10 pt-5 text-[10px] leading-relaxed text-[#171715]/45 sm:text-xs">
-              Public sample preview only. No dealer account or private content
-              is connected. Public product links open the official Kessick Wine
-              Cellars website.
-              <span className="ml-2">
-                <WebsiteLink href="https://kessickwinecellars.com/">
-                  Visit Kessick Wine Cellars
-                </WebsiteLink>
-              </span>
-            </footer>
-          </div>
-        </main>
+        <footer className="mt-8 border-t border-[#1b1b19]/10 pt-4 text-[11px] leading-relaxed text-[#1b1b19]/45">
+          Public sample preview only. No dealer account, pricing, or private
+          documents are connected. Product links open the official Kessick Wine
+          Cellars website.{" "}
+          <WebLink href={KESSICK_SITE}>Visit Kessick Wine Cellars</WebLink>
+        </footer>
       </div>
+
+      {/* Bottom navigation */}
       <nav
-        aria-label="Sample dealer mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#171715]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur-md md:hidden"
+        aria-label="Dealer portal navigation"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1b1b19]/10 bg-white/95 backdrop-blur"
       >
-        {mobileNavigation.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            aria-current={section === label ? "page" : undefined}
-            onClick={() => navigate(label)}
-            className={`flex min-h-12 flex-col items-center justify-center gap-1 ${section === label ? "text-[#d9c58e]" : "text-white/45"}`}
-          >
-            <Icon className="h-[18px] w-[18px]" />
-            <span className="text-[9px] font-semibold leading-none">
-              {label === "Notices" ? "Notices" : label}
-            </span>
-          </button>
-        ))}
+        <div className="mx-auto grid max-w-[460px] grid-cols-4 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:max-w-[520px]">
+          {bottomNav.map((item) => {
+            const Icon = item.icon;
+            const active =
+              item.kind === "section" && section === item.section;
+            const classes = `flex min-h-12 flex-col items-center justify-center gap-1 ${
+              active ? "text-[#6d5a30]" : "text-[#1b1b19]/45"
+            }`;
+            if (item.kind === "link") {
+              const external = item.href.startsWith("http");
+              return (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target={external ? "_blank" : undefined}
+                  rel={external ? "noopener noreferrer" : undefined}
+                  className={classes}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                  <span className="text-[10px] font-semibold leading-none">
+                    {item.label}
+                  </span>
+                </a>
+              );
+            }
+            return (
+              <button
+                key={item.label}
+                aria-current={active ? "page" : undefined}
+                onClick={() => navigate(item.section)}
+                className={classes}
+              >
+                <Icon className="h-[18px] w-[18px]" />
+                <span className="text-[10px] font-semibold leading-none">
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );
