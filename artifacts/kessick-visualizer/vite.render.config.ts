@@ -9,6 +9,7 @@ const previewDir = path.resolve(appDir, "render-preview");
 export default defineConfig({
   configFile: false,
   root: previewDir,
+  publicDir: path.resolve(appDir, "public"),
   base: "/",
   plugins: [react(), tailwindcss({ optimize: false })],
   resolve: {
