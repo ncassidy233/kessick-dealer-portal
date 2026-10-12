@@ -1006,7 +1006,7 @@ export default function DealerPortalPreview({
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f2ed] pb-20 text-[#171715] md:pb-0">
+    <div className="dealer-preview-surface min-h-screen bg-[#10100f] pb-20 text-[#f4f0e8] md:pb-0">
       {staffViewMode && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#171715] px-4 py-3 text-xs text-white sm:px-6">
           <span className="font-semibold uppercase tracking-[0.12em]">
@@ -1141,14 +1141,14 @@ export default function DealerPortalPreview({
       </div>
       <nav
         aria-label="Sample dealer mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-black/10 bg-[#fbfaf7]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(23,23,21,.09)] backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#171715]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur-md md:hidden"
       >
         {mobileNavigation.map(({ label, icon: Icon }) => (
           <button
             key={label}
             aria-current={section === label ? "page" : undefined}
             onClick={() => navigate(label)}
-            className={`flex min-h-12 flex-col items-center justify-center gap-1 ${section === label ? "text-[#715b32]" : "text-[#171715]/45"}`}
+            className={`flex min-h-12 flex-col items-center justify-center gap-1 ${section === label ? "text-[#d9c58e]" : "text-white/45"}`}
           >
             <Icon className="h-[18px] w-[18px]" />
             <span className="text-[9px] font-semibold leading-none">
