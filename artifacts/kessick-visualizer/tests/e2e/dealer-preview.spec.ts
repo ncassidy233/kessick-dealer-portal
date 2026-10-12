@@ -254,6 +254,14 @@ test("feedback opens an encoded email draft, never claims submission, and suppor
   await page
     .getByLabel("How can we help?")
     .fill("Please share the approved stain chart. & Thank you!");
+  const skip = page.getByRole("link", { name: "Skip to content" });
+  await skip.focus();
+  await skip.press("Enter");
+  await expect(page).toHaveURL(/#feedback$/);
+  await expect(page.locator("main")).toBeFocused();
+  await expect(page.getByLabel("How can we help?")).toHaveValue(
+    "Please share the approved stain chart. & Thank you!",
+  );
   await page.getByRole("button", { name: "Open email draft" }).click();
   await expect(page.getByRole("status")).toContainText(
     "Email draft requested — not sent.",

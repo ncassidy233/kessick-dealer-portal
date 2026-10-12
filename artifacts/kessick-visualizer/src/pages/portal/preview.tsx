@@ -474,6 +474,7 @@ export default function DealerPortalPreview({
   const [filter, setFilter] = useState("All");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const content = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
   useEffect(() => {
     const handleHash = () => {
@@ -516,7 +517,15 @@ export default function DealerPortalPreview({
   }[section];
   return (
     <div className="dealer-cover">
-      <a className="desk-skip" href="#desk-content">
+      <a
+        className="desk-skip"
+        href="#desk-content"
+        onClick={(event) => {
+          event.preventDefault();
+          content.current?.focus({ preventScroll: true });
+          content.current?.scrollIntoView();
+        }}
+      >
         Skip to content
       </a>
       {staffViewMode && (
@@ -601,6 +610,7 @@ export default function DealerPortalPreview({
               <label>
                 Search in
                 <select
+                  aria-label="Search in"
                   value={filter}
                   onChange={(event) => setFilter(event.target.value)}
                 >
@@ -640,7 +650,7 @@ export default function DealerPortalPreview({
             </div>
           )}
         </header>
-        <main id="desk-content" tabIndex={-1}>
+        <main ref={content} id="desk-content" tabIndex={-1}>
           {section === "Home" ? (
             <>
               <figure className="desk-cellar">
