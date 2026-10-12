@@ -19,7 +19,9 @@ import {
   Layers,
   GraduationCap,
   BookOpen,
-  BarChart3
+  BarChart3,
+  ArrowLeftRight,
+  Headphones,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useClerk } from "@clerk/react";
@@ -32,7 +34,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   
   const role = session?.role;
-  const isStaff = role && role !== 'dealer';
+  const isStaff = role && role !== 'dealer' && role !== 'customer';
   const { data: access } = useGetDealerPortalAccess({ query: { queryKey: getGetDealerPortalAccessQueryKey(), enabled: role === "dealer" } });
   
   const unreadCount = notificationsData?.notifications?.filter(n => !n.readAt).length || 0;
@@ -63,6 +65,12 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     if ((access?.capabilities as Record<string, boolean> | undefined)?.[pageKey] === false) return false;
     return true;
   });
+  const mobileDealerLinks: NavLink[] = [
+    { href: "/portal", label: "Home", icon: Home, exact: true },
+    { href: "/portal/account", label: "Account", icon: User },
+    { href: "/portal/notifications", label: "Notices", icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
+    { href: "/portal/forms", label: "Support", icon: Headphones },
+  ];
 
   const adminLinks: NavLink[] = [
     { href: "/admin", label: "Overview", icon: Home, exact: true },
@@ -95,7 +103,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   });
 
   return (
-    <div className="min-h-[100dvh] flex flex-col md:flex-row dealer-portal bg-background text-foreground selection:bg-sidebar-primary/30 selection:text-sidebar-primary">
+    <div className={`min-h-[100dvh] flex flex-col md:flex-row dealer-portal ${isStaff ? "staff-portal bg-white text-[#121210]" : "bg-background text-foreground"} selection:bg-sidebar-primary/30 selection:text-sidebar-primary`}>
       {/* Mobile Header */}
       <header className="md:hidden h-14 border-b border-border flex items-center justify-between px-4 bg-background/70 sticky top-0 z-50 shrink-0 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -104,10 +112,11 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             {isStaff ? 'Admin' : 'Portal'}
           </Badge>
         </div>
+        {isStaff && <Link href="/admin/dealer-view" className="inline-flex h-9 items-center gap-2 bg-[#121210] px-3 text-xs font-semibold text-white"><ArrowLeftRight className="h-4 w-4" /> Dealer View</Link>}
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card shrink-0 sticky top-0 h-[100dvh] overflow-y-auto no-scrollbar">
+      <aside className={`hidden md:flex w-64 flex-col border-r border-border ${isStaff ? "bg-white" : "bg-card"} shrink-0 sticky top-0 h-[100dvh] overflow-y-auto no-scrollbar`}>
         <div className="p-6">
           <BrandLogo tone="dark" className="h-5 w-auto" />
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-3">
@@ -159,11 +168,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
+              <Link href="/admin/dealer-view" className="mt-4 flex items-center gap-3 border border-[#121210]/15 px-3 py-2.5 text-sm font-semibold text-[#121210] transition-colors hover:bg-[#B39862]/10">
+                <ArrowLeftRight className="h-4 w-4 text-[#806936]" />
+                Dealer View
+              </Link>
             </nav>
           )}
         </div>
 
-        <div className="p-4 border-t border-border space-y-4 bg-card">
+        <div className={`p-4 border-t border-border space-y-4 ${isStaff ? "bg-white" : "bg-card"}`}>
           <div className="flex items-center justify-between px-2">
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold truncate max-w-[140px] text-foreground">{session?.account?.displayName || session?.account?.email}</span>
@@ -183,7 +196,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border flex justify-around overflow-x-auto p-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {(isStaff ? visibleAdminLinks.filter(l => ['Overview', 'Users', 'Content', 'Notifications'].includes(l.label)) : visibleDealerLinks.filter(l => ['Dashboard', 'Projects', 'Resources', 'Notices', 'Account'].includes(l.label))).map((link) => {
+        {(isStaff ? visibleAdminLinks.filter(l => ['Overview', 'Users', 'Content', 'Notifications'].includes(l.label)) : mobileDealerLinks).map((link) => {
           const isActive = link.exact ? location === link.href : location.startsWith(link.href);
           return (
             <Link 

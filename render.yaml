@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: kessick-dealer-preview
+    runtime: static
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/kessick-visualizer exec vite build --config vite.render.config.ts
+    staticPublishPath: artifacts/kessick-visualizer/dist/render-preview
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -41,6 +41,7 @@ export interface PortalUser {
   portalRole: Exclude<PortalRole, "dealer" | "customer"> | null;
   status: UserStatus;
   createdAt: string;
+  invitationEligible?: boolean;
   groups: PortalGroup[];
   assignedRepId?: string | null;
   assignedRep?: { id: string; email: string; displayName?: string | null } | null;
@@ -207,6 +208,12 @@ export function createPortalUser(body: {
   organizationId?: string;
 }) {
   return jsonRequest<{ user: PortalUser }>("/admin/users", "POST", body);
+}
+
+export function resendPortalUserInvitation(accountId: string) {
+  return jsonRequest<{
+    invitation: { status: "pending"; url?: string };
+  }>(`/admin/users/${accountId}/invitation`, "POST", {});
 }
 
 export function updatePortalUser(accountId: string, body: Partial<{ displayName: string | null; status: UserStatus; role: Exclude<PortalRole, "dealer"> }>) {
