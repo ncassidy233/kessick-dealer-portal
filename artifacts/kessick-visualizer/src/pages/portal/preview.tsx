@@ -342,24 +342,35 @@ function Home({
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#15130f]/78 via-[#15130f]/82 to-[#15130f]/92" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/10 text-sm font-semibold text-white">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/10 text-sm font-semibold text-white">
               AM
             </span>
-            <img
-              src={logoWhite}
-              alt="Kessick Wine Cellars"
-              className="h-5 w-auto"
-            />
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-semibold text-white">
+                Alex Morgan
+              </p>
+              <p className="truncate text-[11px] text-white/60">
+                Example Cellars · Greenville, SC
+              </p>
+            </div>
           </div>
-          <button
-            onClick={() => onNavigate("Announcements")}
-            aria-label="Notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/5 text-white hover:bg-white/15"
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#d9bf7e]" />
-          </button>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              onClick={() => onNavigate("Announcements")}
+              aria-label="Notifications"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/5 text-white hover:bg-white/15"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#d9bf7e]" />
+            </button>
+          </div>
         </div>
+
+        <img
+          src={logoWhite}
+          alt="Kessick Wine Cellars"
+          className="mt-4 h-4 w-auto"
+        />
 
         <h1 className="mt-7 font-serif text-[32px] font-semibold leading-[1.1] tracking-tight sm:text-4xl">
           Your Kessick
@@ -430,7 +441,7 @@ function Home({
         <img
           src={cellarImage}
           alt="Luxury custom Kessick wine cellar"
-          className="h-44 w-full object-cover sm:h-52"
+          className="h-40 w-full object-cover sm:h-48"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
