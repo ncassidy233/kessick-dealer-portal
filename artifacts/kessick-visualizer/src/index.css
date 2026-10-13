@@ -1,5 +1,6 @@
 @layer theme, base, clerk, components, utilities;
 @import 'tailwindcss';
+@source "./";
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
 
@@ -163,7 +164,7 @@
   here so it also covers the area behind the centered app shell.
 */
 .dealer-preview-surface {
-  background: #e7e6ee;
+  background: #eef0fb;
   color-scheme: light;
 }
 
