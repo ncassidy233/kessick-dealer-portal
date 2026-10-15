@@ -1,5 +1,59 @@
 services:
   - type: web
+    name: kessick-dealer-portal
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/kessick-visualizer exec vite build --config vite.production.config.ts
+    startCommand: node scripts/serve-secure-static.mjs artifacts/kessick-visualizer/dist/public
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_PATH
+        value: /
+      - key: API_ORIGIN
+        sync: false
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_CLERK_PROXY_URL
+        sync: false
+  - type: web
+    name: kessick-dealer-api
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: KESSICK_ALLOWED_ORIGINS
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: PRIVATE_OBJECT_DIR
+        sync: false
+      - key: PUBLIC_OBJECT_SEARCH_PATHS
+        sync: false
+      - key: GOOGLE_CLOUD_PROJECT
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: AI_INTEGRATIONS_OPENAI_BASE_URL
+        sync: false
+      - key: AI_INTEGRATIONS_OPENAI_API_KEY
+        sync: false
+  - type: web
     name: kessick-dealer-preview
     runtime: static
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/kessick-visualizer exec vite build --config vite.render.config.ts
