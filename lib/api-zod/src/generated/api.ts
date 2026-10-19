@@ -1276,7 +1276,7 @@ export const GetConciergeProjectResponse = zod.object({
 
 /**
  * Consumes the workspace owner's Replit AI credits. Answers identify unknowns, include citations, and never execute a suggested action.
- * @summary Ask Kessick AI using only authorized catalog and project facts
+ * @summary Ask the Kessick Concierge using only authorized catalog and project facts
  */
 export const askKessickConciergeBodyMessageMax = 4000;
 

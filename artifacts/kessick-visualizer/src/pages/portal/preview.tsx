@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Bell,
   BookOpen,
+  Bookmark,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -347,10 +348,10 @@ function Home({
             </span>
             <div className="min-w-0 leading-tight">
               <p className="truncate text-sm font-semibold text-white">
-                Alex Morgan
+                Authorized Dealer Name
               </p>
-              <p className="truncate text-[11px] text-white/60">
-                Example Cellars · Greenville, SC
+              <p className="truncate text-[11px] text-white/70">
+                123 Anywhere St., Any City
               </p>
             </div>
           </div>
@@ -368,18 +369,17 @@ function Home({
 
         <img
           src={logoWhite}
-          alt="Kessick Wine Cellars"
-          className="mt-4 h-4 w-auto"
+          alt="Kessick Wine Storage Systems"
+          className="mt-6 h-6 w-auto opacity-90"
         />
-
-        <h1 className="mt-7 font-serif text-[32px] font-semibold leading-[1.1] tracking-tight sm:text-4xl">
+        <h1 className="mt-4 font-serif text-[32px] font-semibold leading-[1.1] tracking-tight sm:text-4xl">
           Your Kessick
           <br />
           project desk.
         </h1>
         <p className="mt-2 max-w-sm text-sm italic leading-relaxed text-white/75">
-          Everything you need to design, specify, and present a Kessick wine
-          cellar — in one place.
+          Pricing, specs, finish options, and marketing assets in one place.
+          Everything you need to sell, specify, and deliver.
         </p>
 
         {/* Black search bar with magnifier + filter icon */}
@@ -392,7 +392,7 @@ function Home({
             id="dealer-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search resources, products, forms…"
+            placeholder="Search here"
             className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/45"
           />
           <button
@@ -454,9 +454,12 @@ function Home({
 
       {/* Your Dealer Toolkit */}
       <section>
-        <h2 className="mb-4 font-serif text-xl font-semibold text-[#1b1b19]">
+        <h2 className="font-serif text-xl font-semibold text-[#1b1b19]">
           Your Dealer Toolkit
         </h2>
+        <p className="mb-4 mt-0.5 text-xs italic text-[#1b1b19]/65">
+          News, design support, sales resources, and a direct line to our team.
+        </p>
         <div className="grid grid-cols-4 gap-2 sm:gap-4">
           {toolkit.map(({ label, icon: Icon, section }) => (
             <button
@@ -465,10 +468,10 @@ function Home({
               className="group flex min-w-0 flex-col items-center gap-2 text-center"
             >
               <span
-                className="flex h-[clamp(3.5rem,18vw,4.5rem)] w-[clamp(3.5rem,18vw,4.5rem)] items-center justify-center rounded-full border border-[#c9ccd6] text-[#4a4e59] shadow-[0_6px_16px_rgba(27,27,25,0.12)] transition group-hover:-translate-y-0.5 group-active:translate-y-0"
+                className="flex h-[clamp(3.5rem,18vw,4.5rem)] w-[clamp(3.5rem,18vw,4.5rem)] items-center justify-center rounded-full border border-black/60 text-white shadow-[0_8px_18px_rgba(27,27,25,0.28),inset_0_1px_1px_rgba(255,255,255,0.35)] transition group-hover:-translate-y-0.5 group-active:translate-y-0"
                 style={{
                   background:
-                    "linear-gradient(145deg,#ffffff 0%,#e9eaf0 45%,#c7cad4 100%)",
+                    "radial-gradient(circle at 30% 25%,#8a8a86 0%,#3a3a37 38%,#0f0f0e 100%)",
                 }}
               >
                 <Icon className="h-6 w-6" />
@@ -482,21 +485,30 @@ function Home({
       </section>
 
       {/* Powder-blue 15% voucher banner (unapproved example) */}
-      <section className="overflow-hidden rounded-3xl border border-[#9fb9d6] bg-gradient-to-br from-[#cfe0f0] to-[#aecae6] p-5 text-[#1f3c5e]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            Dealer voucher
+      <section className="rounded-2xl border border-[#9fb9d6] bg-gradient-to-br from-[#bcd2e8] to-[#9fbcdb] px-4 py-3 text-[#1b1b19]">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-md bg-white/70 text-lg font-bold text-[#3c5a80]">
+            %
           </span>
-          <ExampleBadge>Example · pending approval</ExampleBadge>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold leading-tight sm:text-base">
+              Get a 15% Discount Voucher
+            </p>
+            <p className="text-[11px] italic leading-tight text-[#1b1b19]/75">
+              on all Somm projects through Nov 30, 2026
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate("Announcements")}
+            aria-label="Voucher details"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#1b1b19] hover:bg-[#f6edda]"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-        <p className="mt-3 font-serif text-3xl font-bold leading-none">
-          15% off
-        </p>
-        <p className="mt-2 max-w-md text-sm leading-relaxed text-[#1f3c5e]/80">
-          Sample promotional banner only. This 15% voucher is an unapproved
-          example and is <strong>not a live offer</strong> until Kessick
-          confirms it.
-        </p>
+        <div className="mt-2">
+          <ExampleBadge>Example · pending Kessick approval</ExampleBadge>
+        </div>
       </section>
 
       {/* Black ESTATE SERIES / Cask Collection concept card */}
@@ -511,6 +523,7 @@ function Home({
           <span className="absolute left-4 top-4">
             <ExampleBadge>Concept · pending approval</ExampleBadge>
           </span>
+          <Bookmark className="absolute right-4 top-4 h-5 w-5 text-white/85" aria-hidden="true" />
         </div>
         <div className="p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d9bf7e]">
@@ -519,15 +532,15 @@ function Home({
           <h3 className="mt-2 font-serif text-2xl font-semibold">
             Cask Collection
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-white/65">
-            Concept preview only. This featured collection is a design concept
-            and is not approved or available yet.
+          <p className="mt-3 text-sm font-semibold">Be first to quote it.</p>
+          <p className="text-xs italic text-white/65">
+            Concept preview only, not yet approved or available.
           </p>
           <button
             onClick={() => onNavigate("Announcements")}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10"
           >
-            View announcements <ArrowRight className="h-4 w-4" />
+            Click to get launch details <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </section>
