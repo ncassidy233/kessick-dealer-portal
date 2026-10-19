@@ -60,6 +60,8 @@ successful preview deployment is not a production app deployment.
      `AI_INTEGRATIONS_OPENAI_API_KEY` only if the Concierge AI integration is
      configured. These credentials are not required for the core portal.
 
+Per-service env templates live in `deploy/render/`; see [render-env-setup.md](render-env-setup.md).
+
 Render supplies `PORT` to both Node services. Do not set it to a fixed value.
 The frontend listens on `PORT`; its `/api` requests are forwarded to
 `API_ORIGIN`. The API health check is `/api/healthz`.

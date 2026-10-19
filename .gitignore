@@ -65,3 +65,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Render env files filled with real values and GCP secret file
+*.env
+kessick-gcp.json
