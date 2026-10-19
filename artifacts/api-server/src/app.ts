@@ -10,6 +10,7 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { portalStaticRouter } from "./middlewares/portalStatic";
 import { csrfGuard } from "./security/csrf";
 import { securityHeaders } from "./security/headers";
 import { configuredOrigins } from "./security/origin";
@@ -93,6 +94,9 @@ app.use("/api", router);
 app.use("/api", (_req, res) => {
   res.status(404).json({ error: "Not found." });
 });
+
+const portalStatic = portalStaticRouter();
+if (portalStatic) app.use(portalStatic);
 app.use(
   (
     error: unknown,

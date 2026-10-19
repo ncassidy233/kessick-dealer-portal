@@ -1,10 +1,43 @@
+# One Node web service: the API serves the compiled portal (PORTAL_STATIC_DIR),
+# so the portal, /api and the Clerk proxy at /api/__clerk share one origin.
+# Values marked `sync: false` are entered in the Render dashboard, never here.
 services:
   - type: web
-    name: kessick-dealer-preview
-    runtime: static
-    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/kessick-visualizer exec vite build --config vite.render.config.ts
-    staticPublishPath: artifacts/kessick-visualizer/dist/render-preview
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    name: kessick-dealer-portal
+    runtime: node
+    buildCommand: >-
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @workspace/kessick-visualizer run build &&
+      pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Read by vite.config.ts at build time (PORT is only validated there;
+      # Render sets the real PORT at runtime).
+      - key: BASE_PATH
+        value: /
+      - key: PORT
+        value: "10000"
+      - key: PORTAL_STATIC_DIR
+        value: artifacts/kessick-visualizer/dist/public
+      - key: VITE_CLERK_PROXY_URL
+        value: /api/__clerk
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      # The portal's public origin(s), comma separated, e.g. https://portal.example.com
+      - key: KESSICK_ALLOWED_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: PRIVATE_OBJECT_DIR
+        sync: false
+      - key: PUBLIC_OBJECT_SEARCH_PATHS
+        sync: false
