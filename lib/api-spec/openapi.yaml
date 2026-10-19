@@ -20,7 +20,7 @@ tags:
   - name: invitations
   - name: audit
   - name: concierge
-    description: Authenticated, grounded Kessick AI and external connection operations
+    description: Authenticated, grounded Kessick Concierge and external connection operations
   - name: mcp
     description: Minimal read-first MCP JSON-RPC adapter
   - name: dealer-portal
@@ -742,7 +742,7 @@ paths:
     post:
       operationId: askKessickConcierge
       tags: [concierge]
-      summary: Ask Kessick AI using only authorized catalog and project facts
+      summary: Ask the Kessick Concierge using only authorized catalog and project facts
       description: Consumes the workspace owner's Replit AI credits. Answers identify unknowns, include citations, and never execute a suggested action.
       security: [{ KessickOAuth: [concierge:ask] }, { ConciergeBearer: [] }]
       requestBody:
