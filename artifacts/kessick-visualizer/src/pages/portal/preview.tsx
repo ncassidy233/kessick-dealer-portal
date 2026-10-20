@@ -20,6 +20,8 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
+  MousePointerClick,
+  TicketPercent,
   Sparkles,
   UserRound,
   Users,
@@ -27,6 +29,10 @@ import {
 } from "lucide-react";
 import cellarImage from "@assets/kessick-room-demo.jpg";
 import logoWhite from "@assets/kessick-logo-white.svg";
+// Placeholders cropped from the client mockup until the original photos arrive.
+import dealerAvatar from "@assets/mockup/dealer-avatar.jpg";
+import showroomHero from "@assets/mockup/showroom-hero.jpg";
+import estateCraftsman from "@assets/mockup/estate-craftsman.jpg";
 
 /* ------------------------------------------------------------------ *
  * Kessick Dealer Portal — public sample preview
@@ -67,29 +73,51 @@ type NavItem =
 
 const bottomNav: NavItem[] = [
   { kind: "section", label: "Home", icon: HomeIcon, section: "Home" },
-  { kind: "section", label: "Account", icon: UserRound, section: "Account" },
-  { kind: "link", label: "Email", icon: Mail, href: `mailto:${KESSICK_EMAIL}` },
-  { kind: "link", label: "Teamwork", icon: Globe, href: TEAMWORK_SITE },
+  { kind: "section", label: "Account", icon: PersonIcon, section: "Account" },
+  { kind: "link", label: "Email", icon: EnvelopeIcon, href: `mailto:${KESSICK_EMAIL}` },
+  { kind: "link", label: "Teamwork", icon: TeamworkIcon, href: TEAMWORK_SITE },
 ];
 
 /* Small inline icons kept local so the bundle stays lean. */
-function HomeIcon({ className }: { className?: string }) {
+function PersonIcon({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M3 10.5 12 3l9 7.5" />
-      <path d="M5 9.5V21h14V9.5" />
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <circle cx="12" cy="7.5" r="4.5" />
+      <path d="M3.5 21c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8v.5h-17V21Z" />
     </svg>
   );
 }
+
+function EnvelopeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="currentColor" />
+      <path d="m3.5 6.5 8.5 6.5 8.5-6.5" fill="none" stroke="#1d1d1d" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TeamworkIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className} aria-hidden="true">
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="6.5" />
+      <circle cx="12" cy="10.3" r="1.7" fill="currentColor" stroke="none" />
+      <path d="M8.8 15.6c.5-1.6 1.7-2.5 3.2-2.5s2.7.9 3.2 2.5" strokeLinecap="round" />
+      <circle cx="8.4" cy="11.4" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15.6" cy="11.4" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function HomeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 2.6 1.8 11.3l1.3 1.5L4.5 11.6V21h5.6v-5.6h3.8V21h5.6v-9.4l1.4 1.2 1.3-1.5L12 2.6Z" />
+    </svg>
+  );
+}
+
 function Briefcase({ className }: { className?: string }) {
   return (
     <svg
@@ -108,13 +136,57 @@ function Briefcase({ className }: { className?: string }) {
   );
 }
 
-type Toolkit = { label: string; icon: LucideIcon; section: Section };
+type Toolkit = { label: string; icon: IconType; section: Section };
+
+/* Filled toolkit glyphs drawn to match the mockup. */
+function TilesIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <rect x="3" y="3" width="8" height="8" rx="2.4" />
+      <rect x="13" y="3" width="8" height="8" rx="2.4" />
+      <rect x="3" y="13" width="8" height="8" rx="2.4" />
+      <rect x="13" y="13" width="8" height="8" rx="2.4" />
+    </svg>
+  );
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 1.5c.6 5.4 3.6 9.6 10.5 10.5-6.9.9-9.9 5.1-10.5 10.5C11.4 17.1 8.4 12.9 1.5 12 8.4 11.1 11.4 6.9 12 1.5Z" />
+    </svg>
+  );
+}
+
+function GearIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M10.3 1.8h3.4l.5 2.7c.7.2 1.3.5 1.9.9l2.3-1.6 2.4 2.4-1.6 2.3c.4.6.7 1.2.9 1.9l2.7.5v3.4l-2.7.5c-.2.7-.5 1.3-.9 1.9l1.6 2.3-2.4 2.4-2.3-1.6c-.6.4-1.2.7-1.9.9l-.5 2.7h-3.4l-.5-2.7c-.7-.2-1.3-.5-1.9-.9l-2.3 1.6-2.4-2.4 1.6-2.3c-.4-.6-.7-1.2-.9-1.9l-2.7-.5v-3.4l2.7-.5c.2-.7.5-1.3.9-1.9L3.2 6.2l2.4-2.4 2.3 1.6c.6-.4 1.2-.7 1.9-.9l.5-2.7ZM12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"
+      />
+    </svg>
+  );
+}
+
+function ChatIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M14 3.5H6.5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3H9l3 3 3-3h2.5a3 3 0 0 0 3-3V11" />
+      <circle cx="19" cy="5" r="2" />
+      <circle cx="8.5" cy="10.5" r=".6" fill="currentColor" />
+      <circle cx="12" cy="10.5" r=".6" fill="currentColor" />
+      <circle cx="15.5" cy="10.5" r=".6" fill="currentColor" />
+    </svg>
+  );
+}
 
 const toolkit: Toolkit[] = [
-  { label: "What’s New", icon: Sparkles, section: "Announcements" },
-  { label: "Design Request Form", icon: FileText, section: "DesignRequest" },
-  { label: "Dealer Resources", icon: FolderOpen, section: "Resources" },
-  { label: "Feedback", icon: MessageSquareText, section: "Support" },
+  { label: "What’s New", icon: TilesIcon, section: "Announcements" },
+  { label: "Design Request Form", icon: StarIcon, section: "DesignRequest" },
+  { label: "Dealer Resources", icon: GearIcon, section: "Resources" },
+  { label: "Feedback", icon: ChatIcon, section: "Support" },
 ];
 
 /* ---- Announcements content (Oct 8 outline) ---- */
@@ -334,80 +406,71 @@ function Home({
   onNavigate: (s: Section) => void;
 }) {
   return (
-    <div className="space-y-6">
-      {/* Dark photographic header */}
-      <header className="relative isolate -mx-4 -mt-4 overflow-hidden rounded-b-[28px] bg-[#15130f] px-5 pb-7 pt-5 text-white shadow-[0_18px_40px_rgba(21,19,15,0.28)] sm:-mx-6 sm:px-7">
+    <div className="dealer-mockup space-y-2.5 pb-2">
+      {/* Photographic header with dealer identity, title and search */}
+      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
         <img
           src={cellarImage}
           alt=""
           className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#15130f]/78 via-[#15130f]/82 to-[#15130f]/92" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/10 text-sm font-semibold text-white">
-              AM
-            </span>
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-semibold text-white">
-                Authorized Dealer Name
-              </p>
-              <p className="truncate text-[11px] text-white/70">
-                123 Anywhere St., Any City
-              </p>
+        <div className="absolute inset-0 -z-10 bg-black/45" />
+        <div className="px-6 pt-5">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                src={dealerAvatar}
+                alt=""
+                className="h-[42px] w-[42px] shrink-0 rounded-full border-2 border-white object-cover"
+              />
+              <div className="min-w-0 leading-tight">
+                <p className="truncate text-[13px] font-bold">Authorized Dealer Name</p>
+                <p className="truncate text-[12px]">123 Anywhere St., Any City</p>
+              </div>
             </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
             <button
               onClick={() => onNavigate("Announcements")}
               aria-label="Notifications"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/5 text-white hover:bg-white/15"
+              className="mt-1 text-white"
             >
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#d9bf7e]" />
+              <Bell className="h-[18px] w-[18px]" fill="currentColor" />
+            </button>
+          </div>
+
+          <h1 className="mt-5 text-[23px] font-extrabold leading-[1.12]">
+            Your Kessick
+            <br />
+            project desk.
+          </h1>
+          <p className="mt-1.5 pb-3 text-[10.5px] leading-snug">
+            <em>Pricing, specs, finish options, and marketing assets in one place.</em>
+            <br />
+            Everything you need to sell, specify, and deliver.
+          </p>
+        </div>
+
+        {/* Search band: black fading to the photo, underlined field */}
+        <div className="bg-gradient-to-r from-black via-black/85 to-black/30 px-6 pb-2.5 pt-2">
+          <div className="flex items-center gap-3 border-b-2 border-white/85 pb-2">
+            <Search className="h-6 w-6 shrink-0" strokeWidth={2.2} />
+            <label htmlFor="dealer-search" className="sr-only">
+              Search the dealer portal
+            </label>
+            <input
+              id="dealer-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search here"
+              className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white"
+            />
+            <button type="button" aria-label="Filters" className="shrink-0">
+              <SlidersHorizontal className="h-6 w-6" strokeWidth={2} />
             </button>
           </div>
         </div>
 
-        <img
-          src={logoWhite}
-          alt="Kessick Wine Storage Systems"
-          className="mt-6 h-6 w-auto opacity-90"
-        />
-        <h1 className="mt-4 font-serif text-[32px] font-semibold leading-[1.1] tracking-tight sm:text-4xl">
-          Your Kessick
-          <br />
-          project desk.
-        </h1>
-        <p className="mt-2 max-w-sm text-sm italic leading-relaxed text-white/75">
-          Pricing, specs, finish options, and marketing assets in one place.
-          Everything you need to sell, specify, and deliver.
-        </p>
-
-        {/* Black search bar with magnifier + filter icon */}
-        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/12 bg-black/55 px-4 py-3 backdrop-blur">
-          <Search className="h-5 w-5 shrink-0 text-white/60" />
-          <label htmlFor="dealer-search" className="sr-only">
-            Search the dealer portal
-          </label>
-          <input
-            id="dealer-search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search here"
-            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/45"
-          />
-          <button
-            type="button"
-            aria-label="Filters"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 text-white/70 hover:bg-white/10"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </button>
-        </div>
-
         {search.trim() ? (
-          <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-[#1d1b16]">
+          <div className="bg-black/90">
             {results.length ? (
               results.map((r) => (
                 <button
@@ -416,21 +479,17 @@ function Home({
                     onNavigate(r.section);
                     setSearch("");
                   }}
-                  className="flex w-full items-center justify-between gap-3 border-b border-white/5 px-4 py-3 text-left last:border-0 hover:bg-white/5"
+                  className="flex w-full items-center justify-between gap-3 border-b border-white/10 px-6 py-3 text-left last:border-0 hover:bg-white/5"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-white">
-                      {r.title}
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs text-white/50">
-                      {r.detail}
-                    </span>
+                    <span className="block truncate text-sm font-semibold">{r.title}</span>
+                    <span className="mt-0.5 block truncate text-xs text-white/60">{r.detail}</span>
                   </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-white/50" />
                 </button>
               ))
             ) : (
-              <p className="px-4 py-4 text-sm text-white/55">
+              <p className="px-6 py-4 text-sm text-white/70">
                 No results for “{search.trim()}”.
               </p>
             )}
@@ -438,112 +497,105 @@ function Home({
         ) : null}
       </header>
 
-      {/* Wide wine-cellar photograph */}
-      <section className="relative overflow-hidden rounded-3xl">
-        <img
-          src={cellarImage}
-          alt="Luxury custom Kessick wine cellar"
-          className="h-40 w-full object-cover sm:h-48"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-          <p className="font-serif text-lg font-medium text-white drop-shadow">
-            Spaces worth savoring.
-          </p>
-          <WebLinkDark href={KESSICK_STYLES}>Explore styles</WebLinkDark>
-        </div>
-      </section>
+      {/* Showroom photograph */}
+      <img
+        src={showroomHero}
+        alt="Kessick showroom wine display"
+        className="aspect-[9/4] w-full rounded-[10px] object-cover"
+      />
 
       {/* Your Dealer Toolkit */}
-      <section>
-        <h2 className="font-serif text-xl font-semibold text-[#1b1b19]">
+      <section className="pt-1">
+        <h2 className="font-heading text-[18px] font-bold leading-tight tracking-[0.01em] text-[#222]">
           Your Dealer Toolkit
         </h2>
-        <p className="mb-4 mt-0.5 text-xs italic text-[#1b1b19]/65">
+        <p className="text-[9.5px] italic text-[#222]">
           News, design support, sales resources, and a direct line to our team.
         </p>
-        <div className="grid grid-cols-4 gap-2 sm:gap-4">
+        <div className="mt-3 grid grid-cols-4 gap-2">
           {toolkit.map(({ label, icon: Icon, section }) => (
             <button
               key={label}
               onClick={() => onNavigate(section)}
-              className="group flex min-w-0 flex-col items-center gap-2 text-center"
+              className="group flex min-w-0 flex-col items-center gap-1.5 text-center"
             >
               <span
-                className="flex h-[clamp(3.5rem,18vw,4.5rem)] w-[clamp(3.5rem,18vw,4.5rem)] items-center justify-center rounded-full border border-black/60 text-white shadow-[0_8px_18px_rgba(27,27,25,0.28),inset_0_1px_1px_rgba(255,255,255,0.35)] transition group-hover:-translate-y-0.5 group-active:translate-y-0"
+                className="flex h-[clamp(3.25rem,15vw,3.9rem)] w-[clamp(3.25rem,15vw,3.9rem)] items-center justify-center rounded-full text-[#c9c9c9] transition group-hover:-translate-y-0.5"
                 style={{
                   background:
-                    "radial-gradient(circle at 30% 25%,#8a8a86 0%,#3a3a37 38%,#0f0f0e 100%)",
+                    "linear-gradient(90deg,#000 0%,#0d0b08 45%,#6f6656 80%,#b9b09c 100%)",
                 }}
               >
-                <Icon className="h-6 w-6" />
+                <Icon className="h-[60%] w-[60%]" />
               </span>
-              <span className="text-[10px] font-semibold leading-tight text-[#1b1b19]/80 sm:text-xs">
-                {label}
+              <span className="font-label text-[11px] leading-[1.1] text-[#555]">
+                {label === "Design Request Form" ? (
+                  <>Design<br />Request Form</>
+                ) : label === "Dealer Resources" ? (
+                  <>Dealer<br />Resources</>
+                ) : (
+                  label
+                )}
               </span>
             </button>
           ))}
         </div>
       </section>
 
-      {/* Powder-blue 15% voucher banner (unapproved example) */}
-      <section className="rounded-2xl border border-[#9fb9d6] bg-gradient-to-br from-[#bcd2e8] to-[#9fbcdb] px-4 py-3 text-[#1b1b19]">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-md bg-white/70 text-lg font-bold text-[#3c5a80]">
-            %
+      {/* Steel-blue voucher bar */}
+      <button
+        onClick={() => onNavigate("Announcements")}
+        className="flex w-full items-center gap-3 rounded-[10px] bg-[#8ea8bf] px-3.5 py-2 text-left"
+      >
+        <TicketPercent className="h-9 w-9 shrink-0 text-white" fill="currentColor" stroke="#8ea8bf" strokeWidth={1.6} />
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="font-heading block text-[15px] font-bold text-[#1b1b1b]">
+            Get a 15% Discount Voucher
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold leading-tight sm:text-base">
-              Get a 15% Discount Voucher
-            </p>
-            <p className="text-[11px] italic leading-tight text-[#1b1b19]/75">
-              on all Somm projects through Nov 30, 2026
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate("Announcements")}
-            aria-label="Voucher details"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#1b1b19] hover:bg-[#f6edda]"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="mt-2">
-          <ExampleBadge>Example · pending Kessick approval</ExampleBadge>
-        </div>
-      </section>
+          <span className="font-heading block whitespace-nowrap text-[9.5px] italic text-[#1b1b1b]">
+            on all Somm projects through Nov 30, 2026
+          </span>
+        </span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#2b3a67]">
+          <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
+        </span>
+      </button>
 
-      {/* Black ESTATE SERIES / Cask Collection concept card */}
-      <section className="overflow-hidden rounded-3xl bg-[#111010] text-white">
-        <div className="relative h-36 w-full overflow-hidden">
-          <img
-            src={cellarImage}
-            alt=""
-            className="h-full w-full object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#111010] via-[#111010]/50 to-transparent" />
-          <span className="absolute left-4 top-4">
-            <ExampleBadge>Concept · pending approval</ExampleBadge>
-          </span>
-          <Bookmark className="absolute right-4 top-4 h-5 w-5 text-white/85" aria-hidden="true" />
-        </div>
-        <div className="p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d9bf7e]">
-            Coming Soon · Estate Series
-          </p>
-          <h3 className="mt-2 font-serif text-2xl font-semibold">
+      {/* Coming Soon: Estate Series Cask Collection */}
+      <section
+        className="flex gap-3 rounded-[10px] p-2"
+        style={{ background: "linear-gradient(180deg,#000 0%,#000 40%,#5e5748 78%,#a59d8c 100%)" }}
+      >
+        <img
+          src={estateCraftsman}
+          alt="Kessick craftsman building an Estate Series rack"
+          className="aspect-[10/9] w-[42%] shrink-0 rounded-[8px] object-cover"
+        />
+        <div className="relative min-w-0 flex-1 py-1 pr-1 text-white">
+          <Bookmark className="absolute right-1 top-1 h-6 w-6" strokeWidth={1.6} />
+          <p className="text-[16px] font-bold">Coming Soon</p>
+          <p className="mt-5 text-[12.5px] font-bold">ESTATE SERIES</p>
+          <p className="font-label mt-0.5 rounded-full bg-white px-2 py-[1px] text-[13px] text-[#333]">
             Cask Collection
-          </h3>
-          <p className="mt-3 text-sm font-semibold">Be first to quote it.</p>
-          <p className="text-xs italic text-white/65">
-            Concept preview only, not yet approved or available.
           </p>
-          <button
-            onClick={() => onNavigate("Announcements")}
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10"
-          >
-            Click to get launch details <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="mt-5 flex items-end justify-between gap-2">
+            <p className="leading-tight">
+              <span className="block text-[10px] font-bold">Be first to quote it.</span>
+              <span className="block text-[10px] italic">Click to get launch details</span>
+            </p>
+            <button
+              onClick={() => onNavigate("Announcements")}
+              aria-label="Get launch details"
+              className="flex shrink-0 items-center rounded-full bg-[#b9ab97] py-0.5 pl-1.5 text-[6px] font-bold uppercase leading-[1.05] text-white"
+            >
+              Click
+              <br />
+              here
+              <span className="ml-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-[#3a5fae] bg-[#7fa0d8]">
+                <MousePointerClick className="h-2.5 w-2.5" />
+              </span>
+            </button>
+          </div>
         </div>
       </section>
     </div>
@@ -1030,13 +1082,6 @@ export default function DealerPortalPreview({
         </div>
       ) : null}
 
-      {/* Public sample notice */}
-      <div
-        role="note"
-        className="bg-[#2c2a24] px-4 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-[#e9e2cf]"
-      >
-        Public sample preview · example data · no sign-in or live actions
-      </div>
 
       {/* Centered mobile app shell */}
       <div className="mx-auto w-full max-w-[460px] px-4 pt-4 sm:max-w-[520px] sm:px-6">
@@ -1059,49 +1104,31 @@ export default function DealerPortalPreview({
           <Account onBack={() => navigate("Home")} />
         )}
 
-        <footer className="mt-8 border-t border-[#1b1b19]/10 pt-4 text-[11px] leading-relaxed text-[#1b1b19]/45">
-          Public sample preview only. No dealer account, pricing, or private
-          documents are connected. Product links open the official Kessick Wine
-          Cellars website.{" "}
-          <WebLink href={KESSICK_SITE}>Visit Kessick Wine Cellars</WebLink>
-        </footer>
       </div>
 
-      {/* Sticky footer navigation: black glossy buttons from the mockup */}
+      {/* Sticky footer navigation, matching the mockup */}
       <nav
         aria-label="Dealer portal navigation"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1b1b19]/10 bg-white/90 backdrop-blur"
+        className="dealer-preview-surface dealer-mockup fixed inset-x-0 bottom-0 z-40"
       >
-        <div className="mx-auto grid max-w-[460px] grid-cols-4 items-center px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 sm:max-w-[520px]">
+        <div className="mx-auto grid max-w-[460px] grid-cols-4 items-center px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:max-w-[520px]">
           {bottomNav.map((item) => {
             const Icon = item.icon;
             const active =
               item.kind === "section" && section === item.section;
-            const glossy = {
-              background:
-                "radial-gradient(circle at 30% 25%,#6e6e6a 0%,#2b2b29 40%,#0b0b0a 100%)",
-            };
             const content = active ? (
               <span
-                className="flex h-11 items-center gap-2 rounded-full py-1 pl-1 pr-4 text-white shadow-[0_6px_14px_rgba(0,0,0,0.3)]"
-                style={glossy}
+                className="flex h-[38px] items-center gap-1.5 rounded-full py-[3px] pl-[3px] pr-3.5 text-white"
+                style={{ background: "linear-gradient(180deg,#000 0%,#000 45%,#6e6553 100%)" }}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#111]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-semibold">{item.label}</span>
+                <span className="text-[13px] font-bold">{item.label}</span>
               </span>
             ) : (
-              <span className="flex flex-col items-center gap-1">
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white shadow-[0_6px_14px_rgba(0,0,0,0.25)] transition group-hover:-translate-y-0.5"
-                  style={glossy}
-                >
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="text-[10px] font-semibold leading-none text-[#1b1b19]/70">
-                  {item.label}
-                </span>
+              <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#1d1d1d] text-white transition group-hover:-translate-y-0.5">
+                <Icon className="h-[22px] w-[22px]" />
               </span>
             );
             const classes = "group flex min-h-12 items-center justify-center";

@@ -163,6 +163,17 @@
   intended light palette. The pale lavender-gray background is applied
   here so it also covers the area behind the centered app shell.
 */
+/* Client mockup typography for the dealer home and footer nav. */
+.dealer-mockup {
+  font-family: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+}
+.dealer-mockup .font-heading {
+  font-family: 'Montserrat', 'Open Sans', ui-sans-serif, sans-serif;
+}
+.dealer-mockup .font-label {
+  font-family: 'Kumbh Sans', 'Open Sans', ui-sans-serif, sans-serif;
+}
+
 .dealer-preview-surface {
   background: #eef0fb;
   color-scheme: light;
