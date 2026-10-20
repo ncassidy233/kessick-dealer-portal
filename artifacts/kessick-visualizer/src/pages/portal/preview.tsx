@@ -11,6 +11,7 @@ import {
   ExternalLink,
   FileText,
   FolderOpen,
+  Globe,
   Images,
   Mail,
   MessageSquareText,
@@ -20,6 +21,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  UserRound,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -65,9 +67,9 @@ type NavItem =
 
 const bottomNav: NavItem[] = [
   { kind: "section", label: "Home", icon: HomeIcon, section: "Home" },
-  { kind: "section", label: "Account", icon: Users, section: "Account" },
+  { kind: "section", label: "Account", icon: UserRound, section: "Account" },
   { kind: "link", label: "Email", icon: Mail, href: `mailto:${KESSICK_EMAIL}` },
-  { kind: "link", label: "Teamwork", icon: Briefcase, href: TEAMWORK_SITE },
+  { kind: "link", label: "Teamwork", icon: Globe, href: TEAMWORK_SITE },
 ];
 
 /* Small inline icons kept local so the bundle stays lean. */
@@ -1013,7 +1015,7 @@ export default function DealerPortalPreview({
   };
 
   return (
-    <div className="dealer-preview-surface min-h-screen pb-24 text-[#1b1b19]">
+    <div className="dealer-preview-surface min-h-screen pb-28 text-[#1b1b19]">
       {staffViewMode ? (
         <div className="flex flex-wrap items-center justify-between gap-2 bg-[#171715] px-4 py-2 text-xs text-white">
           <span className="font-semibold uppercase tracking-wide">
@@ -1065,19 +1067,44 @@ export default function DealerPortalPreview({
         </footer>
       </div>
 
-      {/* Bottom navigation */}
+      {/* Sticky footer navigation: black glossy buttons from the mockup */}
       <nav
         aria-label="Dealer portal navigation"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1b1b19]/10 bg-white/95 backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1b1b19]/10 bg-white/90 backdrop-blur"
       >
-        <div className="mx-auto grid max-w-[460px] grid-cols-4 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:max-w-[520px]">
+        <div className="mx-auto grid max-w-[460px] grid-cols-4 items-center px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 sm:max-w-[520px]">
           {bottomNav.map((item) => {
             const Icon = item.icon;
             const active =
               item.kind === "section" && section === item.section;
-            const classes = `flex min-h-12 flex-col items-center justify-center gap-1 ${
-              active ? "text-[#6d5a30]" : "text-[#1b1b19]/45"
-            }`;
+            const glossy = {
+              background:
+                "radial-gradient(circle at 30% 25%,#6e6e6a 0%,#2b2b29 40%,#0b0b0a 100%)",
+            };
+            const content = active ? (
+              <span
+                className="flex h-11 items-center gap-2 rounded-full py-1 pl-1 pr-4 text-white shadow-[0_6px_14px_rgba(0,0,0,0.3)]"
+                style={glossy}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#111]">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="text-sm font-semibold">{item.label}</span>
+              </span>
+            ) : (
+              <span className="flex flex-col items-center gap-1">
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white shadow-[0_6px_14px_rgba(0,0,0,0.25)] transition group-hover:-translate-y-0.5"
+                  style={glossy}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="text-[10px] font-semibold leading-none text-[#1b1b19]/70">
+                  {item.label}
+                </span>
+              </span>
+            );
+            const classes = "group flex min-h-12 items-center justify-center";
             if (item.kind === "link") {
               const external = item.href.startsWith("http");
               return (
@@ -1086,12 +1113,10 @@ export default function DealerPortalPreview({
                   href={item.href}
                   target={external ? "_blank" : undefined}
                   rel={external ? "noopener noreferrer" : undefined}
+                  aria-label={item.label}
                   className={classes}
                 >
-                  <Icon className="h-[18px] w-[18px]" />
-                  <span className="text-[10px] font-semibold leading-none">
-                    {item.label}
-                  </span>
+                  {content}
                 </a>
               );
             }
@@ -1099,13 +1124,11 @@ export default function DealerPortalPreview({
               <button
                 key={item.label}
                 aria-current={active ? "page" : undefined}
+                aria-label={item.label}
                 onClick={() => navigate(item.section)}
                 className={classes}
               >
-                <Icon className="h-[18px] w-[18px]" />
-                <span className="text-[10px] font-semibold leading-none">
-                  {item.label}
-                </span>
+                {content}
               </button>
             );
           })}
