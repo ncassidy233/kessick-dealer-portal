@@ -51,7 +51,7 @@ const KESSICK_SITE = "https://kessickwinecellars.com/";
 const KESSICK_DESIGN_REQUEST = "https://kessickwinecellars.com/design-request/";
 const KESSICK_STYLES = "https://kessickwinecellars.com/our-styles/";
 const KESSICK_RESOURCES = "https://kessickwinecellars.com/";
-const KESSICK_EMAIL = "sales@kessickwinecellars.com";
+const KESSICK_EMAIL = "office@kessick.com";
 const KESSICK_PHONE_DISPLAY = "864.297.1911";
 const KESSICK_PHONE_TEL = "+18642971911";
 const TEAMWORK_SITE = "https://www.teamwork.com/";
@@ -189,19 +189,33 @@ const toolkit: Toolkit[] = [
   { label: "Feedback", icon: ChatIcon, section: "Support" },
 ];
 
-/* ---- Announcements content (Oct 8 outline) ---- */
+/* ---- Announcements content (dealer portal outline) ---- */
+type AnnouncementTab = "New Products" | "Coming Soon" | "New Policies";
+
 const announcementGroups: {
-  category: string;
-  pending?: boolean;
-  items: { title: string; body: string; href?: string }[];
+  category: AnnouncementTab;
+  items: { title: string; body: string; href?: string; cta?: string }[];
 }[] = [
   {
     category: "New Products",
     items: [
       {
-        title: "Explore current Kessick collections",
-        body: "Estate, Elevation, Forma, Towers and Wine As Art styles are published on the Kessick website.",
+        title: "Forma Wine Enclosures",
+        body: "A freestanding, furniture-grade wine enclosure in single, double or triple-door configurations. No dedicated cellar room required.",
         href: KESSICK_STYLES,
+        cta: "View Forma",
+      },
+      {
+        title: "Tower Series",
+        body: "Arrives fully assembled and ready to install. Combine towers into a wine wall or a complete room.",
+        href: KESSICK_STYLES,
+        cta: "View Towers",
+      },
+      {
+        title: "Our Styles",
+        body: "Estate, Elevation, Forma, Towers and Wine As Art, as published on kessickwinecellars.com.",
+        href: KESSICK_STYLES,
+        cta: "Explore styles",
       },
     ],
   },
@@ -209,8 +223,8 @@ const announcementGroups: {
     category: "Coming Soon",
     items: [
       {
-        title: "ESTATE SERIES · Cask Collection",
-        body: "Concept preview only. This collection is an unapproved example and is not yet released — details are pending Kessick confirmation.",
+        title: "Estate Series · Cask Collection",
+        body: "Be first to quote it. Ask the Kessick team for launch details, finishes and lead times.",
       },
     ],
   },
@@ -218,43 +232,31 @@ const announcementGroups: {
     category: "New Policies",
     items: [
       {
-        title: "Dealer policy updates",
-        body: "Published dealer policy changes will appear here. Refer to your authorized account for current, binding policies.",
-      },
-    ],
-  },
-  {
-    category: "Special Announcements",
-    items: [
-      {
-        title: "15% dealer voucher (example)",
-        body: "Powder-blue voucher shown on the home screen is an unapproved example. No offer is live until Kessick confirms it.",
-      },
-    ],
-  },
-  {
-    category: "Kessick Cut List Newsletter",
-    pending: true,
-    items: [
-      {
-        title: "Newsletter section — pending content",
-        body: "The Kessick Cut List newsletter will live here once content is confirmed with the Kessick team.",
-      },
-    ],
-  },
-  {
-    category: "Project Credits",
-    pending: true,
-    items: [
-      {
-        title: "Project credits — pending staff confirmation",
-        body: "Credit and recognition details for completed projects will be added after staff confirm the information.",
+        title: "No new policies posted",
+        body: "When Kessick publishes a dealer policy update it will appear here, and in Dealer Resources under Policies and Guides.",
       },
     ],
   },
 ];
 
-/* ---- Dealer Resources (Oct 8 outline) ---- */
+/* Standing notices from the outline, shown above the announcement tabs. */
+const portalNotices: { label?: string; text: string; section: Section }[] = [
+  {
+    label: "Special Announcement",
+    text: "Dealer news from Kessick appears here.",
+    section: "Announcements",
+  },
+  {
+    text: "Subscribe now to receive our quarterly newsletter: The Kessick Cut List",
+    section: "Support",
+  },
+  {
+    text: "Earn project credits on your next build. Learn more",
+    section: "Support",
+  },
+];
+
+/* ---- Dealer Resources (dealer portal outline) ---- */
 type Resource = {
   title: string;
   icon: IconType;
@@ -268,59 +270,59 @@ const resources: Resource[] = [
     title: "Renders",
     icon: Images,
     restricted: true,
-    note: "Project renders are dealer-specific. Request access from the Kessick team.",
+    note: "Project renders for your proposals and presentations.",
   },
   {
-    title: "Policies & Guides",
+    title: "Policies and Guides",
     icon: BookOpen,
-    public: KESSICK_RESOURCES,
-    note: "Dealer policies and project guides. Public guidance on the Kessick website.",
+    restricted: true,
+    note: "Dealer policies, ordering guides and warranty information.",
   },
   {
-    title: "Installation & Specification Sheets",
+    title: "Installation & Spec Sheets",
     icon: FileText,
     restricted: true,
-    note: "Technical install and spec sheets. Request access for the latest files.",
+    note: "Installation instructions and technical specifications by series.",
   },
   {
     title: "Wood Stain Chart",
     icon: Palette,
     public: KESSICK_STYLES,
-    note: "Finish and wood stain options. See finishes on the Kessick website.",
+    note: "Wood species and stain finishes for every Kessick series.",
   },
   {
     title: "Brochures & Catalogs",
     icon: FolderOpen,
     public: KESSICK_SITE,
-    note: "Product brochures and catalogs. Browse collections on Kessick's site.",
+    note: "Current brochures and product catalogs to share with clients.",
   },
   {
-    title: "Approved Logos",
+    title: "Logos",
     icon: Download,
     restricted: true,
-    note: "Brand-approved Kessick logos. Request the current logo pack.",
+    note: "Approved Kessick logo files for co-branded materials.",
   },
   {
     title: "Marketing Materials",
-    icon: Images,
+    icon: Sparkles,
     restricted: true,
-    note: "Co-branded marketing assets. Request access from your rep.",
+    note: "Showroom, social and print assets ready for your marketing.",
   },
   {
     title: "Direct Teamwork Access",
-    icon: Briefcase,
+    icon: TeamworkIcon,
     public: TEAMWORK_SITE,
-    note: "Dealer project collaboration runs in Teamwork. Open Teamwork or request access.",
+    note: "Collaborate with the Kessick team on active projects in Teamwork.",
   },
 ];
 
 /* ---- Report an issue categories ---- */
 const issueCategories = [
-  "Product / spec question",
+  "Product or specification question",
   "Order or delivery",
   "Design request help",
-  "Website / portal issue",
-  "Billing or account",
+  "Installation",
+  "Portal or website issue",
   "Something else",
 ];
 
@@ -621,132 +623,424 @@ function WebLinkDark({
   );
 }
 
+/* ---------------- Shared section styling (homepage look) ------------- */
+
+const BRONZE_CIRCLE =
+  "linear-gradient(90deg,#000 0%,#0d0b08 45%,#6f6656 80%,#b9b09c 100%)";
+const BLACK_TO_TAUPE =
+  "linear-gradient(180deg,#000 0%,#000 40%,#5e5748 78%,#a59d8c 100%)";
+
+/** Photographic page header in the style of the home header. */
+function PageHeader({
+  title,
+  tagline,
+  onBack,
+}: {
+  title: string;
+  tagline: string;
+  onBack: () => void;
+}) {
+  return (
+    <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
+      <img
+        src={cellarImage}
+        alt=""
+        className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+      />
+      <div className="absolute inset-0 -z-10 bg-black/55" />
+      <div className="px-6 pb-4 pt-4">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1 text-[12px] font-semibold text-white/90 hover:text-white"
+        >
+          <ChevronLeft className="h-4 w-4" /> Home
+        </button>
+        <h1 className="mt-4 text-[23px] font-extrabold leading-[1.12]">
+          {title}
+        </h1>
+        <p className="mt-1.5 text-[10.5px] italic leading-snug">{tagline}</p>
+      </div>
+    </header>
+  );
+}
+
+/** Underlined tab row on the black search-band gradient. */
+function TabBand<T extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: readonly T[];
+  active: T;
+  onChange: (t: T) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      className="-mx-4 flex gap-5 overflow-x-auto bg-gradient-to-r from-black via-black/90 to-black/70 px-6 pt-2.5 text-[13px] text-white sm:-mx-6"
+    >
+      {tabs.map((t) => (
+        <button
+          key={t}
+          role="tab"
+          aria-selected={t === active}
+          onClick={() => onChange(t)}
+          className={`shrink-0 border-b-2 pb-2 font-semibold transition ${
+            t === active ? "border-white" : "border-transparent text-white/60 hover:text-white"
+          }`}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BronzeCircle({
+  icon: Icon,
+  size = "h-11 w-11",
+}: {
+  icon: IconType;
+  size?: string;
+}) {
+  return (
+    <span
+      className={`flex ${size} shrink-0 items-center justify-center rounded-full text-[#d0d0d0]`}
+      style={{ background: BRONZE_CIRCLE }}
+    >
+      <Icon className="h-[55%] w-[55%]" />
+    </span>
+  );
+}
+
+function SectionTitle({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className="pt-1">
+      <h2 className="font-heading text-[18px] font-bold leading-tight text-[#222]">
+        {title}
+      </h2>
+      {sub ? <p className="text-[9.5px] italic text-[#222]">{sub}</p> : null}
+    </div>
+  );
+}
+
+/** Steel-blue bar, the voucher style from the home screen. */
+function SteelBar({
+  label,
+  text,
+  onClick,
+  href,
+}: {
+  label?: string;
+  text: string;
+  onClick?: () => void;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <span className="min-w-0 flex-1 text-[12px] leading-snug text-[#1b1b1b]">
+        {label ? <strong className="font-heading">{label}: </strong> : null}
+        {text}
+      </span>
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#2b3a67]">
+        <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
+      </span>
+    </>
+  );
+  const cls =
+    "flex w-full items-center gap-3 rounded-[10px] bg-[#8ea8bf] px-3.5 py-2.5 text-left";
+  return href ? (
+    <a href={href} className={cls}>
+      {inner}
+    </a>
+  ) : (
+    <button onClick={onClick} className={cls}>
+      {inner}
+    </button>
+  );
+}
+
+/** White row with a bronze circle icon, used for lists. */
+function RowCard({
+  icon,
+  title,
+  body,
+  children,
+}: {
+  icon: IconType;
+  title: string;
+  body: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <article className="flex gap-3 rounded-[10px] bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+      <BronzeCircle icon={icon} />
+      <div className="min-w-0 flex-1">
+        <h3 className="text-[13.5px] font-bold text-[#1b1b1b]">{title}</h3>
+        <p className="mt-0.5 text-[11.5px] leading-snug text-[#555]">{body}</p>
+        {children ? <div className="mt-2 flex flex-wrap gap-2">{children}</div> : null}
+      </div>
+    </article>
+  );
+}
+
+function PillLink({
+  href,
+  children,
+  dark = true,
+}: {
+  href: string;
+  children: React.ReactNode;
+  dark?: boolean;
+}) {
+  const external = href.startsWith("http");
+  return (
+    <a
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold ${
+        dark
+          ? "bg-[#1d1d1d] text-white hover:bg-black"
+          : "border border-[#1d1d1d]/25 text-[#1d1d1d] hover:border-[#1d1d1d]"
+      }`}
+    >
+      {children}
+    </a>
+  );
+}
+
+function requestAccessHref(title: string) {
+  return `mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
+    `Dealer resource request: ${title}`,
+  )}&body=${encodeURIComponent(
+    `Hello Kessick team,\n\nPlease send me the "${title}" dealer resource.\n\nDealer / company:\nContact name:\n\nThank you.`,
+  )}`;
+}
+
 /* ------------------------ Announcements ----------------------------- */
 
-function Announcements({ onBack }: { onBack: () => void }) {
+const ANNOUNCEMENT_TABS = ["New Products", "Coming Soon", "New Policies"] as const;
+
+function Announcements({
+  onBack,
+  onNavigate,
+}: {
+  onBack: () => void;
+  onNavigate: (s: Section) => void;
+}) {
+  const [tab, setTab] = useState<AnnouncementTab>("New Products");
+  const group = announcementGroups.find((g) => g.category === tab)!;
   return (
-    <div>
-      <SectionHeader title="Announcements" onBack={onBack}>
-        New products, coming-soon concepts, policy updates, and special
-        announcements. Example and pending items are labeled.
-      </SectionHeader>
-      <div className="space-y-4">
-        {announcementGroups.map((group) => (
-          <article
-            key={group.category}
-            className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-[#6d5a30]">
-                {group.category}
-              </h2>
-              {group.pending ? <PendingBadge /> : null}
-            </div>
-            <div className="mt-3 space-y-3">
-              {group.items.map((item) => (
-                <div
-                  key={item.title}
-                  className="border-l-2 border-[#c9ab62] pl-3"
-                >
-                  <p className="text-sm font-semibold text-[#1b1b19]">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-[#1b1b19]/60">
-                    {item.body}
-                  </p>
-                  {item.href ? (
-                    <div className="mt-2">
-                      <WebLink href={item.href}>Open on kessickwinecellars.com</WebLink>
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </article>
+    <div className="space-y-3 pb-2">
+      <div>
+        <PageHeader
+          title="Announcements"
+          tagline="New products, upcoming collections, and policy updates from Kessick."
+          onBack={onBack}
+        />
+        <TabBand<AnnouncementTab> tabs={ANNOUNCEMENT_TABS} active={tab} onChange={setTab} />
+      </div>
+
+      <div className="space-y-2 pt-1">
+        {portalNotices.map((n) => (
+          <SteelBar
+            key={n.text}
+            label={n.label}
+            text={n.text}
+            onClick={() => onNavigate(n.section)}
+          />
         ))}
       </div>
+
+      <SectionTitle title={tab} />
+
+      {tab === "Coming Soon" ? (
+        <section
+          className="flex gap-3 rounded-[10px] p-2"
+          style={{ background: BLACK_TO_TAUPE }}
+        >
+          <img
+            src={estateCraftsman}
+            alt="Kessick craftsman building an Estate Series rack"
+            className="aspect-[10/9] w-[42%] shrink-0 rounded-[8px] object-cover"
+          />
+          <div className="min-w-0 flex-1 py-1 pr-1 text-white">
+            <p className="text-[12.5px] font-bold">ESTATE SERIES</p>
+            <p className="font-label mt-0.5 rounded-full bg-white px-2 py-[1px] text-[13px] text-[#333]">
+              Cask Collection
+            </p>
+            <p className="mt-3 text-[11px] leading-snug text-white/85">
+              {group.items[0].body}
+            </p>
+            <a
+              href={`mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent("Cask Collection launch details")}`}
+              className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#111]"
+            >
+              Get launch details <ChevronRight className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </section>
+      ) : (
+        <div className="space-y-2">
+          {group.items.map((item) => (
+            <RowCard
+              key={item.title}
+              icon={tab === "New Policies" ? BookOpen : StarIcon}
+              title={item.title}
+              body={item.body}
+            >
+              {item.href ? (
+                <PillLink href={item.href}>
+                  {item.cta ?? "Learn more"} <ArrowUpRight className="h-3 w-3" />
+                </PillLink>
+              ) : null}
+            </RowCard>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ----------------------- Design Request ----------------------------- */
 
-function DesignRequest({ onBack }: { onBack: () => void }) {
-  return (
-    <div>
-      <SectionHeader title="Design Request Form" onBack={onBack}>
-        Start a Forma or Towers design request through Kessick's official
-        workflow. Submissions are handled on the Kessick website.
-      </SectionHeader>
+const DESIGN_TABS = ["Forma", "Towers"] as const;
+type DesignTab = (typeof DESIGN_TABS)[number];
 
-      <section className="rounded-2xl border border-[#c9ab62]/40 bg-[#f7f2e6] p-5">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#6d5a30]" />
-          <div>
-            <h2 className="font-semibold text-[#1b1b19]">
-              Submit through Kessick's official form
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-[#1b1b19]/65">
-              The official design-request workflow collects your project
-              details securely. This public preview links you straight to it.
-            </p>
-            <div className="mt-3">
-              <WebLink href={KESSICK_DESIGN_REQUEST}>
-                Open the Kessick design request
-              </WebLink>
-            </div>
-          </div>
+function DesignRequest({ onBack }: { onBack: () => void }) {
+  const [tab, setTab] = useState<DesignTab>("Forma");
+  const [form, setForm] = useState({
+    project: "",
+    client: "",
+    location: "",
+    configuration: "",
+    finish: "",
+    bottles: "",
+    timeline: "",
+    notes: "",
+  });
+  const set = (k: keyof typeof form) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const configOptions =
+    tab === "Forma"
+      ? ["Single door", "Double door", "Triple door", "Not sure yet"]
+      : ["Single tower", "Wine wall (multiple towers)", "Full room", "Not sure yet"];
+
+  const body = [
+    `Design request: ${tab}`,
+    "",
+    `Project name: ${form.project}`,
+    `Client: ${form.client}`,
+    `Project location: ${form.location}`,
+    `Configuration: ${form.configuration}`,
+    `Wood / stain finish: ${form.finish}`,
+    `Bottle capacity: ${form.bottles}`,
+    `Timeline: ${form.timeline}`,
+    "",
+    `Notes: ${form.notes}`,
+    "",
+    "Please attach room dimensions, photos or drawings to this email.",
+    "Sent from the Kessick dealer portal",
+  ].join("\n");
+  const mailto = `mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
+    `${tab} design request${form.project ? `: ${form.project}` : ""}`,
+  )}&body=${encodeURIComponent(body)}`;
+
+  const field =
+    "mt-1 w-full rounded-[8px] border border-[#1b1b1b]/15 bg-white px-3 py-2 text-[13px] text-[#1b1b1b] outline-none focus:border-[#8ea8bf]";
+  const labelCls = "block text-[11px] font-bold text-[#333]";
+
+  return (
+    <div className="space-y-3 pb-2">
+      <div>
+        <PageHeader
+          title="Design Request Form"
+          tagline="Tell us about the space. Our design team will prepare a layout for your client."
+          onBack={onBack}
+        />
+        <TabBand<DesignTab> tabs={DESIGN_TABS} active={tab} onChange={setTab} />
+      </div>
+
+      <section
+        className="flex items-center gap-3 rounded-[10px] p-3 text-white"
+        style={{ background: BLACK_TO_TAUPE }}
+      >
+        <BronzeCircle icon={StarIcon} size="h-12 w-12" />
+        <div className="min-w-0">
+          <p className="text-[15px] font-bold">{tab}</p>
+          <p className="text-[11px] italic text-white/85">
+            {tab === "Forma"
+              ? "Freestanding, furniture-grade enclosures in single, double or triple-door."
+              : "Fully assembled towers that combine into wine walls and rooms."}
+          </p>
         </div>
       </section>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {[
-          {
-            name: "Forma",
-            body: "Request a Forma collection design.",
-          },
-          {
-            name: "Towers",
-            body: "Request a tower-style design.",
-          },
-        ].map((style) => (
-          <a
-            key={style.name}
-            href={KESSICK_DESIGN_REQUEST}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5 transition hover:border-[#c9ab62]"
-          >
-            <h3 className="font-serif text-lg font-semibold text-[#1b1b19]">
-              {style.name}
-            </h3>
-            <p className="mt-1 text-sm text-[#1b1b19]/60">{style.body}</p>
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#6d5a30]">
-              Start request <ArrowRight className="h-4 w-4" />
-            </span>
-          </a>
-        ))}
-      </div>
+      <SectionTitle title="Project details" sub="Every field helps our designers get it right the first time." />
 
-      <section className="mt-4 rounded-2xl border border-[#1b1b19]/10 bg-white p-5">
-        <h2 className="font-semibold text-[#1b1b19]">
-          Project details you'll need
-        </h2>
-        <ul className="mt-3 space-y-2 text-sm text-[#1b1b19]/65">
-          {[
-            "Room dimensions and photos or drawings",
-            "Collection / style of interest (e.g. Forma, Towers)",
-            "Desired wood species and finish / stain",
-            "Bottle capacity and refrigeration needs",
-            "Project timeline and installation location",
-          ].map((line) => (
-            <li key={line} className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c9ab62]" />
-              {line}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <form
+        className="space-y-3 rounded-[10px] bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+        onSubmit={(e) => {
+          e.preventDefault();
+          window.location.href = mailto;
+        }}
+      >
+        <label className={labelCls}>
+          Project name
+          <input className={field} value={form.project} onChange={set("project")} />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className={labelCls}>
+            Client
+            <input className={field} value={form.client} onChange={set("client")} />
+          </label>
+          <label className={labelCls}>
+            City, state
+            <input className={field} value={form.location} onChange={set("location")} />
+          </label>
+        </div>
+        <label className={labelCls}>
+          Configuration
+          <select className={field} value={form.configuration} onChange={set("configuration")}>
+            <option value="">Choose one</option>
+            {configOptions.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className={labelCls}>
+            Wood / stain
+            <input className={field} value={form.finish} onChange={set("finish")} placeholder="See Wood Stain Chart" />
+          </label>
+          <label className={labelCls}>
+            Bottle capacity
+            <input className={field} value={form.bottles} onChange={set("bottles")} inputMode="numeric" />
+          </label>
+        </div>
+        <label className={labelCls}>
+          Timeline
+          <input className={field} value={form.timeline} onChange={set("timeline")} placeholder="e.g. install by March" />
+        </label>
+        <label className={labelCls}>
+          Notes
+          <textarea className={field} rows={3} value={form.notes} onChange={set("notes")} />
+        </label>
+        <button
+          type="submit"
+          className="flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-bold text-white"
+          style={{ background: "linear-gradient(180deg,#000 0%,#000 45%,#6e6553 100%)" }}
+        >
+          <EnvelopeIcon className="h-4 w-4" /> Email {tab} request to Kessick
+        </button>
+        <p className="text-[10.5px] italic text-[#555]">
+          Opens your email with these details filled in. Attach room dimensions,
+          photos or drawings before sending.
+        </p>
+      </form>
     </div>
   );
 }
@@ -755,252 +1049,185 @@ function DesignRequest({ onBack }: { onBack: () => void }) {
 
 function Resources({ onBack }: { onBack: () => void }) {
   return (
-    <div>
-      <SectionHeader title="Dealer Resources" onBack={onBack}>
-        Renders, guides, spec sheets, finishes, brochures, logos, marketing, and
-        Teamwork access. Restricted files use a Request Access action instead of
-        a fake download.
-      </SectionHeader>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {resources.map((r) => {
-          const Icon = r.icon;
-          const requestHref = `mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
-            `Resource access request: ${r.title}`,
-          )}&body=${encodeURIComponent(
-            `Hello Kessick team,\n\nI'd like access to the "${r.title}" dealer resource.\n\nDealer / company:\nContact name:\n\nThank you.`,
-          )}`;
-          return (
-            <article
-              key={r.title}
-              className="flex flex-col rounded-2xl border border-[#1b1b19]/10 bg-white p-4"
-            >
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-[#1b1b19]">
-                    {r.title}
-                  </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-[#1b1b19]/55">
-                    {r.note}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {r.public ? (
-                  <a
-                    href={r.public}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1b1b19] px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
-                  >
-                    Open <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                ) : null}
-                {r.restricted ? (
-                  <a
-                    href={requestHref}
-                    className="inline-flex items-center gap-1 rounded-full border border-[#1b1b19]/20 px-3 py-1.5 text-xs font-semibold text-[#1b1b19] hover:border-[#c9ab62]"
-                  >
-                    Request access <Mail className="h-3.5 w-3.5" />
-                  </a>
-                ) : null}
-              </div>
-            </article>
-          );
-        })}
+    <div className="space-y-3 pb-2">
+      <PageHeader
+        title="Dealer Resources"
+        tagline="Renders, guides, spec sheets, finishes and marketing assets to sell, specify, and deliver."
+        onBack={onBack}
+      />
+
+      <div className="grid grid-cols-4 gap-2 pt-1">
+        {resources.slice(0, 4).map((r) => (
+          <a
+            key={r.title}
+            href={`#res-${r.title.replace(/\W+/g, "-")}`}
+            className="flex min-w-0 flex-col items-center gap-1.5 text-center"
+          >
+            <BronzeCircle icon={r.icon} size="h-[clamp(3.25rem,15vw,3.9rem)] w-[clamp(3.25rem,15vw,3.9rem)]" />
+            <span className="font-label text-[10.5px] leading-[1.1] text-[#555]">{r.title}</span>
+          </a>
+        ))}
+      </div>
+
+      <SectionTitle title="All resources" sub="Open what's public, or request files from the Kessick team." />
+
+      <div className="space-y-2">
+        {resources.map((r) => (
+          <div key={r.title} id={`res-${r.title.replace(/\W+/g, "-")}`}>
+            <RowCard icon={r.icon} title={r.title} body={r.note}>
+              {r.public ? (
+                <PillLink href={r.public}>
+                  Open <ArrowUpRight className="h-3 w-3" />
+                </PillLink>
+              ) : null}
+              {r.restricted ? (
+                <PillLink href={requestAccessHref(r.title)} dark={false}>
+                  Request files <ChevronRight className="h-3 w-3" />
+                </PillLink>
+              ) : null}
+            </RowCard>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/* --------------------------- Support -------------------------------- */
+/* ----------------------- Report an Issue ----------------------------- */
 
 function Support({ onBack }: { onBack: () => void }) {
   const [category, setCategory] = useState(issueCategories[0]);
   const [message, setMessage] = useState("");
 
   const mailtoHref = `mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
-    `Dealer portal — ${category}`,
+    `Dealer portal feedback: ${category}`,
   )}&body=${encodeURIComponent(
-    `Issue category: ${category}\n\n${message || "Describe the issue here…"}\n\n— Sent from the Kessick dealer portal`,
+    `Category: ${category}\n\n${message}\n\nSent from the Kessick dealer portal`,
   )}`;
+  const field =
+    "mt-1 w-full rounded-[8px] border border-[#1b1b1b]/15 bg-white px-3 py-2 text-[13px] text-[#1b1b1b] outline-none focus:border-[#8ea8bf]";
 
   return (
-    <div>
-      <SectionHeader title="Report an Issue & Feedback" onBack={onBack}>
-        Send feedback by email, reach the Kessick team, or call support. This
-        preview opens a real, prefilled email draft — it never shows a fake
-        "submitted" message.
-      </SectionHeader>
+    <div className="space-y-3 pb-2">
+      <PageHeader
+        title="Report an Issue"
+        tagline="Feedback, questions, or something not right? A direct line to our team."
+        onBack={onBack}
+      />
 
-      <section className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5">
-        <h2 className="font-semibold text-[#1b1b19]">Feedback form</h2>
-        <div className="mt-4 space-y-4">
-          <div>
-            <label
-              htmlFor="issue-category"
-              className="block text-xs font-semibold uppercase tracking-wide text-[#6d5a30]"
-            >
-              Issue category
-            </label>
-            <select
-              id="issue-category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-[#1b1b19]/15 bg-[#faf9f6] px-3 py-2.5 text-sm text-[#1b1b19] outline-none focus:border-[#c9ab62]"
-            >
-              {issueCategories.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="issue-message"
-              className="block text-xs font-semibold uppercase tracking-wide text-[#6d5a30]"
-            >
-              Details
-            </label>
-            <textarea
-              id="issue-message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              placeholder="Tell us what's happening…"
-              className="mt-1.5 w-full rounded-xl border border-[#1b1b19]/15 bg-[#faf9f6] px-3 py-2.5 text-sm text-[#1b1b19] outline-none focus:border-[#c9ab62]"
-            />
-          </div>
-          <a
-            href={mailtoHref}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1b1b19] px-5 py-3 text-sm font-semibold text-white hover:bg-black sm:w-auto"
-          >
-            <Mail className="h-4 w-4" /> Open email draft
+      <div className="grid grid-cols-3 gap-2 pt-1">
+        {[
+          { label: "Feedback Form", icon: ChatIcon, href: "#feedback-form" },
+          { label: "Email Us", icon: EnvelopeIcon, href: `mailto:${KESSICK_EMAIL}` },
+          { label: "Call Now", icon: Phone as IconType, href: `tel:${KESSICK_PHONE_TEL}` },
+        ].map((a) => (
+          <a key={a.label} href={a.href} className="flex flex-col items-center gap-1.5 text-center">
+            <BronzeCircle icon={a.icon} size="h-[clamp(3.25rem,15vw,3.9rem)] w-[clamp(3.25rem,15vw,3.9rem)]" />
+            <span className="font-label text-[11px] text-[#555]">{a.label}</span>
           </a>
-          <p className="text-xs text-[#1b1b19]/45">
-            Your email app opens with these details prefilled so you can review
-            and send. Nothing is submitted from this public preview.
-          </p>
-        </div>
-      </section>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <a
-          href={`mailto:${KESSICK_EMAIL}`}
-          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
-            <Mail className="h-5 w-5" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-[#1b1b19]">
-              Email Kessick
-            </span>
-            <span className="block truncate text-xs text-[#1b1b19]/55">
-              {KESSICK_EMAIL}
-            </span>
-          </span>
-        </a>
-        <a
-          href={`tel:${KESSICK_PHONE_TEL}`}
-          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
-            <Phone className="h-5 w-5" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-[#1b1b19]">
-              Call support
-            </span>
-            <span className="block truncate text-xs text-[#1b1b19]/55">
-              {KESSICK_PHONE_DISPLAY}
-            </span>
-          </span>
-        </a>
+        ))}
       </div>
+
+      <SectionTitle title="Feedback Form" sub="Choose a topic and tell us what's happening." />
+
+      <form
+        id="feedback-form"
+        className="space-y-3 rounded-[10px] bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+        onSubmit={(e) => {
+          e.preventDefault();
+          window.location.href = mailtoHref;
+        }}
+      >
+        <label className="block text-[11px] font-bold text-[#333]">
+          Topic
+          <select className={field} value={category} onChange={(e) => setCategory(e.target.value)}>
+            {issueCategories.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-[11px] font-bold text-[#333]">
+          Details
+          <textarea
+            className={field}
+            rows={4}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Order number, series, and what you're seeing"
+          />
+        </label>
+        <button
+          type="submit"
+          className="flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-bold text-white"
+          style={{ background: "linear-gradient(180deg,#000 0%,#000 45%,#6e6553 100%)" }}
+        >
+          <EnvelopeIcon className="h-4 w-4" /> Send feedback
+        </button>
+      </form>
+
+      <SteelBar label="Email" text={KESSICK_EMAIL} href={`mailto:${KESSICK_EMAIL}`} />
+      <SteelBar label="Call now" text={KESSICK_PHONE_DISPLAY} href={`tel:${KESSICK_PHONE_TEL}`} />
     </div>
   );
 }
 
 /* --------------------------- Account -------------------------------- */
 
-function Account({ onBack }: { onBack: () => void }) {
+function Account({
+  onBack,
+  onNavigate,
+}: {
+  onBack: () => void;
+  onNavigate: (s: Section) => void;
+}) {
   return (
-    <div>
-      <SectionHeader title="Dealer Account" onBack={onBack}>
-        A sample dealer profile. No real person, pricing, or private records are
-        shown in this public preview.
-      </SectionHeader>
-      <section className="rounded-2xl border border-[#1b1b19]/10 bg-white p-5">
-        <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c9ab62]/15 text-sm font-semibold text-[#6d5a30]">
-            AM
-          </span>
-          <div className="min-w-0">
-            <h2 className="font-semibold text-[#1b1b19]">Alex Morgan</h2>
-            <p className="truncate text-sm text-[#1b1b19]/55">
-              Example Cellars LLC · sample profile
-            </p>
+    <div className="space-y-3 pb-2">
+      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
+        <img src={cellarImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <div className="absolute inset-0 -z-10 bg-black/55" />
+        <div className="px-6 pb-5 pt-4">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-white/90 hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4" /> Home
+          </button>
+          <div className="mt-4 flex items-center gap-3">
+            <img
+              src={dealerAvatar}
+              alt=""
+              className="h-16 w-16 rounded-full border-2 border-white object-cover"
+            />
+            <div className="min-w-0 leading-tight">
+              <h1 className="text-[18px] font-extrabold">Authorized Dealer Name</h1>
+              <p className="text-[12px]">123 Anywhere St., Any City</p>
+              <p className="mt-1 text-[10.5px] italic text-white/80">Dealer Account Page</p>
+            </div>
           </div>
         </div>
-        <dl className="mt-5 grid gap-4 border-t border-[#1b1b19]/10 pt-5 sm:grid-cols-2">
-          <div>
-            <dt className="text-[11px] uppercase tracking-wide text-[#1b1b19]/45">
-              Account status
-            </dt>
-            <dd className="mt-0.5 text-sm text-[#1b1b19]">
-              Sample approved dealer
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[11px] uppercase tracking-wide text-[#1b1b19]/45">
-              Access
-            </dt>
-            <dd className="mt-0.5 text-sm text-[#1b1b19]">
-              Illustrative only · no sign-in
-            </dd>
-          </div>
-        </dl>
-      </section>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <a
-          href={TEAMWORK_SITE}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
-            <Briefcase className="h-5 w-5" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-[#1b1b19]">
-              Teamwork Account
-            </span>
-            <span className="block truncate text-xs text-[#1b1b19]/55">
-              Open dealer project collaboration
-            </span>
-          </span>
-        </a>
-        <a
-          href={KESSICK_SITE}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-2xl border border-[#1b1b19]/10 bg-white p-4 hover:border-[#c9ab62]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c9ab62]/15 text-[#6d5a30]">
-            <ExternalLink className="h-5 w-5" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-[#1b1b19]">
-              Kessick Wine Cellars
-            </span>
-            <span className="block truncate text-xs text-[#1b1b19]/55">
-              Visit the official website
-            </span>
-          </span>
-        </a>
+      </header>
+
+      <SectionTitle title="Your account" sub="Profile, projects, and your line to the Kessick team." />
+
+      <div className="space-y-2">
+        <RowCard icon={PersonIcon} title="Dealer profile" body="Company details, showroom address and primary contact.">
+          <PillLink href={`mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent("Dealer profile update")}`} dark={false}>
+            Request an update <ChevronRight className="h-3 w-3" />
+          </PillLink>
+        </RowCard>
+        <RowCard icon={TeamworkIcon} title="Teamwork Account" body="Your active Kessick projects, files and conversations.">
+          <PillLink href={TEAMWORK_SITE}>
+            Open Teamwork <ArrowUpRight className="h-3 w-3" />
+          </PillLink>
+        </RowCard>
+        <RowCard icon={EnvelopeIcon} title="Email the Kessick team" body={KESSICK_EMAIL}>
+          <PillLink href={`mailto:${KESSICK_EMAIL}`}>
+            Email <ChevronRight className="h-3 w-3" />
+          </PillLink>
+        </RowCard>
       </div>
+
+      <SteelBar text="Report an issue or send feedback" onClick={() => onNavigate("Support")} />
     </div>
   );
 }
@@ -1084,7 +1311,7 @@ export default function DealerPortalPreview({
 
 
       {/* Centered mobile app shell */}
-      <div className="mx-auto w-full max-w-[460px] px-4 pt-4 sm:max-w-[520px] sm:px-6">
+      <div className="dealer-mockup mx-auto w-full max-w-[460px] px-4 pt-4 sm:max-w-[520px] sm:px-6">
         {section === "Home" ? (
           <Home
             search={search}
@@ -1093,7 +1320,7 @@ export default function DealerPortalPreview({
             onNavigate={navigate}
           />
         ) : section === "Announcements" ? (
-          <Announcements onBack={() => navigate("Home")} />
+          <Announcements onBack={() => navigate("Home")} onNavigate={navigate} />
         ) : section === "DesignRequest" ? (
           <DesignRequest onBack={() => navigate("Home")} />
         ) : section === "Resources" ? (
@@ -1101,7 +1328,7 @@ export default function DealerPortalPreview({
         ) : section === "Support" ? (
           <Support onBack={() => navigate("Home")} />
         ) : (
-          <Account onBack={() => navigate("Home")} />
+          <Account onBack={() => navigate("Home")} onNavigate={navigate} />
         )}
 
       </div>
