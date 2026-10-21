@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import cellarImage from "@assets/kessick-room-demo.jpg";
 import { dealerAnswers, matchAnswers, suggestedAnswerIds, type DealerAnswer } from "./dealerAnswers";
+import { SOMM_VOUCHER, applicableVouchers, isVoucherActive, voucherLine } from "./vouchers";
 import { clearSearchLog, readSearchLog, recentQueries, recordSearch, searchLogText } from "./searchLog";
 import logoWhite from "@assets/kessick-logo-white.svg";
 // Placeholders cropped from the client mockup until the original photos arrive.
@@ -1387,11 +1388,15 @@ function Home({
         </ul>
       </section>
 
-      {/* Steel-blue voucher bar */}
-      <a
-        href={`mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent("15% Somm project voucher")}&body=${encodeURIComponent(
-          "Hello Kessick team,\n\nPlease send me the 15% discount voucher for Somm projects (valid through Nov 30, 2026).\n\nDealer / company:\nProject:\n\nThank you.",
-        )}`}
+      {/* Steel-blue voucher bar: starts a Somm request with the voucher applied */}
+      {isVoucherActive(SOMM_VOUCHER) ? (
+      <button
+        type="button"
+        onClick={() => {
+          startSommRequest();
+          onNavigate({ section: "DesignRequest" });
+          notify(`${SOMM_VOUCHER.percentOff}% voucher applied to your request`);
+        }}
         className="flex w-full items-center gap-3 rounded-[10px] bg-[#8ea8bf] px-3.5 py-2 text-left transition active:brightness-95"
       >
         <TicketPercent className="h-9 w-9 shrink-0 text-white" fill="currentColor" stroke="#8ea8bf" strokeWidth={1.6} aria-hidden="true" />
@@ -1406,7 +1411,8 @@ function Home({
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#2b3a67]">
           <ChevronRight className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
         </span>
-      </a>
+      </button>
+      ) : null}
 
       {/* Coming Soon: Estate Series Cask Collection */}
       <section
@@ -2032,8 +2038,21 @@ const EMPTY_DESIGN = {
   bottles: "",
   timeline: "",
   notes: "",
+  /** "yes" when the dealer marks this as a Somm project (voucher eligible). */
+  somm: "",
 };
 type DesignForm = typeof EMPTY_DESIGN;
+
+/** Marks the saved design request as a Somm project, so its voucher applies. */
+function startSommRequest() {
+  try {
+    const key = "kessick-portal:design-request";
+    const saved = JSON.parse(window.localStorage.getItem(key) ?? "{}");
+    window.localStorage.setItem(key, JSON.stringify({ ...saved, somm: "yes" }));
+  } catch {
+    // Without storage the dealer can still tick the box themselves.
+  }
+}
 
 function DesignRequest({
   sub,
@@ -2062,10 +2081,16 @@ function DesignRequest({
       ? ["Single door", "Double door", "Triple door", "Not sure yet"]
       : ["Single tower", "Wine wall (multiple towers)", "Full room", "Not sure yet"];
 
+  const vouchers = applicableVouchers({ sommProject: form.somm === "yes" });
+  const voucherOffered = isVoucherActive(SOMM_VOUCHER);
+
   const body = [
     `Design request: ${tab}`,
     "",
+    ...vouchers.map(voucherLine),
+    ...(vouchers.length ? [""] : []),
     `Project name: ${form.project}`,
+    `Somm project: ${form.somm === "yes" ? "Yes" : "No"}`,
     `Client: ${form.client}`,
     `Project location: ${form.location}`,
     `Configuration: ${form.configuration}`,
@@ -2183,6 +2208,44 @@ function DesignRequest({
             <Field id="notes" label="Notes">
               <textarea {...controlProps("notes")} rows={3} value={form.notes} onChange={set("notes")} />
             </Field>
+            {voucherOffered ? (
+              <div
+                className={`rounded-[10px] border p-3 transition ${
+                  vouchers.length ? "border-[#4d7a5a]/40 bg-[#eef5ef]" : "border-[#8ea8bf]/50 bg-[#f1f5f9]"
+                }`}
+              >
+                <label htmlFor="somm" className="flex min-h-11 cursor-pointer items-center gap-3">
+                  <input
+                    id="somm"
+                    name="somm"
+                    type="checkbox"
+                    checked={form.somm === "yes"}
+                    onChange={(e) => setForm((f) => ({ ...f, somm: e.target.checked ? "yes" : "" }))}
+                    className="h-5 w-5 shrink-0 accent-[#1d1d1d]"
+                  />
+                  <span className="text-[13.5px] font-bold text-[#1b1b1b]">This is a Somm project</span>
+                </label>
+                <p className="mt-1 flex items-start gap-2 text-[12.5px] leading-snug text-[#333]" aria-live="polite">
+                  {vouchers.length ? (
+                    <>
+                      <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#4d7a5a]" aria-hidden="true" />
+                      <span>
+                        <strong>{SOMM_VOUCHER.title} applied.</strong> {SOMM_VOUCHER.percentOff}% off is added to this
+                        request automatically, so Kessick discounts your quote. Valid through {SOMM_VOUCHER.expiresLabel}.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <TicketPercent className="mt-0.5 h-4 w-4 shrink-0 text-[#3c5a80]" aria-hidden="true" />
+                      <span>
+                        Somm projects get {SOMM_VOUCHER.percentOff}% off through {SOMM_VOUCHER.expiresLabel}. Tick the
+                        box and the voucher is applied for you.
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            ) : null}
             <button
               type="submit"
               // Click (and Enter's implicit click) is handled directly because
