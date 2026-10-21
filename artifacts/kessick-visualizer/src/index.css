@@ -382,3 +382,37 @@
   from { transform: translateY(24px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Pointer, hover and pressed feedback for every control. */
+.dealer-mockup button:not(:disabled),
+.dealer-mockup a[href],
+.dealer-mockup label[for],
+.dealer-mockup select {
+  cursor: pointer;
+}
+.dealer-mockup button:disabled {
+  cursor: not-allowed;
+}
+.dealer-mockup button:not(:disabled),
+.dealer-mockup a[href] {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: color, background-color, border-color, box-shadow, filter, opacity, transform;
+  transition-duration: 0.15s;
+}
+.dealer-mockup button:not(:disabled):active,
+.dealer-mockup a[href]:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) {
+  .dealer-mockup a.rounded-\[10px\]:hover,
+  .dealer-mockup button.rounded-\[10px\]:hover {
+    filter: brightness(1.04);
+  }
+}
+.dealer-mockup .hint-in {
+  animation: dealer-hint 0.12s ease-out;
+}
+@keyframes dealer-hint {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

@@ -81,6 +81,13 @@ type NavItem =
   | { kind: "link"; label: string; icon: IconType; href: string }
   | { kind: "email"; label: string; icon: IconType };
 
+const NAV_HINTS: Record<string, string> = {
+  Home: "Home",
+  Account: "Your dealer account",
+  Email: "Email the Kessick team",
+  Teamwork: "Open Teamwork in a new tab",
+};
+
 const bottomNav: NavItem[] = [
   { kind: "section", label: "Home", icon: HomeIcon, section: "Home" },
   { kind: "section", label: "Account", icon: PersonIcon, section: "Account" },
@@ -290,6 +297,121 @@ function Toast() {
           {message}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+const HINT_TARGETS = "[data-tip], button[aria-label], a[aria-label]";
+
+/**
+ * Hover hints: a short label appears after a brief pause over a control
+ * (mouse), immediately on keyboard focus, and on a long press (touch).
+ * Controls opt in with data-tip; icon-only controls fall back to their
+ * aria-label so no button is ever a mystery.
+ */
+function HoverHints() {
+  const [tip, setTip] = useState<{ text: string; x: number; y: number; above: boolean } | null>(null);
+  useEffect(() => {
+    let timer: number | undefined;
+    let pressTimer: number | undefined;
+    let current: Element | null = null;
+    let suppressClick = false;
+
+    const textFor = (el: Element) => {
+      const explicit = el.getAttribute("data-tip");
+      if (explicit !== null) return explicit || null;
+      const visible = (el as HTMLElement).innerText?.trim();
+      return visible ? null : el.getAttribute("aria-label");
+    };
+    const hide = () => {
+      window.clearTimeout(timer);
+      current = null;
+      setTip(null);
+    };
+    const show = (el: Element, delay: number) => {
+      window.clearTimeout(timer);
+      const text = textFor(el);
+      if (!text) return hide();
+      current = el;
+      timer = window.setTimeout(() => {
+        if (current !== el) return;
+        const r = el.getBoundingClientRect();
+        const above = r.top > 64;
+        const half = Math.min(120, window.innerWidth / 2 - 8);
+        const x = Math.min(Math.max(r.left + r.width / 2, half + 8), window.innerWidth - half - 8);
+        setTip({ text, x, y: above ? r.top - 8 : r.bottom + 8, above });
+      }, delay);
+    };
+    const target = (e: Event) => (e.target as Element | null)?.closest?.(HINT_TARGETS) ?? null;
+
+    const onOver = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      const el = target(e);
+      if (!el) return hide();
+      if (el !== current) show(el, 400);
+    };
+    const onFocus = (e: FocusEvent) => {
+      const el = target(e);
+      if (el && (el as HTMLElement).matches(":focus-visible")) show(el, 0);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return hide();
+      const el = target(e);
+      window.clearTimeout(pressTimer);
+      if (!el) return;
+      pressTimer = window.setTimeout(() => {
+        suppressClick = true;
+        show(el, 0);
+        navigator.vibrate?.(10);
+        window.setTimeout(hide, 1800);
+      }, 500);
+    };
+    const cancelPress = () => window.clearTimeout(pressTimer);
+    const onClick = (e: MouseEvent) => {
+      // A long press shows the hint; it shouldn't also activate the button.
+      if (!suppressClick) return;
+      suppressClick = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    document.addEventListener("pointerover", onOver);
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("focusout", hide);
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("pointerup", cancelPress);
+    document.addEventListener("pointercancel", cancelPress);
+    document.addEventListener("click", onClick, true);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && hide();
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", hide, true);
+    return () => {
+      document.removeEventListener("pointerover", onOver);
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("focusout", hide);
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("pointerup", cancelPress);
+      document.removeEventListener("pointercancel", cancelPress);
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", hide, true);
+      window.clearTimeout(timer);
+      window.clearTimeout(pressTimer);
+    };
+  }, []);
+
+  if (!tip) return null;
+  return (
+    <div
+      role="tooltip"
+      className="dealer-mockup hint-in pointer-events-none fixed z-[70] max-w-[240px] rounded-[8px] bg-[#1d1d1d] px-2.5 py-1.5 text-center text-[12px] font-semibold leading-snug text-white shadow-lg"
+      style={{
+        left: tip.x,
+        top: tip.y,
+        transform: tip.above ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+      }}
+    >
+      {tip.text}
     </div>
   );
 }
@@ -703,6 +825,15 @@ function ChatIcon({ className }: { className?: string }) {
   );
 }
 
+const TOOLKIT_HINTS: Record<Section, string> = {
+  Home: "Home",
+  Announcements: "New products, coming soon and policy updates",
+  DesignRequest: "Send Kessick a Forma or Towers design request",
+  Resources: "Renders, spec sheets, stain chart and marketing files",
+  Support: "Send feedback or report an issue",
+  Account: "Your dealer account",
+};
+
 const toolkit: Toolkit[] = [
   { label: "What’s New", icon: TilesIcon, section: "Announcements" },
   { label: "Design Request Form", icon: StarIcon, section: "DesignRequest" },
@@ -1066,6 +1197,7 @@ function Home({
               type="button"
               onClick={() => onNavigate({ section: "Announcements" })}
               aria-label="Announcements"
+              data-tip="Announcements and dealer news"
               className="tap-target mt-1 rounded-full text-white"
             >
               <Bell className="h-[18px] w-[18px]" fill="currentColor" aria-hidden="true" />
@@ -1147,6 +1279,7 @@ function Home({
                   document.getElementById("dealer-search")?.focus();
                 }}
                 aria-label="Clear search"
+                data-tip="Clear search"
                 className="tap-target shrink-0 rounded-full"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -1155,6 +1288,7 @@ function Home({
             <button
               type="button"
               aria-label="Filter search"
+              data-tip={filtersOpen ? "Hide filters" : "Filter results by section"}
               aria-expanded={filtersOpen}
               aria-controls="dealer-search-filters"
               onClick={() => {
@@ -1365,6 +1499,7 @@ function Home({
               <button
                 type="button"
                 onClick={() => onNavigate({ section })}
+                data-tip={TOOLKIT_HINTS[section]}
                 className="group flex w-full min-w-0 flex-col items-center gap-1.5 rounded-[10px] py-0.5 text-center"
               >
                 <span
@@ -1397,6 +1532,7 @@ function Home({
           onNavigate({ section: "DesignRequest" });
           notify(`${SOMM_VOUCHER.percentOff}% voucher applied to your request`);
         }}
+        data-tip="Start a Somm design request with 15% off applied"
         className="flex w-full items-center gap-3 rounded-[10px] bg-[#8ea8bf] px-3.5 py-2 text-left transition active:brightness-95"
       >
         <TicketPercent className="h-9 w-9 shrink-0 text-white" fill="currentColor" stroke="#8ea8bf" strokeWidth={1.6} aria-hidden="true" />
@@ -1445,6 +1581,7 @@ function Home({
               type="button"
               onClick={() => onNavigate({ section: "Announcements", sub: slugify("Coming Soon") })}
               aria-label="Get Cask Collection launch details"
+              data-tip="Get Cask Collection launch details"
               className="tap-target flex shrink-0 items-center rounded-full bg-[#b9ab97] py-0.5 pl-1.5 text-[7px] font-bold uppercase leading-[1.05] text-white"
             >
               <span aria-hidden="true">
@@ -1552,6 +1689,7 @@ function AppBar({
           onClick={onBack}
           disabled={!canBack}
           aria-label={previous ? `Back to ${SECTION_TITLES[previous.section]}` : "Back"}
+          data-tip={previous ? `Back to ${SECTION_TITLES[previous.section]}` : undefined}
           className={btn}
         >
           <ChevronLeft className="h-5 w-5" aria-hidden="true" />
@@ -1562,6 +1700,7 @@ function AppBar({
           onClick={onForward}
           disabled={!canForward}
           aria-label={next ? `Forward to ${SECTION_TITLES[next.section]}` : "Forward"}
+          data-tip={next ? `Forward to ${SECTION_TITLES[next.section]}` : undefined}
           className={btn}
         >
           <ChevronRight className="h-5 w-5" aria-hidden="true" />
@@ -1578,6 +1717,7 @@ function AppBar({
           onClick={onHome}
           disabled={section === "Home"}
           aria-label="Home"
+          data-tip="Home"
           className={`${btn} w-11 px-0`}
         >
           <HomeIcon className="h-[18px] w-[18px]" />
@@ -1707,7 +1847,7 @@ function SteelBar({
   const cls =
     "flex min-h-12 w-full items-center gap-3 rounded-[10px] bg-[#8ea8bf] px-3.5 py-2.5 text-left transition active:brightness-95";
   return href ? (
-    <a href={href} className={cls}>
+    <a href={href} className={cls} data-tip={hintForHref(href)}>
       {inner}
     </a>
   ) : (
@@ -1763,6 +1903,7 @@ function PillLink({
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
+      data-tip={hintForHref(href)}
       className={`inline-flex min-h-9 items-center gap-1 rounded-full px-3.5 text-[12px] font-semibold transition ${
         dark
           ? "bg-[#1d1d1d] text-white hover:bg-black"
@@ -1773,6 +1914,18 @@ function PillLink({
       {external ? NEW_TAB_HINT : null}
     </a>
   );
+}
+
+/** Says where a link goes before the dealer taps it. */
+function hintForHref(href: string): string | undefined {
+  if (href.startsWith("mailto:")) return `Opens an email to ${KESSICK_EMAIL}`;
+  if (href.startsWith("tel:")) return `Calls ${KESSICK_PHONE_DISPLAY}`;
+  try {
+    const host = new URL(href).hostname.replace(/^www\./, "");
+    return `Opens ${host} in a new tab`;
+  } catch {
+    return undefined;
+  }
 }
 
 function requestAccessHref(title: string) {
@@ -2301,6 +2454,7 @@ function Resources({ sub, onBack }: { sub?: string; onBack: () => void }) {
               <button
                 type="button"
                 onClick={() => revealElement(resourceId(r.title))}
+                data-tip={`Jump to ${r.title}`}
                 className="flex w-full min-w-0 flex-col items-center gap-1.5 rounded-[10px] py-0.5 text-center"
               >
                 <BronzeCircle icon={r.icon} size="h-[clamp(3.25rem,15vw,3.9rem)] w-[clamp(3.25rem,15vw,3.9rem)]" />
@@ -2359,6 +2513,7 @@ function Support({ onBack }: { onBack: () => void }) {
           <button
             type="button"
             onClick={() => revealElement("feedback-section", sent ? undefined : "select")}
+            data-tip="Jump to the feedback form"
             className="flex w-full flex-col items-center gap-1.5 rounded-[10px] py-0.5 text-center"
           >
             <BronzeCircle icon={ChatIcon} size="h-[clamp(3.25rem,15vw,3.9rem)] w-[clamp(3.25rem,15vw,3.9rem)]" />
@@ -2366,11 +2521,11 @@ function Support({ onBack }: { onBack: () => void }) {
           </button>
         </li>
         {[
-          { label: "Email Us", icon: EnvelopeIcon, href: `mailto:${KESSICK_EMAIL}` },
-          { label: "Call Now", icon: Phone as IconType, href: `tel:${KESSICK_PHONE_TEL}` },
+          { label: "Email Us", icon: EnvelopeIcon, href: `mailto:${KESSICK_EMAIL}`, tip: `Email ${KESSICK_EMAIL}` },
+          { label: "Call Now", icon: Phone as IconType, href: `tel:${KESSICK_PHONE_TEL}`, tip: `Call ${KESSICK_PHONE_DISPLAY}` },
         ].map((a) => (
           <li key={a.label}>
-            <a href={a.href} className="flex flex-col items-center gap-1.5 rounded-[10px] py-0.5 text-center">
+            <a href={a.href} data-tip={a.tip} className="flex flex-col items-center gap-1.5 rounded-[10px] py-0.5 text-center">
               <BronzeCircle icon={a.icon} size="h-[clamp(3.25rem,15vw,3.9rem)] w-[clamp(3.25rem,15vw,3.9rem)]" />
               <span className="font-label text-[11px] text-[#444]">{a.label}</span>
             </a>
@@ -2755,6 +2910,7 @@ export default function DealerPortalPreview({
       </main>
 
       <Toast />
+      <HoverHints />
       {emailOpen ? (
         <EmailSheet
           onClose={() => setEmailOpen(false)}
@@ -2796,6 +2952,7 @@ export default function DealerPortalPreview({
                   <button
                     type="button"
                     aria-label={item.label}
+                    data-tip={NAV_HINTS[item.label]}
                     aria-haspopup="dialog"
                     aria-expanded={emailOpen}
                     onClick={() => setEmailOpen(true)}
@@ -2815,6 +2972,7 @@ export default function DealerPortalPreview({
                     target={external ? "_blank" : undefined}
                     rel={external ? "noopener noreferrer" : undefined}
                     aria-label={external ? `${item.label} (opens in a new tab)` : item.label}
+                    data-tip={NAV_HINTS[item.label]}
                     className={classes}
                   >
                     {content}
@@ -2828,6 +2986,7 @@ export default function DealerPortalPreview({
                   type="button"
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
+                  data-tip={active ? `You're on ${item.label}` : NAV_HINTS[item.label]}
                   onClick={() => navigate({ section: item.section })}
                   className={classes}
                 >
