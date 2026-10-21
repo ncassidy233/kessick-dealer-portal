@@ -38,6 +38,7 @@ import {
 import cellarImage from "@assets/kessick-room-demo.jpg";
 import { dealerAnswers, matchAnswers, suggestedAnswerIds, type DealerAnswer } from "./dealerAnswers";
 import { SOMM_VOUCHER, applicableVouchers, isVoucherActive, voucherLine } from "./vouchers";
+import { PORTAL_URL, installPlatform, isEmbedded, promptInstall, useInstallState, type InstallPlatform } from "./installApp";
 import { clearSearchLog, readSearchLog, recentQueries, recordSearch, searchLogText } from "./searchLog";
 import logoWhite from "@assets/kessick-logo-white.svg";
 // Placeholders cropped from the client mockup until the original photos arrive.
@@ -81,13 +82,15 @@ type IconType = React.ComponentType<{ className?: string }>;
 type NavItem =
   | { kind: "section"; label: string; icon: IconType; section: Section }
   | { kind: "link"; label: string; icon: IconType; href: string }
-  | { kind: "email"; label: string; icon: IconType };
+  | { kind: "email"; label: string; icon: IconType }
+  | { kind: "install"; label: string; icon: IconType };
 
 const NAV_HINTS: Record<string, string> = {
   Home: "Home",
   Account: "Your dealer account",
   Email: "Email the Kessick team",
   Teamwork: "Open Teamwork in a new tab",
+  "Get the app": "Install the portal as an app on this device",
 };
 
 const bottomNav: NavItem[] = [
@@ -95,6 +98,7 @@ const bottomNav: NavItem[] = [
   { kind: "section", label: "Account", icon: PersonIcon, section: "Account" },
   { kind: "email", label: "Email", icon: EnvelopeIcon },
   { kind: "link", label: "Teamwork", icon: TeamworkIcon, href: TEAMWORK_SITE },
+  { kind: "install", label: "Get the app", icon: DownloadIcon },
 ];
 
 /* ---------------------- Routing, focus and feedback ------------------ */
@@ -723,7 +727,76 @@ function EmailSheet({ onClose, onFeedback }: { onClose: () => void; onFeedback: 
   );
 }
 
+const INSTALL_STEPS: Record<InstallPlatform, { intro: string; steps: string[] }> = {
+  "ios-safari": {
+    intro: "Add the portal to your Home Screen. It opens full screen, like any other app.",
+    steps: ["Tap the Share button at the bottom of Safari.", "Scroll down and tap Add to Home Screen.", "Tap Add."],
+  },
+  "ios-other": {
+    intro: "On iPhone and iPad, apps are added from Safari.",
+    steps: ["Copy the portal link below.", "Open Safari and paste the link.", "Tap Share, then Add to Home Screen."],
+  },
+  android: {
+    intro: "Install the portal from Chrome. It opens full screen, like any other app.",
+    steps: ["Tap the ⋮ menu at the top right of Chrome.", "Tap Install app or Add to Home screen.", "Tap Install."],
+  },
+  "mac-safari": {
+    intro: "Add the portal to your Dock so it opens in its own window.",
+    steps: ["Open the File menu in Safari.", "Choose Add to Dock.", "Click Add."],
+  },
+  desktop: {
+    intro: "Install the portal from Chrome or Edge so it opens in its own window.",
+    steps: [
+      "Click the install icon at the right end of the address bar.",
+      "Or open the ⋮ menu and choose Cast, save and share, then Install page as app.",
+      "Click Install.",
+    ],
+  },
+};
+
+/** Shown when the browser can't open its own install dialog (Safari, or before Chrome is ready). */
+function InstallSheet({ onClose }: { onClose: () => void }) {
+  const { intro, steps } = INSTALL_STEPS[installPlatform()];
+  return (
+    <Sheet title="Get the Kessick app" subtitle={intro} onClose={onClose}>
+      {(close) => (
+        <>
+          <ol className="mb-2 space-y-2 px-1">
+            {steps.map((step, i) => (
+              <li key={step} className="flex items-start gap-3 text-[14px] text-[#1b1b1b]">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] text-[12px] font-bold text-white">
+                  {i + 1}
+                </span>
+                <span className="pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+          <button
+            type="button"
+            className={SHEET_ROW}
+            onClick={async () => {
+              notify((await copyText(PORTAL_URL)) ? "Portal link copied" : `The portal is at ${PORTAL_URL}`);
+              close();
+            }}
+          >
+            <BronzeCircle icon={Copy} size="h-9 w-9" /> Copy the portal link
+          </button>
+        </>
+      )}
+    </Sheet>
+  );
+}
+
 /* Small inline icons kept local so the bundle stays lean. */
+function DownloadIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+      <path d="M4.5 16v2.5A2 2 0 0 0 6.5 20.5h11a2 2 0 0 0 2-2V16" />
+    </svg>
+  );
+}
+
 function PersonIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
@@ -2828,6 +2901,24 @@ export default function DealerPortalPreview({
   const [filter, setFilter] = useState<SearchCategory | null>(null);
   const searchIndex = useMemo(buildSearchIndex, []);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const install = useInstallState();
+  const footerNav = bottomNav.filter((item) => item.kind !== "install" || !install.installed);
+  const getApp = async () => {
+    if (isEmbedded()) {
+      // A copy of the portal inside another page can't be installed: open the real one.
+      if (openInNewTab(PORTAL_URL)) notify("Opening the portal. Tap Get the app there to install it.");
+      return;
+    }
+    try {
+      const outcome = await promptInstall();
+      if (outcome === "accepted") notify("Installing the Kessick app");
+      if (outcome) return;
+    } catch {
+      /* fall through to the steps */
+    }
+    setInstallOpen(true);
+  };
   const [leaving, setLeaving] = useState<{ url: string; label: string } | null>(null);
   useLinkGuard(setLeaving);
 
@@ -2955,6 +3046,7 @@ export default function DealerPortalPreview({
           onFeedback={() => navigate({ section: "Support" })}
         />
       ) : null}
+      {installOpen ? <InstallSheet onClose={() => setInstallOpen(false)} /> : null}
       {leaving ? (
         <LeaveSheet url={leaving.url} onClose={() => setLeaving(null)} />
       ) : null}
@@ -2964,8 +3056,9 @@ export default function DealerPortalPreview({
         aria-label="Main"
         className="dealer-preview-surface dealer-mockup fixed inset-x-0 bottom-0 z-40 shadow-[0_-1px_0_rgba(0,0,0,0.06)]"
       >
-        <ul className="mx-auto grid max-w-[460px] grid-cols-4 items-center px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:max-w-[520px]">
-          {bottomNav.map((item) => {
+        <ul className={`mx-auto flex max-w-[460px] items-center ${footerNav.length > 4 ? "justify-between" : "justify-around"} px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:max-w-[520px]`}>
+          {/* Flex, not a grid: the active pill is wider than an icon and must not overlap its neighbours. */}
+          {footerNav.map((item) => {
             const Icon = item.icon;
             const active = item.kind === "section" && section === item.section;
             const content = active ? (
@@ -2983,7 +3076,23 @@ export default function DealerPortalPreview({
                 <Icon className="h-[22px] w-[22px]" />
               </span>
             );
-            const classes = "group flex min-h-12 w-full items-center justify-center rounded-full";
+            const classes = "group flex min-h-12 min-w-12 items-center justify-center rounded-full";
+            if (item.kind === "install") {
+              return (
+                <li key={item.label}>
+                  <button
+                    type="button"
+                    aria-label={item.label}
+                    data-tip={NAV_HINTS[item.label]}
+                    aria-haspopup="dialog"
+                    onClick={() => void getApp()}
+                    className={classes}
+                  >
+                    {content}
+                  </button>
+                </li>
+              );
+            }
             if (item.kind === "email") {
               return (
                 <li key={item.label}>

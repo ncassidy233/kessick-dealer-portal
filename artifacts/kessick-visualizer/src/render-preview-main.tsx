@@ -8,3 +8,11 @@ createRoot(document.getElementById("root")!).render(
     <DealerPortalPreview />
   </ErrorBoundary>,
 );
+
+// Lets browsers install the portal as an app. Skipped where service workers
+// aren't allowed, such as inside an embedded preview.
+if ("serviceWorker" in navigator && window.isSecureContext && window.self === window.top) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
