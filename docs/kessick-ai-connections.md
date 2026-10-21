@@ -1,6 +1,6 @@
-# Kessick AI external connections
+# Kessick Concierge external connections
 
-Kessick AI uses OpenAI through Replit AI Integrations. End users do not provide an
+Kessick Concierge uses OpenAI through Replit AI Integrations. End users do not provide an
 OpenAI key. AI calls consume the workspace owner's Replit AI credits; clients
 must read `GET /api/v1/concierge/usage` and send
 `acknowledgeCreditUsage: true` before an AI request.
