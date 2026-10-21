@@ -19,13 +19,13 @@ Run `pnpm install`, then `pnpm run typecheck`.
 The portal package is `@workspace/kessick-visualizer`; its backend is
 `@workspace/api-server`. Each package has its own dev/build scripts.
 
-This application currently relies on Replit routing, PostgreSQL, managed Clerk
-authentication, private object storage, and AI-provider configuration. A clone
-alone does not recreate those services. Inspect each artifact's
-`.replit-artifact/artifact.toml` and Vite configuration for ports and routing.
-Configure required environment variables securely in the destination environment;
-never commit credentials. See the source and project documentation for service
-configuration before running outside Replit.
+This application relies on PostgreSQL, managed Clerk authentication, private
+Google Cloud Storage, and optional AI-provider configuration. A clone alone does
+not recreate those services. Replit artifact configurations remain available for
+that environment; the authenticated app and API can also be deployed separately
+on Render. See [the Render deployment guide](docs/render-deployment.md) for
+required services, environment variables, database preparation, and verification.
+Never commit credentials.
 
 ## Handoff status
 
