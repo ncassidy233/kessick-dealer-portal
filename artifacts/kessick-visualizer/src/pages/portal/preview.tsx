@@ -7,7 +7,9 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   CircleAlert,
+  Clock,
   CircleCheck,
   Copy,
   Download,
@@ -32,6 +34,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import cellarImage from "@assets/kessick-room-demo.jpg";
+import { dealerAnswers, matchAnswers, suggestedAnswerIds, type DealerAnswer } from "./dealerAnswers";
+import { clearSearchLog, readSearchLog, recentQueries, recordSearch, searchLogText } from "./searchLog";
 import logoWhite from "@assets/kessick-logo-white.svg";
 // Placeholders cropped from the client mockup until the original photos arrive.
 import dealerAvatar from "@assets/mockup/dealer-avatar.jpg";
@@ -857,6 +861,69 @@ function SectionHeader({
 
 /* ---------------------------- Home ---------------------------------- */
 
+function useSearchLogVersion() {
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setVersion((v) => v + 1);
+    window.addEventListener("kessick-search-log", bump);
+    return () => window.removeEventListener("kessick-search-log", bump);
+  }, []);
+  return version;
+}
+
+function useRecentSearches() {
+  const version = useSearchLogVersion();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => recentQueries(5), [version]);
+}
+
+/** A suggested question that expands to its answer, with a next step. */
+function AnswerRow({
+  answer,
+  open,
+  onToggle,
+  onGo,
+}: {
+  answer: DealerAnswer;
+  open: boolean;
+  onToggle: () => void;
+  onGo: () => void;
+}) {
+  const panelId = `answer-${answer.id}`;
+  return (
+    <div className="border-b border-white/10">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={onToggle}
+        className="flex min-h-12 w-full items-center justify-between gap-3 px-6 py-3 text-left hover:bg-white/5 focus-visible:-outline-offset-4"
+      >
+        <span className="flex min-w-0 items-start gap-2.5">
+          <ChatIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#b9b09c]" />
+          <span className="text-sm font-semibold">{answer.question}</span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-white/60 transition ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+      {open ? (
+        <div id={panelId} className="px-6 pb-4 pl-[3.1rem]">
+          <p className="text-[13px] leading-relaxed text-white/85">{answer.answer}</p>
+          <button
+            type="button"
+            onClick={onGo}
+            className="mt-3 inline-flex min-h-9 items-center gap-1 rounded-full bg-white px-3.5 text-[12px] font-bold text-black"
+          >
+            {answer.action.label} <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Home({
   search,
   setSearch,
@@ -875,10 +942,31 @@ function Home({
   onOpenHit: (hit: SearchHit) => void;
 }) {
   const [filtersOpen, setFiltersOpen] = useState(filter !== null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [openAnswer, setOpenAnswer] = useState<string | null>(null);
+  const recent = useRecentSearches();
+  const answers = useMemo(() => (filter ? [] : matchAnswers(search)), [search, filter]);
+  const suggested = useMemo(
+    () => suggestedAnswerIds.map((id) => dealerAnswers.find((a) => a.id === id)!),
+    [],
+  );
+  const totalResults = answers.length + results.length;
   const showResults = Boolean(search.trim() || filter);
-  const resultLabel = results.length
-    ? `${results.length} result${results.length === 1 ? "" : "s"}`
+  const resultLabel = totalResults
+    ? `${totalResults} result${totalResults === 1 ? "" : "s"}`
     : "No results";
+
+  // Save a search once the dealer pauses typing, so refinements don't pile up.
+  useEffect(() => {
+    if (search.trim().length < 3) return;
+    const t = window.setTimeout(() => recordSearch(search, totalResults), 1200);
+    return () => window.clearTimeout(t);
+  }, [search, totalResults]);
+
+  const pickHit = (hit: SearchHit) => {
+    recordSearch(search || hit.title, totalResults, hit.title);
+    onOpenHit(hit);
+  };
 
   return (
     <div className="space-y-2.5 pb-2">
@@ -933,6 +1021,12 @@ function Home({
         </div>
 
         {/* Search band: black fading to the photo, underlined field */}
+        <div
+          onFocus={() => setSearchFocused(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSearchFocused(false);
+          }}
+        >
         <form
           role="search"
           className="bg-gradient-to-r from-black via-black/85 to-black/30 px-6 pb-2.5 pt-2"
@@ -941,22 +1035,33 @@ function Home({
           <div className="flex items-center gap-3 border-b-2 border-white/85 pb-1 focus-within:border-white">
             <Search className="h-6 w-6 shrink-0" strokeWidth={2.2} aria-hidden="true" />
             <label htmlFor="dealer-search" className="sr-only">
-              Search the dealer portal
+              Search the dealer portal or ask a question
             </label>
             <input
               id="dealer-search"
               type="search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setOpenAnswer(null);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   // Handled here, not via form submit, which sandboxed viewers block.
                   e.preventDefault();
-                  if (results[0]) onOpenHit(results[0]);
+                  if (answers[0]) {
+                    setOpenAnswer(answers[0].id);
+                    recordSearch(search, totalResults, answers[0].question);
+                  } else if (results[0]) {
+                    pickHit(results[0]);
+                  } else {
+                    recordSearch(search, 0);
+                  }
                 }
                 if (e.key === "Escape") {
                   setSearch("");
                   setFilter(null);
+                  setOpenAnswer(null);
                 }
               }}
               placeholder="Search here"
@@ -968,7 +1073,11 @@ function Home({
             {search ? (
               <button
                 type="button"
-                onClick={() => setSearch("")}
+                onClick={() => {
+                  setSearch("");
+                  setOpenAnswer(null);
+                  document.getElementById("dealer-search")?.focus();
+                }}
                 aria-label="Clear search"
                 className="tap-target shrink-0 rounded-full"
               >
@@ -1024,45 +1133,140 @@ function Home({
             {showResults ? resultLabel : ""}
           </p>
           {showResults ? (
-            <div className="bg-black/90">
+            <div className="bg-black/90 pb-1">
+              {answers.length ? (
+                <div>
+                  <p className="px-6 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.08em] text-white/60">
+                    Answers
+                  </p>
+                  <ul>
+                    {answers.map((a) => (
+                      <li key={a.id}>
+                        <AnswerRow
+                          answer={a}
+                          open={openAnswer === a.id}
+                          onToggle={() => {
+                            const opening = openAnswer !== a.id;
+                            setOpenAnswer(opening ? a.id : null);
+                            if (opening) recordSearch(search, totalResults, a.question);
+                          }}
+                          onGo={() => onNavigate({ section: a.action.section, sub: a.action.sub })}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               {results.length ? (
-                <ul>
-                  {results.map((r) => (
-                    <li key={`${r.section}-${r.sub ?? ""}-${r.title}`}>
-                      <button
-                        type="button"
-                        onClick={() => onOpenHit(r)}
-                        className="flex min-h-12 w-full items-center justify-between gap-3 border-b border-white/10 px-6 py-3 text-left hover:bg-white/5 focus-visible:-outline-offset-4"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-semibold">{r.title}</span>
-                          <span className="mt-0.5 block truncate text-xs text-white/70">{r.detail}</span>
-                        </span>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden="true" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
+                <div>
+                  {answers.length ? (
+                    <p className="px-6 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.08em] text-white/60">
+                      Pages
+                    </p>
+                  ) : null}
+                  <ul>
+                    {results.map((r) => (
+                      <li key={`${r.section}-${r.sub ?? ""}-${r.title}`}>
+                        <button
+                          type="button"
+                          onClick={() => pickHit(r)}
+                          className="flex min-h-12 w-full items-center justify-between gap-3 border-b border-white/10 px-6 py-3 text-left hover:bg-white/5 focus-visible:-outline-offset-4"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold">{r.title}</span>
+                            <span className="mt-0.5 block truncate text-xs text-white/70">{r.detail}</span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {!totalResults ? (
                 <div className="px-6 py-4 text-sm text-white/80">
                   <p>
                     No results{search.trim() ? <> for “{search.trim()}”</> : null}
                     {filter ? <> in {filter}</> : null}.
                   </p>
                   <p className="mt-1 text-xs text-white/60">
-                    Try “Forma”, “spec sheets” or “stain”, or{" "}
-                    <a
-                      href={`mailto:${KESSICK_EMAIL}`}
-                      className="font-semibold text-white underline underline-offset-2"
-                    >
-                      email the Kessick team
-                    </a>
-                    .
+                    Try “Forma”, “spec sheets” or “stain”, or send your question to the Kessick team.
                   </p>
+                  {search.trim() ? (
+                    <a
+                      href={`mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent(
+                        "Dealer question from the portal",
+                      )}&body=${encodeURIComponent(
+                        `Hello Kessick team,\n\n${search.trim()}\n\nDealer / company:\n\nSent from the Kessick dealer portal`,
+                      )}`}
+                      onClick={() => recordSearch(search, 0, "Asked the Kessick team")}
+                      className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[12.5px] font-bold text-black"
+                    >
+                      <Mail className="h-4 w-4" aria-hidden="true" /> Ask the Kessick team
+                    </a>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
+            </div>
+          ) : searchFocused ? (
+            <div className="bg-black/90 pb-2">
+              {recent.length ? (
+                <div className="px-6 pt-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/60">
+                      Recent searches
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearSearchLog();
+                        notify("Search history cleared");
+                      }}
+                      className="min-h-8 text-[12px] font-semibold text-white/70 underline underline-offset-2 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {recent.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => {
+                          setSearch(q);
+                          document.getElementById("dealer-search")?.focus();
+                        }}
+                        className="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border border-white/40 px-3 text-[12px] text-white hover:border-white"
+                      >
+                        <Clock className="h-3.5 w-3.5 shrink-0 text-white/60" aria-hidden="true" />
+                        <span className="truncate">{q}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <p className="px-6 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.08em] text-white/60">
+                Suggested questions
+              </p>
+              <ul>
+                {suggested.map((a) => (
+                  <li key={a.id}>
+                    <AnswerRow
+                      answer={a}
+                      open={openAnswer === a.id}
+                      onToggle={() => {
+                        const opening = openAnswer !== a.id;
+                        setOpenAnswer(opening ? a.id : null);
+                        if (opening) recordSearch(a.question, 1, a.question);
+                      }}
+                      onGo={() => onNavigate({ section: a.action.section, sub: a.action.sub })}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
+        </div>
         </div>
       </header>
 
@@ -2128,8 +2332,47 @@ function Account({
         </RowCard>
       </div>
 
+      <SavedSearches />
+
       <SteelBar text="Report an issue or send feedback" onClick={() => onNavigate({ section: "Support" })} />
     </div>
+  );
+}
+
+/** Lets the dealer see, share and clear the searches saved for the Concierge. */
+function SavedSearches() {
+  const version = useSearchLogVersion();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const entries = useMemo(() => readSearchLog(), [version]);
+  const unanswered = entries.filter((e) => !e.results).length;
+  const body = entries.length
+    ? `${entries.length} saved on this device${unanswered ? `, ${unanswered} with no answer yet` : ""}. They help Kessick improve the portal and will teach the Kessick Concierge what dealers ask.`
+    : "Your searches are saved here to help Kessick improve the portal and, later, the Kessick Concierge.";
+  return (
+    <RowCard icon={Search as IconType} title="Saved searches" body={body}>
+      {entries.length ? (
+        <>
+          <a
+            href={`mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent("Dealer portal searches")}&body=${encodeURIComponent(
+              `Hello Kessick team,\n\nHere are my recent portal searches:\n\n${searchLogText(entries.slice(-60))}\n\nDealer / company:`,
+            )}`}
+            className="inline-flex min-h-9 items-center gap-1 rounded-full bg-[#1d1d1d] px-3.5 text-[12px] font-semibold text-white hover:bg-black"
+          >
+            Send to Kessick <ChevronRight className="h-3 w-3" aria-hidden="true" />
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              clearSearchLog();
+              notify("Search history cleared");
+            }}
+            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-[#1d1d1d]/30 px-3.5 text-[12px] font-semibold text-[#1d1d1d] hover:border-[#1d1d1d]"
+          >
+            Clear history
+          </button>
+        </>
+      ) : null}
+    </RowCard>
   );
 }
 
