@@ -1243,9 +1243,11 @@ function Home({
   };
 
   return (
-    <div className="space-y-2.5 pb-2">
+    // Home keeps its original phone-width composition on wide screens: the
+    // cellar photo and showroom image are framed for that width.
+    <div className="space-y-2.5 pb-2 md:mx-auto md:max-w-[472px]">
       {/* Photographic header with dealer identity, title and search */}
-      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6 bleed md:mx-[calc(50%-50vw)]">
+      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
         <img
           src={cellarImage}
           alt=""
@@ -1554,7 +1556,7 @@ function Home({
         width={900}
         height={400}
         decoding="async"
-        className="aspect-[9/4] h-auto w-full rounded-[10px] bg-[#d9d6cf] object-cover md:aspect-[4/1]"
+        className="aspect-[9/4] h-auto w-full rounded-[10px] bg-[#d9d6cf] object-cover"
       />
 
       {/* Your Dealer Toolkit */}
