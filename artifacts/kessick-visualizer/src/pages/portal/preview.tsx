@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -275,25 +275,55 @@ function openContactLink(href: string) {
   );
 }
 
-/** Routes every mailto:/tel: tap in the portal through openContactLink. */
-function useContactLinkGuard() {
+/**
+ * Keeps the portal on screen when a link points outside it. mailto:/tel:
+ * go through openContactLink; web links ask first, then open in a new tab,
+ * so the dealer can always come back to where they were.
+ */
+function useLinkGuard(onExternal: (link: { url: string; label: string }) => void) {
+  const handler = useRef(onExternal);
+  handler.current = onExternal;
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       const href = a?.getAttribute("href") ?? "";
-      if (!/^(mailto|tel):/i.test(href)) return;
-      e.preventDefault();
-      openContactLink(href);
+      if (/^(mailto|tel):/i.test(href)) {
+        e.preventDefault();
+        openContactLink(href);
+      } else if (/^https?:/i.test(href)) {
+        e.preventDefault();
+        const label =
+          a?.getAttribute("data-site") ??
+          (a?.getAttribute("aria-label") ?? a?.textContent ?? "")
+            .replace(/\(opens in a new tab\)/, "")
+            .trim();
+        handler.current({ url: href, label });
+      }
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
 }
 
-/** Bottom sheet for the footer Email button: works with or without a mail app. */
-function EmailSheet({ onClose, onFeedback }: { onClose: () => void; onFeedback: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
+/** Opens a web page in a new tab; copies the link if the viewer blocks it. */
+function openInNewTab(url: string) {
+  let opened: Window | null = null;
+  try {
+    opened = window.open(url, "_blank");
+    if (opened) opened.opener = null;
+  } catch {
+    opened = null;
+  }
+  if (opened) return true;
+  void copyText(url).then((ok) =>
+    notify(ok ? "Link copied. Paste it into your browser." : `Open ${url} in your browser`),
+  );
+  return false;
+}
+
+/** Focus trap, Escape to close, and focus return for bottom sheets. */
+function useSheetFocus(ref: React.RefObject<HTMLDivElement | null>, onClose: () => void) {
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLElement>("button, a")?.focus();
@@ -317,76 +347,183 @@ function EmailSheet({ onClose, onFeedback }: { onClose: () => void; onFeedback: 
       document.removeEventListener("keydown", onKey);
       previous?.focus?.();
     };
-  }, [onClose]);
-  const row =
-    "flex min-h-12 w-full items-center gap-3 rounded-[10px] px-3 text-left text-[14px] font-semibold text-[#1b1b1b] hover:bg-[#eef0fb]";
+  }, [ref, onClose]);
+}
+
+const SHEET_ROW =
+  "flex min-h-12 w-full items-center gap-3 rounded-[10px] px-3 text-left text-[14px] font-semibold text-[#1b1b1b] hover:bg-[#eef0fb]";
+
+function Sheet({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  /** Receives close(after?): closes the sheet, then runs `after`. */
+  children: (close: (after?: () => void) => void) => React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const pushed = useRef(false);
+  const afterClose = useRef<(() => void) | undefined>(undefined);
+
+  // The sheet gets its own history entry, so the phone's Back button closes
+  // it instead of leaving the page.
+  useEffect(() => {
+    try {
+      window.history.pushState({ kessickSheet: true }, "");
+      pushed.current = true;
+    } catch {
+      pushed.current = false;
+    }
+    const onPop = () => {
+      pushed.current = false;
+      onCloseRef.current();
+      const after = afterClose.current;
+      afterClose.current = undefined;
+      after?.();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const close = useCallback((after?: () => void) => {
+    if (pushed.current) {
+      afterClose.current = after;
+      window.history.back();
+    } else {
+      onCloseRef.current();
+      after?.();
+    }
+  }, []);
+  const dismiss = useCallback(() => close(), [close]);
+  useSheetFocus(ref, dismiss);
   return (
     <div className="dealer-mockup fixed inset-0 z-[60]">
       <button
         type="button"
         aria-label="Close"
         tabIndex={-1}
-        onClick={onClose}
+        onClick={dismiss}
         className="absolute inset-0 bg-black/40"
       />
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="email-sheet-title"
+        aria-labelledby="sheet-title"
         className="toast-sheet absolute inset-x-0 bottom-0 mx-auto max-w-[520px] rounded-t-[18px] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl"
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#1b1b1b]/15" aria-hidden="true" />
         <div className="flex items-start justify-between gap-3 px-1">
-          <div>
-            <h2 id="email-sheet-title" className="font-heading text-[17px] font-bold text-[#1b1b1b]">
-              Email the Kessick team
+          <div className="min-w-0">
+            <h2 id="sheet-title" className="font-heading text-[17px] font-bold text-[#1b1b1b]">
+              {title}
             </h2>
-            <p className="text-[13px] text-[#555]">{KESSICK_EMAIL}</p>
+            {subtitle ? <p className="break-words text-[13px] text-[#555]">{subtitle}</p> : null}
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={dismiss}
             aria-label="Close"
             className="tap-target rounded-full p-1 text-[#1b1b1b]"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        <div className="mt-3 space-y-1">
+        <div className="mt-3 space-y-1">{children(close)}</div>
+      </div>
+    </div>
+  );
+}
+
+const SITE_NAMES: Record<string, string> = {
+  "teamwork.com": "Teamwork",
+  "kessickwinecellars.com": "Kessick Wine Cellars",
+};
+
+/** Asked before leaving for another site, so the portal stays put. */
+function LeaveSheet({ url, onClose }: { url: string; onClose: () => void }) {
+  let host = url;
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    // keep the raw url
+  }
+  const name = SITE_NAMES[host] ?? host;
+  return (
+    <Sheet
+      title={`Open ${name}`}
+      subtitle={`${name} opens in a new tab. This portal stays open right where you left it.`}
+      onClose={onClose}
+    >
+      {(close) => (
+        <>
           <button
             type="button"
-            className={row}
+            className={SHEET_ROW}
+            onClick={() => {
+              // Open first: popups must start from the tap itself.
+              openInNewTab(url);
+              close();
+            }}
+          >
+            <BronzeCircle icon={ArrowUpRight as IconType} size="h-9 w-9" /> Open {name} in a new tab
+          </button>
+          <button
+            type="button"
+            className={SHEET_ROW}
+            onClick={async () => {
+              notify((await copyText(url)) ? "Link copied" : `Open ${url} in your browser`);
+              close();
+            }}
+          >
+            <BronzeCircle icon={Copy} size="h-9 w-9" /> Copy link
+          </button>
+          <button type="button" className={SHEET_ROW} onClick={() => close()}>
+            <BronzeCircle icon={ChevronLeft as IconType} size="h-9 w-9" /> Stay in the portal
+          </button>
+        </>
+      )}
+    </Sheet>
+  );
+}
+
+function EmailSheet({ onClose, onFeedback }: { onClose: () => void; onFeedback: () => void }) {
+  return (
+    <Sheet title="Email the Kessick team" subtitle={KESSICK_EMAIL} onClose={onClose}>
+      {(close) => (
+        <>
+          <button
+            type="button"
+            className={SHEET_ROW}
             onClick={() => {
               openContactLink(`mailto:${KESSICK_EMAIL}`);
-              onClose();
+              close();
             }}
           >
             <BronzeCircle icon={EnvelopeIcon} size="h-9 w-9" /> Open my email app
           </button>
           <button
             type="button"
-            className={row}
+            className={SHEET_ROW}
             onClick={async () => {
               notify((await copyText(KESSICK_EMAIL)) ? "Email address copied" : `Contact us at ${KESSICK_EMAIL}`);
-              onClose();
+              close();
             }}
           >
             <BronzeCircle icon={Copy} size="h-9 w-9" /> Copy email address
           </button>
-          <button
-            type="button"
-            className={row}
-            onClick={() => {
-              onClose();
-              onFeedback();
-            }}
-          >
+          <button type="button" className={SHEET_ROW} onClick={() => close(onFeedback)}>
             <BronzeCircle icon={ChatIcon} size="h-9 w-9" /> Write to us from the portal
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Sheet>
   );
 }
 
@@ -2073,7 +2210,8 @@ export default function DealerPortalPreview({
   const [filter, setFilter] = useState<SearchCategory | null>(null);
   const searchIndex = useMemo(buildSearchIndex, []);
   const [emailOpen, setEmailOpen] = useState(false);
-  useContactLinkGuard();
+  const [leaving, setLeaving] = useState<{ url: string; label: string } | null>(null);
+  useLinkGuard(setLeaving);
 
   const results = useMemo<SearchHit[]>(() => {
     const q = search.trim().toLowerCase();
@@ -2183,6 +2321,9 @@ export default function DealerPortalPreview({
           onClose={() => setEmailOpen(false)}
           onFeedback={() => navigate({ section: "Support" })}
         />
+      ) : null}
+      {leaving ? (
+        <LeaveSheet url={leaving.url} onClose={() => setLeaving(null)} />
       ) : null}
 
       {/* Sticky footer navigation, matching the mockup */}
