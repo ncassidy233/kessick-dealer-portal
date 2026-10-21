@@ -73,12 +73,13 @@ type IconType = React.ComponentType<{ className?: string }>;
 
 type NavItem =
   | { kind: "section"; label: string; icon: IconType; section: Section }
-  | { kind: "link"; label: string; icon: IconType; href: string };
+  | { kind: "link"; label: string; icon: IconType; href: string }
+  | { kind: "email"; label: string; icon: IconType };
 
 const bottomNav: NavItem[] = [
   { kind: "section", label: "Home", icon: HomeIcon, section: "Home" },
   { kind: "section", label: "Account", icon: PersonIcon, section: "Account" },
-  { kind: "link", label: "Email", icon: EnvelopeIcon, href: `mailto:${KESSICK_EMAIL}` },
+  { kind: "email", label: "Email", icon: EnvelopeIcon },
   { kind: "link", label: "Teamwork", icon: TeamworkIcon, href: TEAMWORK_SITE },
 ];
 
@@ -241,6 +242,153 @@ function useDraft<T extends Record<string, string>>(key: string, initial: T) {
 }
 
 const NEW_TAB_HINT = <span className="sr-only"> (opens in a new tab)</span>;
+
+/**
+ * Opens a mailto: or tel: link without navigating the portal itself away.
+ * Inside an embedded viewer (iframe) a same-frame mailto replaces the page
+ * with a blank screen, so it goes to a new window there instead. If nothing
+ * can open, the address is copied so the dealer is never left stuck.
+ */
+function openContactLink(href: string) {
+  let embedded = false;
+  try {
+    embedded = window.self !== window.top;
+  } catch {
+    embedded = true;
+  }
+  if (!embedded) {
+    window.location.href = href;
+    return;
+  }
+  let opened: Window | null = null;
+  try {
+    opened = window.open(href, "_blank");
+    if (opened) opened.opener = null;
+  } catch {
+    opened = null;
+  }
+  if (opened) return;
+  // The viewer blocked the new window: hand over the address instead.
+  const value = decodeURIComponent(href.replace(/^(mailto|tel):/i, "").split("?")[0]);
+  void copyText(value).then((ok) =>
+    notify(ok ? `${value} copied. Paste it into your email or phone app.` : `Contact us at ${value}`),
+  );
+}
+
+/** Routes every mailto:/tel: tap in the portal through openContactLink. */
+function useContactLinkGuard() {
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      const href = a?.getAttribute("href") ?? "";
+      if (!/^(mailto|tel):/i.test(href)) return;
+      e.preventDefault();
+      openContactLink(href);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+}
+
+/** Bottom sheet for the footer Email button: works with or without a mail app. */
+function EmailSheet({ onClose, onFeedback }: { onClose: () => void; onFeedback: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLElement>("button, a")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "Tab" && ref.current) {
+        const items = Array.from(ref.current.querySelectorAll<HTMLElement>("button, a"));
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previous?.focus?.();
+    };
+  }, [onClose]);
+  const row =
+    "flex min-h-12 w-full items-center gap-3 rounded-[10px] px-3 text-left text-[14px] font-semibold text-[#1b1b1b] hover:bg-[#eef0fb]";
+  return (
+    <div className="dealer-mockup fixed inset-0 z-[60]">
+      <button
+        type="button"
+        aria-label="Close"
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/40"
+      />
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="email-sheet-title"
+        className="toast-sheet absolute inset-x-0 bottom-0 mx-auto max-w-[520px] rounded-t-[18px] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl"
+      >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#1b1b1b]/15" aria-hidden="true" />
+        <div className="flex items-start justify-between gap-3 px-1">
+          <div>
+            <h2 id="email-sheet-title" className="font-heading text-[17px] font-bold text-[#1b1b1b]">
+              Email the Kessick team
+            </h2>
+            <p className="text-[13px] text-[#555]">{KESSICK_EMAIL}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="tap-target rounded-full p-1 text-[#1b1b1b]"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="mt-3 space-y-1">
+          <button
+            type="button"
+            className={row}
+            onClick={() => {
+              openContactLink(`mailto:${KESSICK_EMAIL}`);
+              onClose();
+            }}
+          >
+            <BronzeCircle icon={EnvelopeIcon} size="h-9 w-9" /> Open my email app
+          </button>
+          <button
+            type="button"
+            className={row}
+            onClick={async () => {
+              notify((await copyText(KESSICK_EMAIL)) ? "Email address copied" : `Contact us at ${KESSICK_EMAIL}`);
+              onClose();
+            }}
+          >
+            <BronzeCircle icon={Copy} size="h-9 w-9" /> Copy email address
+          </button>
+          <button
+            type="button"
+            className={row}
+            onClick={() => {
+              onClose();
+              onFeedback();
+            }}
+          >
+            <BronzeCircle icon={ChatIcon} size="h-9 w-9" /> Write to us from the portal
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* Small inline icons kept local so the bundle stays lean. */
 function PersonIcon({ className }: { className?: string }) {
@@ -651,10 +799,7 @@ function Home({
         <form
           role="search"
           className="bg-gradient-to-r from-black via-black/85 to-black/30 px-6 pb-2.5 pt-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (results[0]) onOpenHit(results[0]);
-          }}
+          onSubmit={(e) => e.preventDefault()}
         >
           <div className="flex items-center gap-3 border-b-2 border-white/85 pb-1 focus-within:border-white">
             <Search className="h-6 w-6 shrink-0" strokeWidth={2.2} aria-hidden="true" />
@@ -667,6 +812,11 @@ function Home({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  // Handled here, not via form submit, which sandboxed viewers block.
+                  e.preventDefault();
+                  if (results[0]) onOpenHit(results[0]);
+                }
                 if (e.key === "Escape") {
                   setSearch("");
                   setFilter(null);
@@ -1538,15 +1688,7 @@ function DesignRequest({
             id="design-form"
             noValidate
             className="space-y-3.5 rounded-[10px] bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!validate()) {
-                focusFirstError("design-form");
-                return;
-              }
-              window.location.href = mailto;
-              setSent(true);
-            }}
+            onSubmit={(e) => e.preventDefault()}
           >
             <Field id="project" label="Project name" required error={errors.project}>
               <input {...controlProps("project", errors.project, undefined, true)} value={form.project} onChange={set("project")} />
@@ -1583,6 +1725,17 @@ function DesignRequest({
             </Field>
             <button
               type="submit"
+              // Click (and Enter's implicit click) is handled directly because
+              // sandboxed viewers silently block real form submission.
+              onClick={(e) => {
+                e.preventDefault();
+                if (!validate()) {
+                  focusFirstError("design-form");
+                  return;
+                }
+                openContactLink(mailto);
+                setSent(true);
+              }}
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-bold text-white transition active:brightness-125"
               style={{ background: SUBMIT_GRADIENT }}
             >
@@ -1723,16 +1876,7 @@ function Support({ onBack }: { onBack: () => void }) {
             id="feedback-form"
             noValidate
             className="space-y-3.5 rounded-[10px] bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (form.message.trim().length < 10) {
-                setError("Tell us a little more, at least a sentence.");
-                focusFirstError("feedback-form");
-                return;
-              }
-              window.location.href = mailtoHref;
-              setSent(true);
-            }}
+            onSubmit={(e) => e.preventDefault()}
           >
             <Field id="category" label="Topic" required>
               <select
@@ -1760,6 +1904,16 @@ function Support({ onBack }: { onBack: () => void }) {
             </Field>
             <button
               type="submit"
+              onClick={(e) => {
+                e.preventDefault();
+                if (form.message.trim().length < 10) {
+                  setError("Tell us a little more, at least a sentence.");
+                  focusFirstError("feedback-form");
+                  return;
+                }
+                openContactLink(mailtoHref);
+                setSent(true);
+              }}
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-bold text-white transition active:brightness-125"
               style={{ background: SUBMIT_GRADIENT }}
             >
@@ -1918,6 +2072,8 @@ export default function DealerPortalPreview({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<SearchCategory | null>(null);
   const searchIndex = useMemo(buildSearchIndex, []);
+  const [emailOpen, setEmailOpen] = useState(false);
+  useContactLinkGuard();
 
   const results = useMemo<SearchHit[]>(() => {
     const q = search.trim().toLowerCase();
@@ -2022,6 +2178,12 @@ export default function DealerPortalPreview({
       </main>
 
       <Toast />
+      {emailOpen ? (
+        <EmailSheet
+          onClose={() => setEmailOpen(false)}
+          onFeedback={() => navigate({ section: "Support" })}
+        />
+      ) : null}
 
       {/* Sticky footer navigation, matching the mockup */}
       <nav
@@ -2048,6 +2210,22 @@ export default function DealerPortalPreview({
               </span>
             );
             const classes = "group flex min-h-12 w-full items-center justify-center rounded-full";
+            if (item.kind === "email") {
+              return (
+                <li key={item.label}>
+                  <button
+                    type="button"
+                    aria-label={item.label}
+                    aria-haspopup="dialog"
+                    aria-expanded={emailOpen}
+                    onClick={() => setEmailOpen(true)}
+                    className={classes}
+                  >
+                    {content}
+                  </button>
+                </li>
+              );
+            }
             if (item.kind === "link") {
               const external = item.href.startsWith("http");
               return (

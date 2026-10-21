@@ -374,3 +374,11 @@
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
+
+.dealer-mockup .toast-sheet {
+  animation: dealer-sheet 0.22s ease-out;
+}
+@keyframes dealer-sheet {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
