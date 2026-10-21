@@ -315,7 +315,7 @@ async function authorizationRequest(req: Request, res: Response) {
       })
       .join("");
     res.type("html").send(
-      `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Authorize Kessick AI</title><body><main><h1>Authorize ${escapeHtml(client.clientName)}</h1><p>This will allow access only to your selected Kessick scopes: ${escapeHtml(requestedScopes.join(", "))}.</p><p>Kessick AI cannot approve engineering, accept quotes, place orders, take payments, or message customers autonomously.</p><form method="post">${hidden}<button name="consent" value="deny">Deny</button><button name="consent" value="allow">Allow</button></form></main></body></html>`,
+      `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Authorize Kessick Concierge</title><body><main><h1>Authorize ${escapeHtml(client.clientName)}</h1><p>This will allow access only to your selected Kessick scopes: ${escapeHtml(requestedScopes.join(", "))}.</p><p>Kessick Concierge cannot approve engineering, accept quotes, place orders, take payments, or message customers autonomously.</p><form method="post">${hidden}<button name="consent" value="deny">Deny</button><button name="consent" value="allow">Allow</button></form></main></body></html>`,
     );
     return;
   }

@@ -269,7 +269,7 @@ router.post(
       } else {
         res.status(503).json({
           error:
-            "Kessick AI could not complete the request. No project action was taken.",
+            "Kessick Concierge could not complete the request. No project action was taken.",
         });
       }
     }
@@ -324,7 +324,7 @@ router.post(
       } else {
         res.status(503).json({
           error:
-            "Kessick AI could not complete the request. No project action was taken.",
+            "Kessick Concierge could not complete the request. No project action was taken.",
         });
       }
     }

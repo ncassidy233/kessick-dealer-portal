@@ -65,7 +65,7 @@ const tools = [
   {
     name: "ask_concierge",
     description:
-      "Ask grounded Kessick AI. Consumes Replit AI credits and never executes actions.",
+      "Ask the grounded Kessick Concierge. Consumes Replit AI credits and never executes actions.",
     inputSchema: {
       type: "object",
       properties: {

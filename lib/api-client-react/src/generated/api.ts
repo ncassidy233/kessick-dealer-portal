@@ -6100,7 +6100,7 @@ export const getAskKessickConciergeUrl = () => {
 
 /**
  * Consumes the workspace owner's Replit AI credits. Answers identify unknowns, include citations, and never execute a suggested action.
- * @summary Ask Kessick AI using only authorized catalog and project facts
+ * @summary Ask the Kessick Concierge using only authorized catalog and project facts
  */
 export const askKessickConcierge = async (askKessickConciergeBody: AskKessickConciergeBody, options?: Parameters<typeof customFetch>[1]): Promise<ConciergeAnswer> => {
 
@@ -6149,7 +6149,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type AskKessickConciergeMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Ask Kessick AI using only authorized catalog and project facts
+ * @summary Ask the Kessick Concierge using only authorized catalog and project facts
  */
 export const useAskKessickConcierge = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askKessickConcierge>>, TError,{data: BodyType<AskKessickConciergeBody>}, TContext>, request?: SecondParameter<typeof customFetch>}

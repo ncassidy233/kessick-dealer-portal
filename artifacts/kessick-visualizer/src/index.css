@@ -1,5 +1,6 @@
 @layer theme, base, clerk, components, utilities;
 @import 'tailwindcss';
+@source "./";
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
 
@@ -162,9 +163,70 @@
   intended light palette. The pale lavender-gray background is applied
   here so it also covers the area behind the centered app shell.
 */
+/* Client mockup typography for the dealer home and footer nav. */
+.dealer-mockup {
+  font-family: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+}
+.dealer-mockup .font-heading {
+  font-family: 'Montserrat', 'Open Sans', ui-sans-serif, sans-serif;
+}
+.dealer-mockup .font-label {
+  font-family: 'Kumbh Sans', 'Open Sans', ui-sans-serif, sans-serif;
+}
+
 .dealer-preview-surface {
-  background: #e7e6ee;
+  background: #eef0fb;
   color-scheme: light;
+}
+
+/* Visible keyboard focus on both the pale surface and the photo headers. */
+.dealer-mockup :focus-visible {
+  outline: 3px solid #5b84a8;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.dealer-mockup [data-page-title]:focus {
+  outline: none;
+}
+
+/* Expands a small control's hit area to at least 44x44 without changing its look. */
+.dealer-mockup .tap-target {
+  position: relative;
+}
+.dealer-mockup .tap-target::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.dealer-mockup .flash-highlight {
+  animation: dealer-flash 1.6s ease-out;
+}
+@keyframes dealer-flash {
+  0%, 30% { box-shadow: 0 0 0 3px #8ea8bf; }
+  100% { box-shadow: 0 0 0 3px transparent; }
+}
+
+.dealer-mockup .toast-in {
+  animation: dealer-toast 0.2s ease-out;
+}
+@keyframes dealer-toast {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dealer-mockup *,
+  .dealer-mockup *::before,
+  .dealer-mockup *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer base {
@@ -311,4 +373,46 @@
 
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+}
+
+.dealer-mockup .toast-sheet {
+  animation: dealer-sheet 0.22s ease-out;
+}
+@keyframes dealer-sheet {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Pointer, hover and pressed feedback for every control. */
+.dealer-mockup button:not(:disabled),
+.dealer-mockup a[href],
+.dealer-mockup label[for],
+.dealer-mockup select {
+  cursor: pointer;
+}
+.dealer-mockup button:disabled {
+  cursor: not-allowed;
+}
+.dealer-mockup button:not(:disabled),
+.dealer-mockup a[href] {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: color, background-color, border-color, box-shadow, filter, opacity, transform;
+  transition-duration: 0.15s;
+}
+.dealer-mockup button:not(:disabled):active,
+.dealer-mockup a[href]:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) {
+  .dealer-mockup a.rounded-\[10px\]:hover,
+  .dealer-mockup button.rounded-\[10px\]:hover {
+    filter: brightness(1.04);
+  }
+}
+.dealer-mockup .hint-in {
+  animation: dealer-hint 0.12s ease-out;
+}
+@keyframes dealer-hint {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
