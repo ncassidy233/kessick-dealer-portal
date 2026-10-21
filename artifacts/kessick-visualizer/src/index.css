@@ -179,6 +179,56 @@
   color-scheme: light;
 }
 
+/* Visible keyboard focus on both the pale surface and the photo headers. */
+.dealer-mockup :focus-visible {
+  outline: 3px solid #5b84a8;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.dealer-mockup [data-page-title]:focus {
+  outline: none;
+}
+
+/* Expands a small control's hit area to at least 44x44 without changing its look. */
+.dealer-mockup .tap-target {
+  position: relative;
+}
+.dealer-mockup .tap-target::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.dealer-mockup .flash-highlight {
+  animation: dealer-flash 1.6s ease-out;
+}
+@keyframes dealer-flash {
+  0%, 30% { box-shadow: 0 0 0 3px #8ea8bf; }
+  100% { box-shadow: 0 0 0 3px transparent; }
+}
+
+.dealer-mockup .toast-in {
+  animation: dealer-toast 0.2s ease-out;
+}
+@keyframes dealer-toast {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dealer-mockup *,
+  .dealer-mockup *::before,
+  .dealer-mockup *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
