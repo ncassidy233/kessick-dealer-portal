@@ -126,28 +126,123 @@ function routeHash({ section, sub }: Route) {
   return `#/${slug}${slug && sub ? `/${sub}` : ""}`;
 }
 
-function useHashRoute() {
-  const [route, setRoute] = useState<Route>(() => parseHash(window.location.hash));
-  useEffect(() => {
-    const onChange = () => setRoute(parseHash(window.location.hash));
-    window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
-  }, []);
-  /** Pushes a history entry, so Back returns to the previous page. */
-  const go = (next: Route) => {
-    if (routeHash(next) === routeHash(route)) return;
-    window.location.hash = routeHash(next);
+type NavState = { stack: Route[]; index: number; kind: "push" | "move" | "init" };
+
+/**
+ * The portal keeps its own Back/Forward history, so the in-app buttons work
+ * even inside viewers that hide or block the browser's. Each step is also
+ * mirrored into the browser history (when allowed), so the phone or browser
+ * Back button, refresh and shared links behave the same way.
+ */
+function usePortalHistory() {
+  const [nav, setNav] = useState<NavState>(() => ({
+    stack: [parseHash(window.location.hash)],
+    index: 0,
+    kind: "init",
+  }));
+  const navRef = useRef(nav);
+  navRef.current = nav;
+  const mirror = useRef(true);
+  const scrolls = useRef<number[]>([]);
+
+  const writeHistory = (method: "pushState" | "replaceState", index: number, route: Route) => {
+    if (!mirror.current) return;
+    try {
+      window.history[method]({ kIdx: index }, "", routeHash(route));
+    } catch {
+      mirror.current = false;
+    }
   };
+
+  useEffect(() => {
+    writeHistory("replaceState", 0, navRef.current.stack[0]);
+    const onPop = (e: PopStateEvent) => {
+      // hashchange events carry no state, so read it from history directly.
+      let state: unknown = (e as Partial<PopStateEvent>).state;
+      try {
+        state ??= window.history.state;
+      } catch {
+        state = null;
+      }
+      const k = (state as { kIdx?: unknown } | null)?.kIdx;
+      const n = navRef.current;
+      if (typeof k === "number" && k < n.stack.length) {
+        if (k !== n.index) {
+          scrolls.current[n.index] = window.scrollY;
+          setNav({ ...n, index: k, kind: "move" });
+        }
+        return;
+      }
+      // A hand-typed or outside hash change: treat it as a new page.
+      const route = parseHash(window.location.hash);
+      if (routeHash(route) !== routeHash(n.stack[n.index])) {
+        scrolls.current[n.index] = window.scrollY;
+        const stack = [...n.stack.slice(0, n.index + 1), route];
+        setNav({ stack, index: stack.length - 1, kind: "push" });
+        writeHistory("replaceState", stack.length - 1, route);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("hashchange", onPop as unknown as EventListener);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("hashchange", onPop as unknown as EventListener);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const route = nav.stack[nav.index];
+
+  /** Opens a page, dropping anything ahead of it (like a browser). */
+  const go = (next: Route) => {
+    const n = navRef.current;
+    if (routeHash(next) === routeHash(n.stack[n.index])) return;
+    scrolls.current[n.index] = window.scrollY;
+    const stack = [...n.stack.slice(0, n.index + 1), next];
+    const index = stack.length - 1;
+    scrolls.current.length = index;
+    setNav({ stack, index, kind: "push" });
+    writeHistory("pushState", index, next);
+  };
+
   /** Swaps the current entry, for tab changes inside a page. */
   const replace = (next: Route) => {
-    try {
-      window.history.replaceState(null, "", routeHash(next));
-    } catch {
-      // Some embedded viewers block history writes; state still updates.
-    }
-    setRoute(next);
+    const n = navRef.current;
+    const stack = n.stack.map((r, i) => (i === n.index ? next : r));
+    setNav({ ...n, stack });
+    writeHistory("replaceState", n.index, next);
   };
-  return { route, go, replace };
+
+  const step = (delta: -1 | 1) => {
+    const n = navRef.current;
+    const index = n.index + delta;
+    if (index < 0 || index >= n.stack.length) return;
+    scrolls.current[n.index] = window.scrollY;
+    setNav({ ...n, index, kind: "move" });
+    if (mirror.current) {
+      try {
+        if (delta < 0) window.history.back();
+        else window.history.forward();
+      } catch {
+        mirror.current = false;
+      }
+    }
+  };
+
+  return {
+    route,
+    go,
+    replace,
+    back: () => step(-1),
+    forward: () => step(1),
+    canBack: nav.index > 0,
+    canForward: nav.index < nav.stack.length - 1,
+    previous: nav.index > 0 ? nav.stack[nav.index - 1] : undefined,
+    next: nav.index < nav.stack.length - 1 ? nav.stack[nav.index + 1] : undefined,
+    index: nav.index,
+    kind: nav.kind,
+    savedScroll: () => scrolls.current[nav.index] ?? 0,
+  };
 }
 
 const prefersReducedMotion = () =>
@@ -372,37 +467,9 @@ function Sheet({
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  const pushed = useRef(false);
-  const afterClose = useRef<(() => void) | undefined>(undefined);
-
-  // The sheet gets its own history entry, so the phone's Back button closes
-  // it instead of leaving the page.
-  useEffect(() => {
-    try {
-      window.history.pushState({ kessickSheet: true }, "");
-      pushed.current = true;
-    } catch {
-      pushed.current = false;
-    }
-    const onPop = () => {
-      pushed.current = false;
-      onCloseRef.current();
-      const after = afterClose.current;
-      afterClose.current = undefined;
-      after?.();
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
   const close = useCallback((after?: () => void) => {
-    if (pushed.current) {
-      afterClose.current = after;
-      window.history.back();
-    } else {
-      onCloseRef.current();
-      after?.();
-    }
+    onCloseRef.current();
+    after?.();
   }, []);
   const dismiss = useCallback(() => close(), [close]);
   useSheetFocus(ref, dismiss);
@@ -1435,12 +1502,11 @@ function PageHeader({
         className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
       />
       <div className="absolute inset-0 -z-10 bg-black/55" />
-      <div className="px-6 pb-4 pt-3">
-        <BackButton onBack={onBack} />
+      <div className="px-6 pb-4 pt-5">
         <h1
           data-page-title
           tabIndex={-1}
-          className="mt-3 text-[23px] font-extrabold leading-[1.12]"
+          className="text-[23px] font-extrabold leading-[1.12]"
         >
           {title}
         </h1>
@@ -1450,15 +1516,68 @@ function PageHeader({
   );
 }
 
-function BackButton({ onBack }: { onBack: () => void }) {
+/** Persistent top bar: in-app Back and Forward, where you are, and Home. */
+function AppBar({
+  section,
+  canBack,
+  canForward,
+  previous,
+  next,
+  onBack,
+  onForward,
+  onHome,
+}: {
+  section: Section;
+  canBack: boolean;
+  canForward: boolean;
+  previous?: Route;
+  next?: Route;
+  onBack: () => void;
+  onForward: () => void;
+  onHome: () => void;
+}) {
+  const btn =
+    "inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2.5 text-[13px] font-semibold transition enabled:hover:bg-white/10 enabled:active:bg-white/15 disabled:opacity-35";
   return (
-    <button
-      type="button"
-      onClick={onBack}
-      className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[12px] font-semibold text-white/90 hover:text-white"
-    >
-      <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Home
-    </button>
+    <div className="dealer-mockup sticky top-0 z-40 bg-black/90 text-white backdrop-blur supports-[backdrop-filter]:bg-black/75">
+      <div className="mx-auto flex h-[52px] max-w-[460px] items-center gap-0.5 px-1.5 sm:max-w-[520px] sm:px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={!canBack}
+          aria-label={previous ? `Back to ${SECTION_TITLES[previous.section]}` : "Back"}
+          className={btn}
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+          <span>Back</span>
+        </button>
+        <button
+          type="button"
+          onClick={onForward}
+          disabled={!canForward}
+          aria-label={next ? `Forward to ${SECTION_TITLES[next.section]}` : "Forward"}
+          className={btn}
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <div className="min-w-0 flex-1 text-center">
+          {section === "Home" ? (
+            <img src={logoWhite} alt="Kessick" className="mx-auto h-[18px] w-auto" />
+          ) : (
+            <p className="truncate text-[13px] font-bold tracking-[0.02em]">{SECTION_TITLES[section]}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onHome}
+          disabled={section === "Home"}
+          aria-label="Home"
+          className={`${btn} w-11 px-0`}
+        >
+          <HomeIcon className="h-[18px] w-[18px]" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -2284,9 +2403,8 @@ function Account({
       <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
         <img src={cellarImage} alt="" decoding="async" className="absolute inset-0 -z-20 h-full w-full object-cover" />
         <div className="absolute inset-0 -z-10 bg-black/55" />
-        <div className="px-6 pb-5 pt-3">
-          <BackButton onBack={onBack} />
-          <div className="mt-3 flex items-center gap-3">
+        <div className="px-6 pb-5 pt-5">
+          <div className="flex items-center gap-3">
             <img
               src={dealerAvatar}
               alt=""
@@ -2447,7 +2565,8 @@ export default function DealerPortalPreview({
 }: {
   staffViewMode?: boolean;
 }) {
-  const { route, go, replace } = useHashRoute();
+  const history = usePortalHistory();
+  const { route, go, replace } = history;
   const { section, sub } = route;
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<SearchCategory | null>(null);
@@ -2481,20 +2600,23 @@ export default function DealerPortalPreview({
     go(next);
   };
 
-  // Page title, scroll position and focus follow the route.
-  const firstRender = useRef(true);
+  // Page title, scroll position and focus follow the route. New pages start
+  // at the top; Back and Forward return to where you were on that page.
   useEffect(() => {
     document.title =
       section === "Home"
         ? "Kessick Dealer Portal"
         : `${SECTION_TITLES[section]} · Kessick Dealer Portal`;
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    window.scrollTo({ top: 0, behavior: "auto" });
-    document.querySelector<HTMLElement>("[data-page-title]")?.focus({ preventScroll: true });
-  }, [section]);
+    setEmailOpen(false);
+    setLeaving(null);
+    if (history.kind === "init") return;
+    const y = history.kind === "move" ? history.savedScroll() : 0;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: y, behavior: "auto" });
+      document.querySelector<HTMLElement>("[data-page-title]")?.focus({ preventScroll: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history.index, section]);
 
   const goHome = () => navigate({ section: "Home" });
 
@@ -2524,6 +2646,17 @@ export default function DealerPortalPreview({
           </a>
         </div>
       ) : null}
+
+      <AppBar
+        section={section}
+        canBack={history.canBack}
+        canForward={history.canForward}
+        previous={history.previous}
+        next={history.next}
+        onBack={history.back}
+        onForward={history.forward}
+        onHome={goHome}
+      />
 
       {/* Centered mobile app shell */}
       <main
