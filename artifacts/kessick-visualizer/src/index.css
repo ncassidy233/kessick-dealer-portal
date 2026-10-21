@@ -416,3 +416,19 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* Wide screens: photo headers and tab bands run edge to edge, while their
+   text lines up with the page content (max 880px at md, 1160px at lg). */
+@media (min-width: 768px) {
+  .dealer-mockup { --gutter: 2rem; }
+}
+@media (min-width: 1024px) {
+  .dealer-mockup { --gutter: max(2rem, calc((100vw - 1160px) / 2 + 2rem)); }
+}
+@media (min-width: 768px) {
+  .dealer-mockup .bleed .px-6,
+  .dealer-mockup .bleed.px-6 {
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+}
