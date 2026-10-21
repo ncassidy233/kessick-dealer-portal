@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Maximize,
+  Minimize,
   CircleAlert,
   Clock,
   CircleCheck,
@@ -1170,7 +1172,7 @@ function Home({
   return (
     <div className="space-y-2.5 pb-2">
       {/* Photographic header with dealer identity, title and search */}
-      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
+      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6 bleed md:mx-[calc(50%-50vw)]">
         <img
           src={cellarImage}
           alt=""
@@ -1479,7 +1481,7 @@ function Home({
         width={900}
         height={400}
         decoding="async"
-        className="aspect-[9/4] h-auto w-full rounded-[10px] bg-[#d9d6cf] object-cover"
+        className="aspect-[9/4] h-auto w-full rounded-[10px] bg-[#d9d6cf] object-cover md:aspect-[4/1]"
       />
 
       {/* Your Dealer Toolkit */}
@@ -1637,7 +1639,7 @@ function PageHeader({
   onBack: () => void;
 }) {
   return (
-    <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
+    <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6 bleed md:mx-[calc(50%-50vw)]">
       <img
         src={cellarImage}
         alt=""
@@ -1656,6 +1658,41 @@ function PageHeader({
         <p className="mt-1.5 text-[11px] italic leading-snug">{tagline}</p>
       </div>
     </header>
+  );
+}
+
+/** Fills the whole screen, hiding the browser's own bars. */
+function FullScreenButton({ className }: { className: string }) {
+  const supported =
+    typeof document !== "undefined" &&
+    Boolean(document.documentElement.requestFullscreen) &&
+    document.fullscreenEnabled !== false;
+  const [on, setOn] = useState(() => Boolean(document.fullscreenElement));
+  useEffect(() => {
+    const sync = () => setOn(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  if (!supported) return null;
+  const label = on ? "Exit full screen" : "Full screen";
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={on}
+      data-tip={on ? "Exit full screen (Esc)" : "Fill the whole screen"}
+      onClick={async () => {
+        try {
+          if (document.fullscreenElement) await document.exitFullscreen();
+          else await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+        } catch {
+          notify("Full screen isn't available here. Open the portal in your browser.");
+        }
+      }}
+      className={`${className} w-11 px-0`}
+    >
+      {on ? <Minimize className="h-[18px] w-[18px]" aria-hidden="true" /> : <Maximize className="h-[18px] w-[18px]" aria-hidden="true" />}
+    </button>
   );
 }
 
@@ -1683,7 +1720,7 @@ function AppBar({
     "inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2.5 text-[13px] font-semibold transition enabled:hover:bg-white/10 enabled:active:bg-white/15 disabled:opacity-35";
   return (
     <div className="dealer-mockup sticky top-0 z-40 bg-black/90 text-white backdrop-blur supports-[backdrop-filter]:bg-black/75">
-      <div className="mx-auto flex h-[52px] max-w-[460px] items-center gap-0.5 px-1.5 sm:max-w-[520px] sm:px-4">
+      <div className="mx-auto flex h-[52px] max-w-[460px] sm:max-w-[520px] md:max-w-[880px] lg:max-w-[1160px] items-center gap-0.5 px-1.5 sm:px-4 md:px-6">
         <button
           type="button"
           onClick={onBack}
@@ -1712,6 +1749,7 @@ function AppBar({
             <p className="truncate text-[13px] font-bold tracking-[0.02em]">{SECTION_TITLES[section]}</p>
           )}
         </div>
+        <FullScreenButton className={btn} />
         <button
           type="button"
           onClick={onHome}
@@ -1751,7 +1789,7 @@ function TabBand<T extends string>({
     <div
       role="tablist"
       aria-label={label}
-      className="-mx-4 flex gap-5 overflow-x-auto bg-gradient-to-r from-black via-black/90 to-black/70 px-6 pt-1 text-[13px] text-white [scrollbar-width:none] sm:-mx-6"
+      className="-mx-4 flex gap-5 overflow-x-auto bg-gradient-to-r from-black via-black/90 to-black/70 px-6 pt-1 text-[13px] text-white [scrollbar-width:none] sm:-mx-6 bleed md:mx-[calc(50%-50vw)]"
       onKeyDown={(e) => {
         const i = tabs.indexOf(active);
         if (e.key === "ArrowRight") move(i + 1);
@@ -2155,7 +2193,7 @@ function Announcements({
             </div>
           </section>
         ) : (
-          <div className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {group.items.map((item) => (
               <RowCard
                 key={item.title}
@@ -2467,7 +2505,7 @@ function Resources({ sub, onBack }: { sub?: string; onBack: () => void }) {
 
       <SectionTitle title="All resources" sub="Open what's public, or request files from the Kessick team." />
 
-      <div className="space-y-2">
+      <div className="grid gap-2 md:grid-cols-2">
         {resources.map((r) => (
           <RowCard key={r.title} id={resourceId(r.title)} icon={r.icon} title={r.title} body={r.note}>
             {r.public ? (
@@ -2618,7 +2656,7 @@ function Account({
 }) {
   return (
     <div className="space-y-3 pb-2">
-      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6">
+      <header className="relative isolate -mx-4 -mt-4 overflow-hidden text-white sm:-mx-6 bleed md:mx-[calc(50%-50vw)]">
         <img src={cellarImage} alt="" decoding="async" className="absolute inset-0 -z-20 h-full w-full object-cover" />
         <div className="absolute inset-0 -z-10 bg-black/55" />
         <div className="px-6 pb-5 pt-5">
@@ -2643,7 +2681,7 @@ function Account({
 
       <SectionTitle title="Your account" sub="Profile, projects, and your line to the Kessick team." />
 
-      <div className="space-y-2">
+      <div className="grid gap-2 md:grid-cols-2">
         <RowCard icon={PersonIcon} title="Dealer profile" body="Company details, showroom address and primary contact.">
           <PillLink href={`mailto:${KESSICK_EMAIL}?subject=${encodeURIComponent("Dealer profile update")}`} dark={false}>
             Request an update <ChevronRight className="h-3 w-3" aria-hidden="true" />
@@ -2839,7 +2877,7 @@ export default function DealerPortalPreview({
   const goHome = () => navigate({ section: "Home" });
 
   return (
-    <div className="dealer-preview-surface min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] text-[#1b1b19]">
+    <div className="dealer-preview-surface min-h-screen overflow-x-clip pb-[calc(6rem+env(safe-area-inset-bottom))] text-[#1b1b19]">
       <a
         href="#main-content"
         onClick={(e) => {
@@ -2879,7 +2917,7 @@ export default function DealerPortalPreview({
       {/* Centered mobile app shell */}
       <main
         id="main-content"
-        className="dealer-mockup mx-auto w-full max-w-[460px] px-4 pt-4 sm:max-w-[520px] sm:px-6"
+        className="dealer-mockup mx-auto w-full max-w-[460px] sm:max-w-[520px] md:max-w-[880px] lg:max-w-[1160px] px-4 pt-4 sm:px-6 md:px-8"
       >
         {section === "Home" ? (
           <Home
