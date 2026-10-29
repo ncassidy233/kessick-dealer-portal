@@ -22,7 +22,7 @@ The portal package is `@workspace/kessick-visualizer`; its backend is
 ### Validation
 
 - `pnpm --filter @workspace/kessick-visualizer test` runs frontend unit tests.
-- `pnpm --filter @workspace/kessick-visualizer test:e2e` runs desktop and phone
+- `pnpm --filter @workspace/kessick-visualizer test:e2e` runs desktop, tablet, and phone
   browser regressions. Install Playwright's Chromium first with
   `pnpm --filter @workspace/kessick-visualizer exec playwright install chromium`.
   The canvas tests use the development-only `/__e2e/canvas` route with local

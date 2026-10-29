@@ -421,7 +421,7 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function LocalCanvas() {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [testClient] = useState(() => new QueryClient({
-    defaultOptions: { queries: { retry: false, enabled: false } },
+    defaultOptions: { queries: { retry: false } },
   }));
   return (
     <QueryClientProvider client={testClient}>

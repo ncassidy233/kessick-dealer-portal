@@ -238,6 +238,7 @@ export function CanvasStateProvider({ children, initialSnapshot, initialProjectV
   const [roomImageDataUrl, setRoomImageDataUrl] = useState<string | null>(null);
   const [roomImageDataId, setRoomImageDataId] = useState<string | null>(null);
   const [roomImageError, setRoomImageError] = useState<string | null>(null);
+  const [imageLoadRevision, setImageLoadRevision] = useState(0);
   const sessionImageDataRef = useRef<Map<string, string>>(new Map());
 
   const current = history[historyIndex];
@@ -366,7 +367,7 @@ export function CanvasStateProvider({ children, initialSnapshot, initialProjectV
     return () => {
       cancelled = true;
     };
-  }, [current.roomImageId, persistImages, roomImageDataId]);
+  }, [current.roomImageId, persistImages, roomImageDataId, imageLoadRevision]);
 
   const commit = useCallback((updater: (draft: StateSnapshot) => StateSnapshot) => {
     const previous = historyStateRef.current;
@@ -546,6 +547,7 @@ export function CanvasStateProvider({ children, initialSnapshot, initialProjectV
 
   const loadProject = async (snap: StateSnapshot) => {
     sessionImageDataRef.current.clear();
+    setImageLoadRevision(revision => revision + 1);
     const migrated = migrateSnap(snap);
     const updated = { history: [migrated], historyIndex: 0 };
     historyStateRef.current = updated;

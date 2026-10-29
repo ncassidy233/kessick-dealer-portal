@@ -47,7 +47,7 @@ export function Header({
   const [isConciergeOpen, setIsConciergeOpen] = useState(false);
   
   const { data: accountContext } = useGetAccount();
-  const role = accountContext?.account.role || 'customer';
+  const role = accountContext?.account?.role || 'customer';
   const [, setLocation] = useLocation();
 
   const { 

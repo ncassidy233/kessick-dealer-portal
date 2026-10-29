@@ -7,6 +7,24 @@ async function closeInitialComposer(page: Page) {
   await page.getByTestId(page.viewportSize()!.width < 768 ? 'close-composer-panel' : 'toolrail-composer').click();
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({
+    status: 401,
+    json: { error: 'Local canvas tests do not access authenticated services.' },
+  }));
+  await page.route('**/api/account', route => route.fulfill({
+    json: {
+      account: {
+        id: 'local-canvas-staff',
+        clerkUserId: 'local-canvas-test',
+        email: 'canvas-test@example.invalid',
+        role: 'staff',
+        status: 'approved',
+      },
+    },
+  }));
+});
+
 function failOnUpdateLoops(page: Page) {
   const errors: string[] = [];
 
@@ -134,6 +152,7 @@ async function seedSavedProjects(
 }
 
 async function openSavedProject(page: Page, projectName: string) {
+  await expect(page.getByRole('dialog')).toBeHidden();
   await page
     .locator(
       '[data-testid="button-open-project"]:visible, [data-testid="button-open-project-mobile"]:visible',
@@ -141,6 +160,7 @@ async function openSavedProject(page: Page, projectName: string) {
     .click();
   const projectRow = page.getByText(projectName, { exact: true }).locator('../..');
   await projectRow.getByRole('button', { name: 'Load' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
 }
 
 async function expectPanelToggle(
@@ -426,7 +446,8 @@ test('portrait upload stays visible through resize and project reopen', async ({
   await page.waitForTimeout(1_200);
   await page.reload();
   await closeInitialComposer(page);
-  await expect(page.getByRole('heading', { name: 'Begin Site Survey' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Photo View' })).toBeVisible();
+  await expectRoomContainedAndCentered(page);
   await page
     .locator(
       '[data-testid="button-open-project"]:visible, [data-testid="button-open-project-mobile"]:visible',
