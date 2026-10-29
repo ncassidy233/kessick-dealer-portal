@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { BrandLogo } from "@/components/brand-logo";
 import { usePortalSession } from "@/lib/portal-session";
-import { canAccessDealerPortal } from "@/lib/dealer-access";
+import { dealerAccessState } from "@/lib/dealer-access";
 import { useGetDealerPortalAccess, getGetDealerPortalAccessQueryKey } from "@workspace/api-client-react";
 import { usePortalNotifications } from "@/hooks/use-portal-v2";
 import { 
@@ -30,13 +30,14 @@ import { Badge } from "@/components/ui/badge";
 
 export function PortalLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const { data: session } = usePortalSession();
+  const sessionQuery = usePortalSession();
+  const session = sessionQuery.data;
   const { data: notificationsData } = usePortalNotifications();
   const { signOut } = useClerk();
   
   const role = session?.role;
   const isStaff = role && role !== 'dealer' && role !== 'customer';
-  const dealerAuthorized = canAccessDealerPortal(session);
+  const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
   const { data: access } = useGetDealerPortalAccess({ query: { queryKey: getGetDealerPortalAccessQueryKey(), enabled: dealerAuthorized } });
   
   const unreadCount = notificationsData?.notifications?.filter(n => !n.readAt).length || 0;

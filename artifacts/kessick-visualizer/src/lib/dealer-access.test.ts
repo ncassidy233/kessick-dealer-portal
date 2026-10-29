@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { canAccessDealerPortal, dealerAccessState } from "./dealer-access";
 import type { PortalSession } from "./portal-session";
 
@@ -45,5 +46,48 @@ test("verified dealers continue normally and ineligible accounts retain account 
     { ...dealer, role: "customer" as const },
   ]) {
     assert.equal(dealerAccessState({ data: session, isLoading: false, isError: false }), "account");
+  }
+});
+
+test("a failed bootstrap refresh with cached authorization stays locked until verification succeeds", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const key = ["dealer-access-regression"];
+  client.setQueryData(key, dealer);
+  let rejectRefresh = true;
+  const observer = new QueryObserver(client, {
+    queryKey: key,
+    queryFn: async () => {
+      if (rejectRefresh) throw new Error("Permission service unavailable");
+      return dealer;
+    },
+  });
+
+  try {
+    assert.equal(dealerAccessState(observer.getCurrentResult()), "allowed");
+    const failed = await observer.refetch();
+    assert.equal(failed.data, dealer);
+    assert.equal(failed.isError, true);
+    assert.equal(dealerAccessState(failed), "error");
+    rejectRefresh = false;
+    assert.equal(dealerAccessState(await observer.refetch()), "allowed");
+  } finally {
+    client.clear();
+  }
+});
+
+test("a refreshed bootstrap revocation overrides a previously approved dealer session", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const key = ["dealer-revocation-regression"];
+  client.setQueryData(key, dealer);
+  const observer = new QueryObserver(client, {
+    queryKey: key,
+    queryFn: async () => ({ ...dealer, authorized: false }),
+  });
+
+  try {
+    assert.equal(dealerAccessState(observer.getCurrentResult()), "allowed");
+    assert.equal(dealerAccessState(await observer.refetch()), "account");
+  } finally {
+    client.clear();
   }
 });

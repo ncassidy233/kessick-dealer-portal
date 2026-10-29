@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { usePortalSession } from "@/lib/portal-session";
-import { canAccessDealerPortal } from "@/lib/dealer-access";
+import { dealerAccessState } from "@/lib/dealer-access";
 
 export interface PortalContent {
   id: string;
@@ -18,20 +18,20 @@ export interface PortalContent {
 }
 
 export function usePortalContent(kind?: string) {
-  const { data: session } = usePortalSession();
+  const sessionQuery = usePortalSession();
   return useQuery({
     queryKey: ["portal-v2-content", kind],
     queryFn: () => customFetch<{ content: PortalContent[] }>(`/api/portal-v2/content${kind ? `?kind=${kind}` : ""}`, { responseType: "json" }),
-    enabled: canAccessDealerPortal(session)
+    enabled: dealerAccessState(sessionQuery) === "allowed"
   });
 }
 
 export function usePortalProjects() {
-  const { data: session } = usePortalSession();
+  const sessionQuery = usePortalSession();
   return useQuery({
     queryKey: ["portal-v2-projects"],
     queryFn: () => customFetch<{ content: PortalContent[] }>(`/api/portal-v2/projects`, { responseType: "json" }),
-    enabled: canAccessDealerPortal(session)
+    enabled: dealerAccessState(sessionQuery) === "allowed"
   });
 }
 
@@ -62,7 +62,7 @@ export interface NotificationRecipient {
 }
 
 export function usePortalNotifications() {
-  const { data: session } = usePortalSession();
+  const sessionQuery = usePortalSession();
   return useQuery({
     queryKey: ["portal-v2-notifications"],
     queryFn: async () => {
@@ -70,7 +70,7 @@ export function usePortalNotifications() {
       return { notifications: data.notifications.map(({ notification, recipient }) => ({ ...recipient, notification })) };
     },
     refetchInterval: 30_000,
-    enabled: canAccessDealerPortal(session)
+    enabled: dealerAccessState(sessionQuery) === "allowed"
   });
 }
 
@@ -91,11 +91,11 @@ export function useAcknowledgeNotification() {
 }
 
 export function useNotificationPreferences() {
-  const { data: session } = usePortalSession();
+  const sessionQuery = usePortalSession();
   return useQuery({
     queryKey: ["portal-v2-notification-preferences"],
     queryFn: () => customFetch<{ preferences: any }>("/api/portal-v2/notification-preferences", { responseType: "json" }),
-    enabled: canAccessDealerPortal(session)
+    enabled: dealerAccessState(sessionQuery) === "allowed"
   });
 }
 

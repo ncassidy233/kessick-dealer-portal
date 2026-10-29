@@ -19,6 +19,23 @@ Run `pnpm install`, then `pnpm run typecheck`.
 The portal package is `@workspace/kessick-visualizer`; its backend is
 `@workspace/api-server`. Each package has its own dev/build scripts.
 
+### Validation
+
+- `pnpm --filter @workspace/kessick-visualizer test` runs frontend unit tests.
+- `pnpm --filter @workspace/kessick-visualizer test:e2e` runs desktop and phone
+  browser regressions. Install Playwright's Chromium first with
+  `pnpm --filter @workspace/kessick-visualizer exec playwright install chromium`.
+  The canvas tests use the development-only `/__e2e/canvas` route with local
+  browser storage; real dealer and staff routes still require authentication.
+- `pnpm --filter @workspace/api-server test` runs backend tests. For full database
+  coverage, point `DATABASE_URL` at a **disposable local PostgreSQL database**
+  initialized with `pnpm --filter @workspace/db push`, and set
+  `KNOWLEDGE_DB_INTEGRATION_TEST=1`. Never use production credentials or data.
+- `pnpm --filter @workspace/scripts test` and
+  `node --test scripts/serve-secure-static.test.mjs` run catalog and static-server
+  regressions.
+- `PORT=5173 BASE_PATH=/ pnpm run build` typechecks and builds the workspace.
+
 This application currently relies on Replit routing, PostgreSQL, managed Clerk
 authentication, private object storage, and AI-provider configuration. A clone
 alone does not recreate those services. Inspect each artifact's

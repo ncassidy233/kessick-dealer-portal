@@ -3,6 +3,10 @@ import { expect, test, type Page } from '@playwright/test';
 const updateLoopPattern =
   /maximum update depth exceeded|too many re-renders|infinite (?:render|update) loop/i;
 
+async function closeInitialComposer(page: Page) {
+  await page.getByTestId(page.viewportSize()!.width < 768 ? 'close-composer-panel' : 'toolrail-composer').click();
+}
+
 function failOnUpdateLoops(page: Page) {
   const errors: string[] = [];
 
@@ -161,7 +165,8 @@ test('new-project canvas workflow keeps its primary actions reachable', async ({
 }) => {
   const assertNoUpdateLoops = failOnUpdateLoops(page);
 
-  await page.goto('/');
+  await page.goto('/__e2e/canvas');
+  await closeInitialComposer(page);
   await expect(page.getByRole('heading', { name: 'Begin Site Survey' })).toBeVisible();
   await page.getByTestId('btn-demo-room').click();
   await expect(page.getByRole('button', { name: 'Photo View' })).toBeVisible();
@@ -222,7 +227,7 @@ test('phone placement keeps a fixed Tower dimensional and legible', async ({
   test.skip(!isMobile, 'This regression protects the phone-width canvas.');
 
   await page.goto('/__e2e/canvas');
-  await page.getByTestId('close-composer-panel').click();
+  await closeInitialComposer(page);
   await page.getByTestId('btn-demo-room').click();
   await expect(page.getByRole('heading', { name: 'Calibrate Scale' })).toBeVisible();
   await expect(page.getByTestId('btn-confirm-scale')).toBeEnabled();
@@ -294,7 +299,8 @@ test('phone placement keeps a fixed Tower dimensional and legible', async ({
 });
 
 test('legacy calibrated layouts are never guessed or silently rewritten', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/__e2e/canvas');
+  await closeInitialComposer(page);
   const legacy = savedProject({
     id: 'legacy-project',
     name: 'Legacy Room',
@@ -306,6 +312,7 @@ test('legacy calibrated layouts are never guessed or silently rewritten', async 
     [{ id: 'legacy-image', dataUrl: roomSvgDataUrl(600, 1200, '#8d794e') }],
   );
   await page.reload();
+  await closeInitialComposer(page);
   await openSavedProject(page, 'Legacy Room');
 
   await expect(page.getByRole('heading', { name: 'Older room layout needs review' })).toBeVisible();
@@ -323,7 +330,8 @@ test('legacy calibrated layouts are never guessed or silently rewritten', async 
 });
 
 test('replacing a missing legacy photo still requires an explicit layout reset', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/__e2e/canvas');
+  await closeInitialComposer(page);
   const legacy = savedProject({
     id: 'missing-photo-project',
     name: 'Missing Legacy Photo',
@@ -331,6 +339,7 @@ test('replacing a missing legacy photo still requires an explicit layout reset',
   });
   await seedSavedProjects(page, [legacy], []);
   await page.reload();
+  await closeInitialComposer(page);
   await openSavedProject(page, 'Missing Legacy Photo');
 
   await expect(page.getByRole('heading', { name: 'Room photo unavailable' })).toBeVisible();
@@ -348,7 +357,8 @@ test('replacing a missing legacy photo still requires an explicit layout reset',
 });
 
 test('switching projects waits for the incoming room photo', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/__e2e/canvas');
+  await closeInitialComposer(page);
   const current = savedProject({
     id: 'current-project',
     name: 'Current Room',
@@ -369,6 +379,7 @@ test('switching projects waits for the incoming room photo', async ({ page }) =>
     ],
   );
   await page.reload();
+  await closeInitialComposer(page);
   await openSavedProject(page, 'Current Room');
   await expectRoomContainedAndCentered(page);
 
@@ -393,7 +404,8 @@ test('portrait upload stays visible through resize and project reopen', async ({
     </svg>
   `;
 
-  await page.goto('/');
+  await page.goto('/__e2e/canvas');
+  await closeInitialComposer(page);
   await page.locator('input[type="file"][accept="image/*"]').setInputFiles({
     name: 'portrait-room.svg',
     mimeType: 'image/svg+xml',
@@ -413,6 +425,7 @@ test('portrait upload stays visible through resize and project reopen', async ({
 
   await page.waitForTimeout(1_200);
   await page.reload();
+  await closeInitialComposer(page);
   await expect(page.getByRole('heading', { name: 'Begin Site Survey' })).toBeVisible();
   await page
     .locator(

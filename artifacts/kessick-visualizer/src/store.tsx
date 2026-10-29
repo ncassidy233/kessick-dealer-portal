@@ -205,10 +205,15 @@ export function updateActiveInstances(s: StateSnapshot, updater: (insts: Product
   };
 }
 
-export function AppProvider({ children, initialSnapshot, initialProjectVersion, persistLocal = true, persistImages = persistLocal }: { children: React.ReactNode, initialSnapshot?: StateSnapshot, initialProjectVersion?: number, persistLocal?: boolean, persistImages?: boolean }) {
+type AppProviderProps = { children: React.ReactNode, initialSnapshot?: StateSnapshot, initialProjectVersion?: number, persistLocal?: boolean, persistImages?: boolean };
+
+export function AppProvider(props: AppProviderProps) {
   const { user } = useUser();
   const userName = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'Unknown User';
+  return <CanvasStateProvider {...props} userName={userName} />;
+}
 
+export function CanvasStateProvider({ children, initialSnapshot, initialProjectVersion, persistLocal = true, persistImages = persistLocal, userName }: AppProviderProps & { userName: string }) {
   const [historyState, setHistoryState] = useState(() => {
     const activeProject = initialSnapshot ?? getActiveProjectLocal();
     return {

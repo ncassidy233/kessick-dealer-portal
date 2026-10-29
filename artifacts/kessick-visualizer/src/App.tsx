@@ -14,8 +14,9 @@ import ProjectsPage from '@/pages/workspace/projects';
 import ProjectEditorPage from '@/pages/workspace/project-editor';
 import InvitationPage from '@/pages/invitation';
 import AccountPage from '@/pages/account';
-import { AppProvider } from '@/store';
+import { CanvasStateProvider } from '@/store';
 import { HomeInner } from '@/pages/home';
+import { ProjectsModal } from '@/components/projects-modal';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { StaffGuard } from '@/components/auth/staff-guard';
 import { WorkspaceLayout } from '@/components/layouts/workspace-layout';
@@ -204,13 +205,6 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <Switch>
-        {import.meta.env.DEV && (
-          <Route path="/__e2e/canvas">
-            <AppProvider persistLocal={false} persistImages={false}>
-              <HomeInner />
-            </AppProvider>
-          </Route>
-        )}
         <Route path="/" component={PublicLanding} />
         <Route path="/app" component={PublicLanding} />
         <Route path="/demo">
@@ -424,7 +418,26 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function LocalCanvas() {
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [testClient] = useState(() => new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  }));
+  return (
+    <QueryClientProvider client={testClient}>
+      <CanvasStateProvider userName="Local canvas">
+        <HomeInner onExitProject={() => setProjectsOpen(true)} />
+        <ProjectsModal open={projectsOpen} onOpenChange={setProjectsOpen} />
+      </CanvasStateProvider>
+    </QueryClientProvider>
+  );
+}
+
 function AppRoutes() {
+  const [location] = useLocation();
+  if (import.meta.env.DEV && location === "/__e2e/canvas") {
+    return <LocalCanvas />;
+  }
   if (!clerkPubKey) return <AuthConfigurationError />;
   return (
     <ClerkProviderWithRouter>
