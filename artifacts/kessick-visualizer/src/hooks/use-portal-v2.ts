@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { usePortalSession } from "@/lib/portal-session";
+import { canAccessDealerPortal } from "@/lib/dealer-access";
 
 export interface PortalContent {
   id: string;
@@ -21,7 +22,7 @@ export function usePortalContent(kind?: string) {
   return useQuery({
     queryKey: ["portal-v2-content", kind],
     queryFn: () => customFetch<{ content: PortalContent[] }>(`/api/portal-v2/content${kind ? `?kind=${kind}` : ""}`, { responseType: "json" }),
-    enabled: session?.role === 'dealer'
+    enabled: canAccessDealerPortal(session)
   });
 }
 
@@ -30,7 +31,7 @@ export function usePortalProjects() {
   return useQuery({
     queryKey: ["portal-v2-projects"],
     queryFn: () => customFetch<{ content: PortalContent[] }>(`/api/portal-v2/projects`, { responseType: "json" }),
-    enabled: session?.role === 'dealer'
+    enabled: canAccessDealerPortal(session)
   });
 }
 
@@ -69,7 +70,7 @@ export function usePortalNotifications() {
       return { notifications: data.notifications.map(({ notification, recipient }) => ({ ...recipient, notification })) };
     },
     refetchInterval: 30_000,
-    enabled: session?.role === 'dealer'
+    enabled: canAccessDealerPortal(session)
   });
 }
 
@@ -94,7 +95,7 @@ export function useNotificationPreferences() {
   return useQuery({
     queryKey: ["portal-v2-notification-preferences"],
     queryFn: () => customFetch<{ preferences: any }>("/api/portal-v2/notification-preferences", { responseType: "json" }),
-    enabled: session?.role === 'dealer'
+    enabled: canAccessDealerPortal(session)
   });
 }
 

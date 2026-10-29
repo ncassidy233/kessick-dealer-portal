@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { BrandLogo } from "@/components/brand-logo";
-import { usePortalSession, staffHome } from "@/lib/portal-session";
+import { usePortalSession } from "@/lib/portal-session";
+import { canAccessDealerPortal } from "@/lib/dealer-access";
 import { useGetDealerPortalAccess, getGetDealerPortalAccessQueryKey } from "@workspace/api-client-react";
 import { usePortalNotifications } from "@/hooks/use-portal-v2";
 import { 
@@ -35,7 +36,8 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   
   const role = session?.role;
   const isStaff = role && role !== 'dealer' && role !== 'customer';
-  const { data: access } = useGetDealerPortalAccess({ query: { queryKey: getGetDealerPortalAccessQueryKey(), enabled: role === "dealer" } });
+  const dealerAuthorized = canAccessDealerPortal(session);
+  const { data: access } = useGetDealerPortalAccess({ query: { queryKey: getGetDealerPortalAccessQueryKey(), enabled: dealerAuthorized } });
   
   const unreadCount = notificationsData?.notifications?.filter(n => !n.readAt).length || 0;
 
@@ -60,6 +62,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   ];
 
   const visibleDealerLinks = dealerLinks.filter((link) => {
+    if (!dealerAuthorized) return link.href === "/portal/account";
     if (link.href === "/portal" || link.href === "/portal/account") return true;
     const pageKey = `page:${link.href.split("/").pop()}`;
     if ((access?.capabilities as Record<string, boolean> | undefined)?.[pageKey] === false) return false;
@@ -71,6 +74,9 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     { href: "/portal/notifications", label: "Notices", icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
     { href: "/portal/forms", label: "Support", icon: Headphones },
   ];
+  const visibleMobileDealerLinks = mobileDealerLinks.filter((link) =>
+    visibleDealerLinks.some((visible) => visible.href === link.href),
+  );
 
   const adminLinks: NavLink[] = [
     { href: "/admin", label: "Overview", icon: Home, exact: true },
@@ -196,7 +202,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border flex justify-around overflow-x-auto p-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {(isStaff ? visibleAdminLinks.filter(l => ['Overview', 'Users', 'Content', 'Notifications'].includes(l.label)) : mobileDealerLinks).map((link) => {
+        {(isStaff ? visibleAdminLinks.filter(l => ['Overview', 'Users', 'Content', 'Notifications'].includes(l.label)) : visibleMobileDealerLinks).map((link) => {
           const isActive = link.exact ? location === link.href : location.startsWith(link.href);
           return (
             <Link 

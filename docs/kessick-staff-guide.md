@@ -19,6 +19,7 @@ Sign in with an approved staff account. **Overview** (`/admin`) is for super adm
 
 ## Permissions and operational limits
 
+- Private dealer pages require an approved dealer account and approved organization membership, as verified by the portal session. Customers and dealers without that authorization retain **Account** access but do not see private dealer navigation. If verification fails, private pages stay locked; use **Retry access check** or **Go to account**. Staff administration and the public sample previews are separate from this dealer authorization.
 - The Overview and its figures are restricted to super admins and staff admins. The numbers come from the overview response; **dealer total minus approved** is *not* a reliable pending count (suspended dealers exist). Filter Users by Pending for actual approval work.
 - Users, Groups, Access Rules, Pricing, Insights and Audit are administrative workspaces. Content managers can work with Content, Notifications and Concierge Knowledge where permitted, but cannot use this Overview. Sales reps have narrower access. A visible link is not a grant of permission.
 - Content publication and notification sending are distinct actions. A saved draft is not visible to dealers; target and publish/send intentionally. A notification's in-app delivery record does not prove the device received a push. Push requires working device subscriptions and server configuration; inspect actual push status, and verify on a device before promising push delivery.
