@@ -38,6 +38,7 @@ import { logger } from "../lib/logger";
 import { approvedDealerAccountIds, isApprovedDealerAccount } from "../lib/portalDealerEligibility";
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
 import linkedFormsRouter from "./linkedForms";
+import pageStudioRouter from "./pageStudio";
 import { dealerProvisioningPlan } from "../lib/portalDealerProvisioning";
 import { portalInvitationRedirectUrl } from "../lib/portalInvitation";
 import { requestSourceOrigin } from "../security/origin";
@@ -428,6 +429,8 @@ async function processPendingPushes(notification: typeof portalNotificationsV2Ta
     }
   }
 }
+
+router.use("/portal-v2", pageStudioRouter);
 
 router.get("/portal-v2/bootstrap", async (req, res): Promise<void> => {
   if (!req.account) { res.status(404).json({ error: "Portal account not found." }); return; }

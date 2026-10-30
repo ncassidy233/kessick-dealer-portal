@@ -29,3 +29,15 @@ Sign in with an approved staff account. **Overview** (`/admin`) is for super adm
 - Form fields support short and long answers, email, number, date, and choices. Give fields unique keys; choice fields require options. Form definitions and their targeting save together. Unpublish linked forms to stop new requests rather than deleting their response history.
 - AI answers require an available provider and credit-consent configuration; uploading knowledge alone does not turn on live AI. Activation makes eligible material searchable, not guaranteed to appear in every answer. Staff-only sources must not be shared with dealers. See [Concierge knowledge](kessick-concierge-knowledge.md) for the review and audience process.
 - Resource uploads accept only the file types shown in the Content editor; use an external URL for unsupported types. No UI step in this guide deploys code or applies database migrations. If a feature reports a migration or service error, escalate to the technical owner rather than trying to fix it from the staff portal.
+
+## Page Studio foundation (development)
+
+Page Studio now has a strict, versioned page-document schema and separate database tables for drafts and publications. This is backend groundwork, not a released visual editor: the existing dealer homepage is unchanged by saving these drafts.
+
+- Editable page keys are Home, Projects, Collections, Training, and Resources. Authentication, Account, Pricing, and security components are excluded.
+- Approved blocks are hero, plain text, and content-reference grids, with constrained styles and safe web/dealer links. Executable HTML, JavaScript, arbitrary component types, and unknown fields are rejected.
+- Staff with content-read permission can retrieve `/api/portal-v2/admin/pages/:pageKey/draft`; content-write permission is required to save with `PUT`. Each save supplies `expectedRevision` (zero for a new draft). Stale saves return 409 rather than overwriting another editor; successful saves record the editor and an audit event.
+- Approved dealers can retrieve only `/api/portal-v2/pages/:pageKey`, which reads the separate publication table and respects dealer page permissions. With no publication, it returns 404, never the draft.
+- There is intentionally no publishing or rollback API yet. Visual editing, live draft previews, linked-resource validation, publication confirmation, revision history, and actual page rendering remain subsequent work.
+
+The new additive database schema has been tested only in an isolated local database. Applying it to a hosted environment requires a separately reviewed database change; this work does not run production migrations or seed live content.

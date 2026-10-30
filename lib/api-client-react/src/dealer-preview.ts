@@ -21,6 +21,11 @@ export function dealerPreviewLinkUrl(href: string, location: URL, basePath: stri
   if (url.origin !== location.origin) return url.href;
   const accountId = dealerPreviewAccountId(location.pathname);
   if (!accountId) return null;
+  const gatewayPrefix = `/api/staff/dealer-view/${accountId}`;
+  if (url.pathname.startsWith(`${gatewayPrefix}/`)) {
+    const original = new URL(`/api${url.pathname.slice(gatewayPrefix.length)}${url.search}`, location);
+    return dealerPreviewRequestUrl(original, location, "GET") === `${url.origin}${url.pathname}${url.search}` ? url.href : null;
+  }
   const base = basePath.replace(/\/$/, "");
   const path = base && url.pathname.startsWith(`${base}/`) ? url.pathname.slice(base.length) : url.pathname;
   if (/^\/portal(?:\/(?:projects|collections|training|pricing|resources|forms|notifications|account))?\/?$/.test(path)) {

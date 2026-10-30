@@ -23,6 +23,9 @@ test("Dealer View recognizes subpath deployments and keeps native links inside t
   }
   for (const href of ["/admin/users", "/dealer-app/admin/content", "javascript:alert(1)"]) assert.equal(dealerPreviewLinkUrl(href, subpath, "/dealer-app/"), null);
   assert.equal(dealerPreviewLinkUrl("https://kessickwinecellars.com/", subpath, "/dealer-app/"), "https://kessickwinecellars.com/");
+  const download = dealerPreviewLinkUrl(`/api/dealer-portal/resources/${id}/file`, subpath, "/dealer-app/")!;
+  assert.equal(dealerPreviewLinkUrl(download, subpath, "/dealer-app/"), download);
+  assert.equal(dealerPreviewLinkUrl(`/api/staff/dealer-view/${id}/staff/portal/users`, subpath, "/dealer-app/"), null);
 });
 
 test("Dealer View rejects writes but never remaps staff bootstrap, authentication, or external URLs", () => {
