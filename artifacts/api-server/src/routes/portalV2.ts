@@ -37,6 +37,7 @@ import { isPortalTargetVisible, legacyPageCapabilityForContent, linkedResourceId
 import { logger } from "../lib/logger";
 import { approvedDealerAccountIds, isApprovedDealerAccount } from "../lib/portalDealerEligibility";
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
+import { dealerReadAccount } from "../lib/staffDealerRead";
 import linkedFormsRouter from "./linkedForms";
 import pageStudioRouter from "./pageStudio";
 import { dealerProvisioningPlan } from "../lib/portalDealerProvisioning";
@@ -80,7 +81,8 @@ async function getStaffRole(req: Request): Promise<StaffRole | null> {
   return profile.role;
 }
 async function requireApprovedDealer(req: Request, res: Response): Promise<boolean> {
-  if (!req.account || !await isApprovedDealerAccount(req.account.id)) {
+  const account = dealerReadAccount(req);
+  if (!account || !await isApprovedDealerAccount(account.id)) {
     res.status(403).json({ error: "Approved dealer organization membership required." });
     return false;
   }
@@ -433,20 +435,21 @@ async function processPendingPushes(notification: typeof portalNotificationsV2Ta
 router.use("/portal-v2", pageStudioRouter);
 
 router.get("/portal-v2/bootstrap", async (req, res): Promise<void> => {
-  if (!req.account) { res.status(404).json({ error: "Portal account not found." }); return; }
-  const staffRole = await getStaffRole(req);
+  const account = dealerReadAccount(req);
+  if (!account) { res.status(404).json({ error: "Portal account not found." }); return; }
+  const staffRole = account.role === "staff" ? await getStaffRole(req) : null;
   const access = resolvePortalBootstrapAccess(
-    req.account,
+    account,
     staffRole,
-    req.account.role === "dealer"
-      ? await isApprovedDealerAccount(req.account.id)
+    account.role === "dealer"
+      ? await isApprovedDealerAccount(account.id)
       : false,
   );
   if (!access) { res.status(404).json({ error: "Portal account not found." }); return; }
   const [membership] = await db.select({ organization: dealerOrganizationsTable })
     .from(organizationMembershipsTable).innerJoin(dealerOrganizationsTable, eq(organizationMembershipsTable.organizationId, dealerOrganizationsTable.id))
-    .where(and(eq(organizationMembershipsTable.accountId, req.account.id), eq(organizationMembershipsTable.status, "approved"), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
-  res.json({ account: await userDto(req.account), role: access.role, authorized: access.authorized, organization: membership?.organization ?? null, groups: await groupsForAccount(req.account.id), capabilities: portalCapabilities[access.role], push: { configured: pushConfigured, message: pushConfiguration.error } });
+    .where(and(eq(organizationMembershipsTable.accountId, account.id), eq(organizationMembershipsTable.status, "approved"), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
+  res.json({ account: await userDto(account), role: access.role, authorized: access.authorized, organization: membership?.organization ?? null, groups: await groupsForAccount(account.id), capabilities: portalCapabilities[access.role], push: { configured: pushConfigured, message: pushConfiguration.error } });
 });
 router.post("/portal-v2/bootstrap", async (req, res): Promise<void> => {
   const body = z.object({ displayName: z.string().trim().min(1).max(200).optional() }).safeParse(req.body);
@@ -876,27 +879,29 @@ router.delete("/portal-v2/admin/content/:contentId", requireCapability("content:
 
 router.get("/portal-v2/content", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
+  const accountId = dealerReadAccount(req)!.id;
   const query = z.object({ kind: contentKinds.optional() }).safeParse(req.query); if (!query.success) { res.status(400).json({ error: "Invalid content filter." }); return; }
-  const groupIds = (await groupsForAccount(req.account!.id)).map((group) => group.id);
+  const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(eq(portalContentTable.published, true));
   const visible = await Promise.all(rows.filter((row) => !query.data.kind || row.kind === query.data.kind).map(async (row) => {
     const pageCapability = legacyPageCapabilityForContent(row.kind);
-    if (pageCapability && !await canViewLegacyPortalCapability(req.account!.id, groupIds, pageCapability)) return null;
+    if (pageCapability && !await canViewLegacyPortalCapability(accountId, groupIds, pageCapability)) return null;
     if (row.visibility === "everyone") return row;
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
-    return isPortalTargetVisible(row.visibility, targets, req.account!.id, groupIds) ? row : null;
+    return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));
   res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
 });
 router.get("/portal-v2/projects", async (req, res): Promise<void> => {
   req.query.kind = "project"; // reuse the exact dealer visibility handler through a local redirect-free invocation is not possible.
   if (!await requireApprovedDealer(req, res)) return;
-  const groupIds = (await groupsForAccount(req.account!.id)).map((group) => group.id);
+  const accountId = dealerReadAccount(req)!.id;
+  const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(and(eq(portalContentTable.published, true), eq(portalContentTable.kind, "project")));
   const visible = await Promise.all(rows.map(async (row) => {
     if (row.visibility === "everyone") return row;
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
-    return isPortalTargetVisible(row.visibility, targets, req.account!.id, groupIds) ? row : null;
+    return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));
   res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
 });
@@ -966,11 +971,12 @@ router.get("/portal-v2/admin/notifications/:notificationId/history", requireCapa
 
 router.get("/portal-v2/notifications", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
+  const accountId = dealerReadAccount(req)!.id;
   const [preferences] = await db.select().from(portalNotificationPreferencesTable)
-    .where(eq(portalNotificationPreferencesTable.accountId, req.account!.id)).limit(1);
+    .where(eq(portalNotificationPreferencesTable.accountId, accountId)).limit(1);
   const rows = await db.select({ notification: portalNotificationsV2Table, recipient: portalNotificationRecipientsV2Table }).from(portalNotificationRecipientsV2Table)
     .innerJoin(portalNotificationsV2Table, eq(portalNotificationRecipientsV2Table.notificationId, portalNotificationsV2Table.id))
-    .where(and(eq(portalNotificationRecipientsV2Table.accountId, req.account!.id), eq(portalNotificationsV2Table.status, "sent"))).orderBy(desc(portalNotificationsV2Table.sentAt));
+    .where(and(eq(portalNotificationRecipientsV2Table.accountId, accountId), eq(portalNotificationsV2Table.status, "sent"))).orderBy(desc(portalNotificationsV2Table.sentAt));
   res.json({
     notifications: rows.filter(({ notification }) =>
       shouldListDealerNotification(
@@ -995,8 +1001,9 @@ router.post("/portal-v2/notifications/:notificationId/read", async (req, res): P
 router.post("/portal-v2/notifications/:notificationId/acknowledge", async (req, res): Promise<void> => { await recipientAction(req, res, "acknowledgedAt"); });
 router.get("/portal-v2/notification-preferences", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
-  const [preferences] = await db.select().from(portalNotificationPreferencesTable).where(eq(portalNotificationPreferencesTable.accountId, req.account!.id)).limit(1);
-  res.json({ preferences: preferences ?? { accountId: req.account!.id, inAppEnabled: true, pushEnabled: true, priorityThreshold: "low" } });
+  const accountId = dealerReadAccount(req)!.id;
+  const [preferences] = await db.select().from(portalNotificationPreferencesTable).where(eq(portalNotificationPreferencesTable.accountId, accountId)).limit(1);
+  res.json({ preferences: preferences ?? { accountId, inAppEnabled: true, pushEnabled: true, priorityThreshold: "low" } });
 });
 router.put("/portal-v2/notification-preferences", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;

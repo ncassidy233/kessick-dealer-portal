@@ -9,12 +9,15 @@ import {
 import { Loader2, Bell, AlertTriangle, Check, CheckCheck, Settings2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { portalRelativeTime } from "@/lib/portal-dates";
+import { safeContentUrl } from "@/lib/content-links";
 import { Badge } from "@/components/ui/badge";
 import { NotificationPreferences } from "./notification-preferences";
 import { DealerContentLink } from "@/components/dealer-content-link";
+import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
 
 export default function PortalNotifications() {
+  const view = useStaffDealerView();
   const { data: notificationsData, isLoading: noticesLoading, isError, refetch } = usePortalNotifications();
   const { data: prefsData } = useNotificationPreferences();
   
@@ -23,12 +26,14 @@ export default function PortalNotifications() {
   const updatePrefsMutation = useUpdateNotificationPreferences();
 
   const handleMarkRead = (id: string) => {
+    if (view?.readOnly) return;
     markReadMutation.mutate(id, {
       onError: () => toast.error("Failed to mark as read")
     });
   };
 
   const handleAcknowledge = (id: string) => {
+    if (view?.readOnly) return;
     acknowledgeMutation.mutate(id, {
       onSuccess: () => toast.success("Notification acknowledged"),
       onError: () => toast.error("Failed to acknowledge")
@@ -76,7 +81,7 @@ export default function PortalNotifications() {
                 className={`p-6 border transition-colors relative flex flex-col gap-4 ${isUnread || needsAck ? 'bg-white border-[#B39862]/40 shadow-md' : 'bg-[#121210]/5 border-[#121210]/10 opacity-70'}`}
               >
                 {(isUnread || needsAck) && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#B39862]" />}
-                {n.imageUrl && <img src={n.imageUrl} alt="" className="max-h-64 w-full object-cover" />}
+                {safeContentUrl(n.imageUrl) && <img src={safeContentUrl(n.imageUrl)!} alt="" className="max-h-64 w-full object-cover" />}
                 {n.linkUrl && <DealerContentLink className="text-sm underline underline-offset-4" href={n.linkUrl} target="_blank" rel="noopener noreferrer">Open announcement link</DealerContentLink>}
                 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -92,7 +97,7 @@ export default function PortalNotifications() {
                       {n.body}
                     </p>
                     <p className="text-xs text-[#121210]/40 font-mono mt-2">
-                      {n.sentAt ? formatDistanceToNow(new Date(n.sentAt), { addSuffix: true }) : 'Unknown date'}
+                      {portalRelativeTime(n.sentAt) ?? 'Unknown date'}
                     </p>
                   </div>
                   
@@ -101,7 +106,7 @@ export default function PortalNotifications() {
                       <Button 
                         size="sm" 
                         onClick={() => handleAcknowledge(item.id)}
-                        disabled={acknowledgeMutation.isPending}
+                        disabled={view?.readOnly || acknowledgeMutation.isPending}
                         className="w-full text-xs rounded-none bg-[#B39862] text-white hover:bg-[#B39862]/90"
                       >
                         <ShieldAlert className="w-4 h-4 mr-2" /> Acknowledge
@@ -112,7 +117,7 @@ export default function PortalNotifications() {
                         variant="outline" 
                         size="sm" 
                         onClick={() => handleMarkRead(item.id)}
-                        disabled={markReadMutation.isPending}
+                        disabled={view?.readOnly || markReadMutation.isPending}
                         className="w-full text-xs rounded-none border-[#121210]/20 text-[#121210] hover:bg-[#121210]/5"
                       >
                         <Check className="w-4 h-4 mr-2" /> Mark as read

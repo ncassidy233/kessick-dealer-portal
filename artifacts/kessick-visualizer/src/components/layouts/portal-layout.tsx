@@ -1,9 +1,11 @@
-import { ReactNode, useContext } from "react";
-import { Link, useLocation } from "wouter";
+import { ReactNode } from "react";
+import { useLocation } from "wouter";
+import { PortalLink as Link } from "@/components/portal-link";
 import { BrandLogo } from "@/components/brand-logo";
-import { DealerPreviewContext, usePortalSession } from "@/lib/portal-session";
+import { usePortalSession } from "@/lib/portal-session";
+import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
 import { dealerAccessState } from "@/lib/dealer-access";
-import { useGetDealerPortalAccess, getGetDealerPortalAccessQueryKey } from "@workspace/api-client-react";
+import { useGetDealerPortalAccess } from "@/hooks/use-dealer-api";
 import { usePortalNotifications } from "@/hooks/use-portal-v2";
 import { 
   LogOut, 
@@ -29,17 +31,18 @@ import { useClerk } from "@clerk/react";
 import { Badge } from "@/components/ui/badge";
 
 export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: { children: ReactNode; signOutControl?: ReactNode }) {
-  const [location] = useLocation();
+  const [routeLocation] = useLocation();
+  const previewDealerId = useStaffDealerView();
+  const location = previewDealerId ? routeLocation.replace(`/admin/dealer-view/${previewDealerId.selectedDealerAccountId}`, "") : routeLocation;
   const sessionQuery = usePortalSession();
   const session = sessionQuery.data;
   const { data: notificationsData } = usePortalNotifications();
-  const previewDealerId = useContext(DealerPreviewContext);
   
   const role = session?.role;
   const isStaff = role && role !== 'dealer' && role !== 'customer';
   const canPreview = isStaff && session?.authorized && session.capabilities.includes("dealer-view:read");
   const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
-  const { data: access } = useGetDealerPortalAccess({ query: { queryKey: getGetDealerPortalAccessQueryKey(), enabled: dealerAuthorized } });
+  const { data: access } = useGetDealerPortalAccess();
   
   const unreadCount = notificationsData?.notifications?.filter(n => !n.readAt).length || 0;
 

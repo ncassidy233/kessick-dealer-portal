@@ -36,16 +36,22 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     for (const dealer of [dealerA, dealerB]) await connection.query("INSERT INTO organization_memberships(organization_id,account_id,status) VALUES ($1,$2,'approved')", [orgId, dealer.id]);
     await connection.query("INSERT INTO portal_groups(id,name) VALUES ($1,'Test group')", [groupId]);
     await connection.query("INSERT INTO portal_group_memberships_v2(group_id,account_id) VALUES ($1,$2)", [groupId, dealerA.id]);
+    await connection.query("INSERT INTO portal_dealer_profiles(account_id,assigned_sales_rep_account_id) VALUES ($1,$2)", [dealerA.id, manager.id]);
     for (const [title, published, visibility] of [["Published", true, "everyone"], ["Draft secret", false, "everyone"], ["Group only", true, "groups"], ["Dealer B only", true, "individuals"]] as const) {
       const contentId = randomUUID();
-      await connection.query("INSERT INTO portal_content_v2(id,kind,title,published,visibility,created_by_account_id) VALUES ($1,'resource',$2,$3,$4,$5)", [contentId, title, published, visibility, staff.id]);
+      await connection.query("INSERT INTO portal_content_v2(id,kind,title,published,visibility,created_by_account_id,payload) VALUES ($1,'resource',$2,$3,$4,$5,$6)", [contentId, title, published, visibility, staff.id, JSON.stringify({ category: "Resources", staffNotes: "PRIVATE_STAFF_NOTE", futureSensitiveField: "DENY_NEW_FIELD" })]);
       if (visibility !== "everyone") await connection.query("INSERT INTO portal_content_targets_v2(content_id,group_id,account_id) VALUES ($1,$2,$3)", [contentId, visibility === "groups" ? groupId : null, visibility === "individuals" ? dealerB.id : null]);
+      if (title === "Published") await connection.query("INSERT INTO portal_content_targets_v2(content_id,account_id) VALUES ($1,$2)", [contentId, dealerB.id]);
     }
     const app = express();
+    let authenticationCalls = 0;
+    const observedActors: string[] = [];
     app.use("/api/staff/dealer-view", createDealerPreviewRouter(async (req, res, next) => {
+      authenticationCalls++;
       const id = req.header("x-test-account");
       if (!id) { res.status(401).end(); return; }
       [req.account] = await db.select().from(accountsTable).where(eq(accountsTable.id, id));
+      res.once("finish", () => { observedActors.push(req.account!.id); });
       next();
     }));
     server = app.listen(0, "127.0.0.1");
@@ -69,6 +75,21 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     };
     assert.deepEqual(await titles(dealerA.id), ["Group only", "Published"]);
     assert.deepEqual(await titles(dealerB.id), ["Dealer B only", "Published"]);
+    const privateContentResponse = await request(`/${dealerA.id}/portal-v2/content`);
+    const privateContent = await privateContentResponse.text();
+    for (const secret of ["createdByAccountId", "targets", dealerB.id, staff.id, "PRIVATE_STAFF_NOTE", "DENY_NEW_FIELD"]) assert.equal(privateContent.includes(secret), false);
+    assert.equal(privateContentResponse.headers.get("cache-control"), "private, no-store");
+    const resourceId = randomUUID();
+    const resourceContentId = randomUUID();
+    await connection.query("INSERT INTO portal_resources(id,title,category,url,enabled,created_by_account_id) VALUES ($1,'Dealer B document','Resources','https://example.invalid/approved-resource',true,$2)", [resourceId, staff.id]);
+    await connection.query("INSERT INTO portal_content_v2(id,kind,title,published,visibility,created_by_account_id,payload) VALUES ($1,'resource','Dealer B document',true,'individuals',$2,$3)", [resourceContentId, staff.id, JSON.stringify({ legacyId: resourceId })]);
+    await connection.query("INSERT INTO portal_content_targets_v2(content_id,account_id) VALUES ($1,$2)", [resourceContentId, dealerB.id]);
+    assert.deepEqual(await (await request(`/${dealerA.id}/dealer-portal/resources`)).json(), []);
+    const resourceResponse = await request(`/${dealerB.id}/dealer-portal/resources`);
+    const resourceBody = await resourceResponse.text();
+    assert.ok(resourceBody.includes("Dealer B document"));
+    assert.equal(resourceBody.includes("createdByAccountId"), false);
+    assert.equal((await request(`/${dealerA.id}/dealer-portal/resources/${resourceId}/file`)).status, 404);
     for (const [title, status, accountId] of [["Sent A", "sent", dealerA.id], ["Sent B", "sent", dealerB.id], ["Draft notice", "draft", dealerA.id], ["Scheduled notice", "scheduled", dealerA.id]] as const) {
       const notificationId = randomUUID();
       await connection.query("INSERT INTO portal_notifications_v2(id,title,body,status,scheduled_for,created_by_account_id) VALUES ($1,$2,'Test notification',$3,now()-interval '1 minute',$4)", [notificationId, title, status, staff.id]);
@@ -87,18 +108,40 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
       assert.equal(response.status, 200);
       assert.equal((await response.json() as { wholesaleAmount: string }[])[0].wholesaleAmount, amount);
     }
-    const bootstrap = await (await request(`/${dealerA.id}/portal-v2/bootstrap`)).json() as { role: string; account: { id: string }; authorized: boolean };
+    const bootstrapResponse = await request(`/${dealerA.id}/portal-v2/bootstrap`);
+    const bootstrapText = await bootstrapResponse.text();
+    for (const secret of ["clerkUserId", "assignedRepId", "authorizedClerkUserId", "createdByAccountId", staff.clerkUserId, staff.email, manager.id, manager.clerkUserId]) assert.equal(bootstrapText.includes(secret), false);
+    const bootstrap = JSON.parse(bootstrapText) as { role: string; account: { id: string; assignedRep: unknown }; authorized: boolean };
+    assert.deepEqual(bootstrap.account.assignedRep, { email: manager.email, displayName: manager.displayName });
     assert.equal(bootstrap.role, "dealer");
     assert.equal(bootstrap.account.id, dealerA.id);
     assert.equal(bootstrap.authorized, true);
     const audit = await connection.query("SELECT actor_account_id,target_id FROM audit_events WHERE action='portal.dealer_view.opened'");
     assert.equal(audit.rows[0].actor_account_id, staff.id);
     assert.equal(audit.rows[0].target_id, dealerA.id);
+    const accesses = await connection.query("SELECT actor_account_id,target_id,metadata,created_at FROM audit_events WHERE action='portal.dealer_view.data.accessed'");
+    assert.ok(accesses.rows.length >= 5);
+    for (const access of accesses.rows) {
+      assert.equal(access.actor_account_id, staff.id);
+      assert.ok([dealerA.id, dealerB.id].includes(access.target_id));
+      assert.equal(access.metadata.readOnly, true);
+      assert.ok(access.metadata.dataAccess.startsWith("/"));
+      assert.ok(!Number.isNaN(Date.parse(access.metadata.accessedAt)));
+    }
+    assert.equal(observedActors.at(-1), staff.id);
     assert.deepEqual((await db.select().from(accountsTable).where(eq(accountsTable.id, dealerA.id)))[0].lastSeenAt, dealerA.lastSeenAt);
+    const callsBeforeWrites = authenticationCalls;
     for (const method of ["POST", "PUT", "PATCH", "DELETE", "HEAD"]) assert.equal((await request(`/${dealerA.id}/portal-v2/content`, staff.id, method)).status, 403);
+    for (const path of [`/${dealerA.id}/portal-v2/notifications/${randomUUID()}/read`, `/${dealerA.id}/dealer-portal/forms/${randomUUID()}/submissions`, `/${dealerA.id}/dealer-portal/push-subscriptions`, ""]) {
+      assert.equal((await request(path, staff.id, "POST")).status, 403);
+    }
+    assert.equal(authenticationCalls, callsBeforeWrites);
+    const recipientState = await connection.query("SELECT read_at,acknowledged_at FROM portal_notification_recipients_v2");
+    assert.ok(recipientState.rows.every(row => row.read_at === null && row.acknowledged_at === null));
     for (const path of ["/portal-v2/admin/content", "/staff/portal/users", "/portal-v2/content/extra", "/account"]) assert.equal((await request(`/${dealerA.id}${path}`)).status, 403);
     assert.equal(isDealerPreviewRead("GET", "/portal-v2/admin/content"), false);
     assert.equal((await request("/not-a-uuid/portal-v2/content")).status, 403);
+    assert.equal((await request(`/${dealerA.id}/portal-v2/content?accountId=${dealerB.id}`)).status, 400);
     await connection.query("INSERT INTO portal_access_rules(subject_type,account_id,capability,enabled) VALUES ('account',$1,'page:resources',false)", [dealerA.id]);
     assert.deepEqual(await titles(dealerA.id), []);
     assert.equal((await request(`/${dealerA.id}/dealer-portal/resources`)).status, 403);

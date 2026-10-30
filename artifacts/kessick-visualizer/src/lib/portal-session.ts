@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
-import { createContext, useContext } from "react";
+import { useStaffDealerView } from "./staff-dealer-view-context";
+import { dealerQueryKey, dealerReadUrl } from "./staff-dealer-view";
 
 export type PortalRole = "super_admin" | "staff_admin" | "sales_rep" | "content_manager" | "dealer" | "customer";
 
@@ -13,13 +14,12 @@ export interface PortalSession {
 }
 
 export const portalSessionKey = ["portal-v2", "bootstrap"] as const;
-export const DealerPreviewContext = createContext<string | null>(null);
 
 export function usePortalSession() {
-  const dealerId = useContext(DealerPreviewContext);
+  const view = useStaffDealerView();
   return useQuery({
-    queryKey: dealerId ? ["dealer-preview", dealerId, "bootstrap"] : portalSessionKey,
-    queryFn: () => customFetch<PortalSession>(dealerId ? `/api/staff/dealer-view/${dealerId}/portal-v2/bootstrap` : "/api/portal-v2/bootstrap"),
+    queryKey: dealerQueryKey(portalSessionKey, view),
+    queryFn: ({ signal }) => customFetch<PortalSession>(dealerReadUrl("/api/portal-v2/bootstrap", view), { signal }),
     staleTime: 30_000,
     refetchOnWindowFocus: true,
     retry: false,

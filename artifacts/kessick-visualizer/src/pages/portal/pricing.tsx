@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useGetDealerPortalPricing } from "@workspace/api-client-react";
+import { useGetDealerPortalPricing } from "@/hooks/use-dealer-api";
 import {
   AlertTriangle,
   ExternalLink,

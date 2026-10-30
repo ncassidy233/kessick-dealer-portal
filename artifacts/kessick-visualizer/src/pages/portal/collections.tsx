@@ -1,6 +1,7 @@
 import { usePortalContent } from "@/hooks/use-portal-v2";
 import { Loader2, Layers, AlertTriangle, Image as ImageIcon } from "lucide-react";
 import demoRoomImg from '@assets/kessick-room-demo.jpg';
+import { safeContentUrl } from "@/lib/content-links";
 
 export default function PortalCollections() {
   const { data: seriesData, isLoading: seriesLoading, error: seriesError } = usePortalContent("product_series");
@@ -76,8 +77,8 @@ export default function PortalCollections() {
             {series.map(item => (
               <div key={item.id} className="border border-border bg-card overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="w-full h-48 bg-muted flex items-center justify-center relative">
-                  {item.payload?.imageUrl ? (
-                    <img src={item.payload.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  {safeContentUrl(item.payload?.imageUrl) ? (
+                    <img src={safeContentUrl(item.payload?.imageUrl)!} alt={item.title} className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
                   )}
@@ -115,8 +116,8 @@ export default function PortalCollections() {
             {finishes.map(item => (
               <div key={item.id} className="border border-border bg-card p-4">
                 <div className="w-full aspect-square bg-muted mb-4 flex items-center justify-center overflow-hidden">
-                  {item.payload?.imageUrl ? (
-                    <img src={item.payload.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  {safeContentUrl(item.payload?.imageUrl) ? (
+                    <img src={safeContentUrl(item.payload?.imageUrl)!} alt={item.title} className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
                   )}

@@ -17,6 +17,7 @@ import { isMappedLegacyItemVisible } from "../lib/portalTargetPolicy";
 import { validatePortalFormSubmission } from "../lib/portalFormSubmission";
 import { canViewLegacyPortalCapability, resolvedLegacyPortalCapabilities } from "../lib/portalLegacyAccess";
 import { z } from "zod";
+import { dealerReadAccount } from "../lib/staffDealerRead";
 import {
   configurePushFromEnvironment,
   isAllowedPushEndpoint,
@@ -56,8 +57,9 @@ const groupName = z.string().trim().min(1).max(160);
 const uuid = z.string().uuid();
 const dealerPortalBody = z.object({}).passthrough();
 async function dealerContext(req: any, res: any): Promise<Awaited<ReturnType<typeof context>> | null> {
-  if (req.account?.role !== "dealer" || req.account?.status !== "approved") { res.status(403).json({ error: "Approved dealer access required." }); return null; }
-  const c = await context(req.account.id);
+  const account = dealerReadAccount(req);
+  if (account?.role !== "dealer" || account?.status !== "approved") { res.status(403).json({ error: "Approved dealer access required." }); return null; }
+  const c = await context(account.id);
   if (!c.membership || c.membership.organization.status !== "approved") { res.status(403).json({ error: "Approved dealer access required." }); return null; }
   return c;
 }
@@ -142,20 +144,20 @@ async function legacyTargetVisible(accountId: string, groupIds: string[], kind: 
 router.get("/dealer-portal/dashboard", async (req, res): Promise<void> => {
   const c = await dealerContext(req, res); if (!c) return;
   const [formsPageVisible, resourcesPageVisible] = await Promise.all([
-    canView(req.account!.id, c.groupIds, "page:forms"),
-    canView(req.account!.id, c.groupIds, "page:resources"),
+    canView(dealerReadAccount(req)!.id, c.groupIds, "page:forms"),
+    canView(dealerReadAccount(req)!.id, c.groupIds, "page:resources"),
   ]);
   const [forms, resources, notifications] = await Promise.all([
     db.select({ id: portalFormsTable.id }).from(portalFormsTable).where(eq(portalFormsTable.enabled, true)),
     db.select({ id: portalResourcesTable.id }).from(portalResourcesTable).where(eq(portalResourcesTable.enabled, true)),
-    db.select({ count: portalNotificationRecipientsTable.id }).from(portalNotificationRecipientsTable).where(and(eq(portalNotificationRecipientsTable.accountId, req.account!.id), isNull(portalNotificationRecipientsTable.readAt))),
+    db.select({ count: portalNotificationRecipientsTable.id }).from(portalNotificationRecipientsTable).where(and(eq(portalNotificationRecipientsTable.accountId, dealerReadAccount(req)!.id), isNull(portalNotificationRecipientsTable.readAt))),
   ]);
   const [visibleForms, visibleResources] = await Promise.all([
     formsPageVisible
-      ? Promise.all(forms.map(async (x) => (await canView(req.account!.id, c.groupIds, `form:${x.id}`)) && (await legacyTargetVisible(req.account!.id, c.groupIds, "form", x.id)))).then((x) => x.filter(Boolean).length)
+      ? Promise.all(forms.map(async (x) => (await canView(dealerReadAccount(req)!.id, c.groupIds, `form:${x.id}`)) && (await legacyTargetVisible(dealerReadAccount(req)!.id, c.groupIds, "form", x.id)))).then((x) => x.filter(Boolean).length)
       : 0,
     resourcesPageVisible
-      ? Promise.all(resources.map(async (x) => (await canView(req.account!.id, c.groupIds, `resource:${x.id}`)) && (await legacyTargetVisible(req.account!.id, c.groupIds, "resource", x.id)))).then((x) => x.filter(Boolean).length)
+      ? Promise.all(resources.map(async (x) => (await canView(dealerReadAccount(req)!.id, c.groupIds, `resource:${x.id}`)) && (await legacyTargetVisible(dealerReadAccount(req)!.id, c.groupIds, "resource", x.id)))).then((x) => x.filter(Boolean).length)
       : 0,
   ]);
   res.json({ organization: c.membership.organization, groupId: c.groupId, counts: { forms: visibleForms, resources: visibleResources, unreadNotifications: notifications.length } });
@@ -163,24 +165,24 @@ router.get("/dealer-portal/dashboard", async (req, res): Promise<void> => {
 
 router.get("/dealer-portal/pricing", async (req, res): Promise<void> => {
   const c = await dealerContext(req, res); if (!c) return;
-  if (!(await canView(req.account!.id, c.groupIds, "page:pricing"))) { res.status(403).json({ error: "Pricing access denied." }); return; }
+  if (!(await canView(dealerReadAccount(req)!.id, c.groupIds, "page:pricing"))) { res.status(403).json({ error: "Pricing access denied." }); return; }
   const [book] = await db.select().from(pricebooksTable).where(isNotNull(pricebooksTable.approvedAt)).orderBy(desc(pricebooksTable.effectiveFrom)).limit(1);
   const lines = book ? await db.select().from(pricebookLinesTable).where(eq(pricebookLinesTable.pricebookId, book.id)) : [];
-  if (book && !(await legacyTargetVisible(req.account!.id, c.groupIds, "price_book", book.id))) { res.json([]); return; }
-  const overrides = await db.select().from(portalPriceOverridesTable).where(or(eq(portalPriceOverridesTable.accountId, req.account!.id), c.groupIds.length ? inArray(portalPriceOverridesTable.groupId, c.groupIds) : sql`false`));
+  if (book && !(await legacyTargetVisible(dealerReadAccount(req)!.id, c.groupIds, "price_book", book.id))) { res.json([]); return; }
+  const overrides = await db.select().from(portalPriceOverridesTable).where(or(eq(portalPriceOverridesTable.accountId, dealerReadAccount(req)!.id), c.groupIds.length ? inArray(portalPriceOverridesTable.groupId, c.groupIds) : sql`false`));
   const bySku = new Map<string, typeof overrides[number]>();
   const visibleSkus = new Set<string>();
   for (const line of lines) {
-    if (!(await canView(req.account!.id, c.groupIds, `pricing:${line.sku}`))) continue;
+    if (!(await canView(dealerReadAccount(req)!.id, c.groupIds, `pricing:${line.sku}`))) continue;
     visibleSkus.add(line.sku);
     const candidates = overrides.filter((x) => x.sku === line.sku);
-    const account = candidates.find((x) => x.accountId === req.account!.id);
+    const account = candidates.find((x) => x.accountId === dealerReadAccount(req)!.id);
     const group = c.groupIds.map((groupId) => candidates.find((x) => x.groupId === groupId)).find(Boolean);
     if (account ?? group) bySku.set(line.sku, account ?? group!);
   }
   res.json(lines.filter((line) => visibleSkus.has(line.sku)).map((line) => ({ ...line, wholesaleAmount: bySku.get(line.sku)?.wholesaleAmount ?? line.wholesaleAmount })));
 });
-router.get("/dealer-portal/forms", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(req.account!.id, c.groupIds, "page:forms"))) { res.status(403).json({ error: "Forms access denied." }); return; } const rows = await db.select().from(portalFormsTable).where(eq(portalFormsTable.enabled, true)); res.json((await Promise.all(rows.map(async (x) => (await canView(req.account!.id, c.groupIds, `form:${x.id}`)) && (await legacyTargetVisible(req.account!.id, c.groupIds, "form", x.id)) ? x : null))).filter(Boolean)); });
+router.get("/dealer-portal/forms", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(dealerReadAccount(req)!.id, c.groupIds, "page:forms"))) { res.status(403).json({ error: "Forms access denied." }); return; } const rows = await db.select().from(portalFormsTable).where(eq(portalFormsTable.enabled, true)); res.json((await Promise.all(rows.map(async (x) => (await canView(dealerReadAccount(req)!.id, c.groupIds, `form:${x.id}`)) && (await legacyTargetVisible(dealerReadAccount(req)!.id, c.groupIds, "form", x.id)) ? x : null))).filter(Boolean)); });
 router.post("/dealer-portal/forms/:formId/submissions", async (req, res): Promise<void> => {
   const c = await dealerContext(req, res); if (!c) return;
   if (!(await canView(req.account!.id, c.groupIds, "page:forms"))) { res.status(403).json({ error: "Forms access denied." }); return; }
@@ -200,20 +202,20 @@ router.post("/dealer-portal/forms/:formId/submissions", async (req, res): Promis
   const [submission] = await db.insert(portalFormSubmissionsTable).values({ formId: form.id, accountId: req.account!.id, values: { ...validation.values } }).returning();
   res.status(201).json(submission);
 });
-router.get("/dealer-portal/resources", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(req.account!.id, c.groupIds, "page:resources"))) { res.status(403).json({ error: "Resources access denied." }); return; } const rows = await db.select().from(portalResourcesTable).where(eq(portalResourcesTable.enabled, true)); const visible = (await Promise.all(rows.map(async (x) => (await canView(req.account!.id, c.groupIds, `resource:${x.id}`)) && (await legacyTargetVisible(req.account!.id, c.groupIds, "resource", x.id)) ? x : null))).filter((x): x is typeof portalResourcesTable.$inferSelect => Boolean(x)); res.json(visible.map(dealerResourceDto)); });
+router.get("/dealer-portal/resources", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(dealerReadAccount(req)!.id, c.groupIds, "page:resources"))) { res.status(403).json({ error: "Resources access denied." }); return; } const rows = await db.select().from(portalResourcesTable).where(eq(portalResourcesTable.enabled, true)); const visible = (await Promise.all(rows.map(async (x) => (await canView(dealerReadAccount(req)!.id, c.groupIds, `resource:${x.id}`)) && (await legacyTargetVisible(dealerReadAccount(req)!.id, c.groupIds, "resource", x.id)) ? x : null))).filter((x): x is typeof portalResourcesTable.$inferSelect => Boolean(x)); res.json(visible.map(dealerResourceDto)); });
 router.get("/dealer-portal/resources/:resourceId/file", async (req, res): Promise<void> => {
   const c = await dealerContext(req, res); if (!c) return;
-  if (!(await canView(req.account!.id, c.groupIds, "page:resources"))) { res.status(403).json({ error: "Resources access denied." }); return; }
+  if (!(await canView(dealerReadAccount(req)!.id, c.groupIds, "page:resources"))) { res.status(403).json({ error: "Resources access denied." }); return; }
   const id = uuid.safeParse(req.params.resourceId);
   if (!id.success) { res.status(404).json({ error: "File not found." }); return; }
   const [resource] = await db.select().from(portalResourcesTable).where(and(eq(portalResourcesTable.id, id.data), eq(portalResourcesTable.enabled, true))).limit(1);
-  if (!resource || !(await canView(req.account!.id, c.groupIds, `resource:${resource.id}`)) || !(await legacyTargetVisible(req.account!.id, c.groupIds, "resource", resource.id))) { res.status(404).json({ error: "File not found." }); return; }
+  if (!resource || !(await canView(dealerReadAccount(req)!.id, c.groupIds, `resource:${resource.id}`)) || !(await legacyTargetVisible(dealerReadAccount(req)!.id, c.groupIds, "resource", resource.id))) { res.status(404).json({ error: "File not found." }); return; }
   await streamStoredResource(res, resource);
 });
 router.get("/dealer-portal/notifications", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(req.account!.id, c.groupIds, "page:notifications"))) { res.status(403).json({ error: "Notifications access denied." }); return; } res.json(await db.select({ notification: portalNotificationsTable, recipient: portalNotificationRecipientsTable }).from(portalNotificationRecipientsTable).innerJoin(portalNotificationsTable, eq(portalNotificationRecipientsTable.notificationId, portalNotificationsTable.id)).where(eq(portalNotificationRecipientsTable.accountId, req.account!.id)).orderBy(desc(portalNotificationsTable.sentAt))); });
 router.post("/dealer-portal/notifications/:notificationId/read", async (req, res): Promise<void> => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(req.account!.id, c.groupIds, "page:notifications"))) { res.status(403).json({ error: "Notifications access denied." }); return; } const id = uuid.safeParse(req.params.notificationId); if (!id.success) { res.status(400).json({ error: "Invalid notification id." }); return; } const [row] = await db.update(portalNotificationRecipientsTable).set({ readAt: new Date() }).where(and(eq(portalNotificationRecipientsTable.notificationId, id.data), eq(portalNotificationRecipientsTable.accountId, req.account!.id))).returning(); if (!row) { res.status(404).json({ error: "Notification not found." }); return; } res.json(row); });
 router.post("/dealer-portal/notifications/read-all", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; if (!(await canView(req.account!.id, c.groupIds, "page:notifications"))) { res.status(403).json({ error: "Notifications access denied." }); return; } await db.update(portalNotificationRecipientsTable).set({ readAt: new Date() }).where(and(eq(portalNotificationRecipientsTable.accountId, req.account!.id), isNull(portalNotificationRecipientsTable.readAt))); res.status(204).end(); });
-router.get("/dealer-portal/access", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; const capabilities = await resolvedLegacyPortalCapabilities(req.account!.id, c.groupIds); res.json({ groupId: c.groupId, groupIds: c.groupIds, capabilities: Object.fromEntries(capabilities) }); });
+router.get("/dealer-portal/access", async (req, res) => { const c = await dealerContext(req, res); if (!c) return; const capabilities = await resolvedLegacyPortalCapabilities(dealerReadAccount(req)!.id, c.groupIds); res.json({ groupId: c.groupId, groupIds: c.groupIds, capabilities: Object.fromEntries(capabilities) }); });
 router.post("/dealer-portal/push-subscriptions", async (req, res) => {
   if (!await dealerContext(req, res)) return;
   const body = z.object({ endpoint: z.string().max(2048).refine(isAllowedPushEndpoint), keys: z.object({ p256dh: z.string().min(1).max(512), auth: z.string().min(1).max(512) }), expirationTime: z.number().int().nonnegative().nullable().optional() }).safeParse(req.body);

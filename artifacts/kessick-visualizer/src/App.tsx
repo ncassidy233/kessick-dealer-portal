@@ -24,6 +24,7 @@ import { ClerkProvider, useUser } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { resolveOAuthAuthorizationDestination } from "@/lib/oauth-navigation";
+import { StaffDealerViewContext } from "@/lib/staff-dealer-view-context";
 
 import DemoPresentationPage from '@/pages/demo/index';
 import { PortalLayout } from '@/components/layouts/portal-layout';
@@ -439,6 +440,14 @@ function LocalCanvas() {
 
 function AppRoutes() {
   const [location] = useLocation();
+  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1") {
+    if (location === "/portal/preview") return <DealerPortalPreview />;
+    if (location === "/__e2e/dealer-preview-context") {
+      return <StaffDealerViewContext.Provider value={{ selectedDealerAccountId: new URLSearchParams(window.location.search).get("selectedDealerAccountId") ?? "", readOnly: true }}>
+        <DealerPortalPreview />
+      </StaffDealerViewContext.Provider>;
+    }
+  }
   if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/dealer-view"))) {
     return <LocalDealerView location={location} />;
   }

@@ -1,4 +1,3 @@
-import { dealerPreviewRequestUrl } from "./dealer-preview";
 
 export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
@@ -332,13 +331,6 @@ export async function customFetch<T = unknown>(
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
   const method = resolveMethod(input, init.method);
-  if (typeof window !== "undefined") {
-    const url = new URL(resolveUrl(input), window.location.href);
-    const previewUrl = dealerPreviewRequestUrl(url, new URL(window.location.href), method);
-    if (previewUrl !== url.href) {
-      input = isRequest(input) ? new Request(previewUrl, input) : previewUrl;
-    }
-  }
 
   if (init.body != null && (method === "GET" || method === "HEAD")) {
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);

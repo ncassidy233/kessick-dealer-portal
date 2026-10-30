@@ -1,8 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  customFetch,
-  useListDealerPortalResources,
-} from "@workspace/api-client-react";
+import { useDealerResourceDownload, useListDealerPortalResources } from "@/hooks/use-dealer-api";
 import {
   AlertTriangle,
   Download,
@@ -52,6 +49,7 @@ function isDownloadableUrl(url: string) {
 }
 
 export default function PortalResources() {
+  const fetchResource = useDealerResourceDownload();
   // The legacy resource route applies linked v2 visibility and returns the
   // authenticated file route for stored resources. Keep those records as the
   // source of truth, and layer unlinked v2 resources on top.
@@ -113,9 +111,7 @@ export default function PortalResources() {
     if (!resource.url || !isProtectedResource(resource.url)) return;
     setDownloadingId(resource.id);
     try {
-      const blob = await customFetch<Blob>(resource.url, {
-        responseType: "blob",
-      });
+      const blob = await fetchResource(resource.url);
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;

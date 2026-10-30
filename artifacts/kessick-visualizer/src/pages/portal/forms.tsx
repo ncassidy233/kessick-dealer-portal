@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import {
   useListDealerPortalForms,
   useSubmitDealerPortalForm,
-} from "@workspace/api-client-react";
+} from "@/hooks/use-dealer-api";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePortalContent, type PortalContent } from "@/hooks/use-portal-v2";
+import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -257,6 +258,7 @@ function FormRenderer({
   form: DisplayForm;
   onBack: () => void;
 }) {
+  const view = useStaffDealerView();
   const submitMutation = useSubmitDealerPortalForm();
   const [submitted, setSubmitted] = useState(false);
   const fields = Array.isArray(form.legacy?.fieldDefinitions) ? form.legacy.fieldDefinitions : [];
@@ -289,7 +291,7 @@ function FormRenderer({
   }
 
   const handleSubmit = (response: FormValues) => {
-    if (configurationError || fields.length === 0) return;
+    if (view?.readOnly || configurationError || fields.length === 0) return;
     submitMutation.mutate(
       {
         formId: form.legacy!.id,
@@ -376,6 +378,7 @@ function FormRenderer({
                       {field.type === "textarea" ? (
                         <Textarea
                           {...input}
+                          disabled={view?.readOnly}
                           data-testid={`input-form-field-${index}`}
                           className="min-h-28 resize-y rounded-none border-[#121210]/20 bg-white text-[#121210] focus-visible:ring-[#B39862]"
                           rows={4}
@@ -383,6 +386,7 @@ function FormRenderer({
                       ) : field.type === "select" ? (
                         <select
                           {...input}
+                          disabled={view?.readOnly}
                           data-testid={`select-form-field-${index}`}
                           className="flex h-10 w-full rounded-none border border-[#121210]/20 bg-white px-3 py-2 text-sm text-[#121210] outline-none focus:ring-1 focus:ring-[#B39862]"
                         >
@@ -394,6 +398,7 @@ function FormRenderer({
                       ) : (
                         <Input
                           {...input}
+                          disabled={view?.readOnly}
                           data-testid={`input-form-field-${index}`}
                           type={type}
                           step={type === "number" ? "any" : undefined}
@@ -418,7 +423,7 @@ function FormRenderer({
           <Button
             type="submit"
             data-testid="button-submit-form"
-            disabled={submitMutation.isPending || fields.length === 0 || Boolean(configurationError)}
+            disabled={view?.readOnly || submitMutation.isPending || fields.length === 0 || Boolean(configurationError)}
             className="w-full rounded-none bg-[#121210] px-8 text-[#F3F0E8] hover:bg-[#121210]/85 md:w-auto"
           >
             {submitMutation.isPending ? "Submitting…" : "Submit Form"}

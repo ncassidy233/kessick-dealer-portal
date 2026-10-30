@@ -12,14 +12,14 @@ import {
   UserRound,
   Wine,
 } from "lucide-react";
-import { Link } from "wouter";
-import { useListDealerPortalResources } from "@workspace/api-client-react";
-import { formatDistanceToNow } from "date-fns";
+import { PortalLink as Link } from "@/components/portal-link";
+import { useListDealerPortalResources } from "@/hooks/use-dealer-api";
+import { portalRelativeTime } from "@/lib/portal-dates";
 import roomImage from "@assets/kessick-room-demo.jpg";
 import { usePortalContent, usePortalNotifications, usePortalProjects } from "@/hooks/use-portal-v2";
 import type { PortalContent } from "@/hooks/use-portal-v2";
 import { usePortalSession } from "@/lib/portal-session";
-import { safeWebUrl } from "@/lib/content-links";
+import { safeContentUrl } from "@/lib/content-links";
 import { DealerContentLink } from "@/components/dealer-content-link";
 
 type SearchResult = {
@@ -62,7 +62,7 @@ export default function PortalDashboard() {
   }[];
   const featuredAnnouncement =
     announcements.find((item) => item.payload?.featuredOnDashboard === true) ?? announcements[0];
-  const featuredAnnouncementUrl = safeWebUrl(featuredAnnouncement?.payload?.url);
+  const featuredAnnouncementUrl = safeContentUrl(featuredAnnouncement?.payload?.url);
   const featuredSeries = productSeries.find(
     (item) => item.payload?.featuredOnDashboard === true || item.payload?.comingSoon === true,
   );
@@ -73,7 +73,7 @@ export default function PortalDashboard() {
     const linkedResources = new Map(
       resources
         .filter((item) => typeof item.payload?.legacyId === "string")
-        .map((item) => [item.payload.legacyId as string, item]),
+        .map((item) => [item.payload?.legacyId as string, item]),
     );
     const records: SearchResult[] = [
       ...projects.map((item) => ({
@@ -118,7 +118,7 @@ export default function PortalDashboard() {
         id: `announcement-${item.id}`,
         title: item.title,
         detail: item.description || "Dealer announcement",
-        href: safeWebUrl(item.payload?.url) ?? "/portal/notifications",
+        href: safeContentUrl(item.payload?.url) ?? "/portal/notifications",
         type: "Announcement",
       })),
       ...notifications.map(({ notification }) => ({
@@ -226,7 +226,7 @@ export default function PortalDashboard() {
         {featuredAnnouncement && (
           <section aria-label="Dealer announcement" className="relative isolate overflow-hidden rounded-2xl border border-[#d1b35f]/40 bg-[#d1b35f] text-[#191711]">
             <img
-              src={safeWebUrl(featuredAnnouncement.payload?.imageUrl) ?? roomImage}
+              src={safeContentUrl(featuredAnnouncement.payload?.imageUrl) ?? roomImage}
               alt=""
               className="absolute inset-0 -z-20 h-full w-full object-cover opacity-35"
             />
@@ -280,7 +280,7 @@ export default function PortalDashboard() {
               {notifications.slice(0, 2).map(({ id, notification, readAt }) => (
                 <Link key={id} href="/portal/notifications" className="block border-l-2 border-[#B39862] pl-3">
                   <p className="line-clamp-2 text-sm font-medium">{notification.title}</p>
-                  <p className="mt-1 text-xs text-white/45">{readAt ? "Read" : "New"}{notification.sentAt ? ` · ${formatDistanceToNow(new Date(notification.sentAt), { addSuffix: true })}` : ""}</p>
+                  <p className="mt-1 text-xs text-white/45">{readAt ? "Read" : "New"}{portalRelativeTime(notification.sentAt) ? ` · ${portalRelativeTime(notification.sentAt)}` : ""}</p>
                 </Link>
               ))}
               {notifications.length === 0 && <p className="text-sm text-white/55">You’re all caught up. New notices from Kessick will appear here.</p>}
@@ -292,7 +292,7 @@ export default function PortalDashboard() {
         <section aria-labelledby="collection-heading" className="overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a18]">
           <div className="grid md:grid-cols-[1.05fr_.95fr]">
             <div className="relative min-h-52 overflow-hidden md:min-h-64">
-              <img src={featuredSeries ? safeWebUrl(featuredSeries.payload?.imageUrl) ?? roomImage : roomImage} alt="Kessick wine storage in an architectural interior" className="absolute inset-0 h-full w-full object-cover" />
+              <img src={featuredSeries ? safeContentUrl(featuredSeries.payload?.imageUrl) ?? roomImage : roomImage} alt="Kessick wine storage in an architectural interior" className="absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#1a1a18]/90" />
               {!featuredSeries && <span className="absolute bottom-4 left-4 rounded-full border border-white/25 bg-black/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">Kessick Wine Cellars</span>}
             </div>
@@ -349,7 +349,7 @@ function SearchResultLink({ result }: { result: SearchResult }) {
     </>
   );
   const className = "flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5";
-  return result.href.startsWith("https://") || result.href.startsWith("http://") ? (
+  return result.type === "Announcement" || result.href.startsWith("https://") || result.href.startsWith("http://") ? (
     <DealerContentLink href={result.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</DealerContentLink>
   ) : (
     <Link href={result.href} className={className}>{content}</Link>
