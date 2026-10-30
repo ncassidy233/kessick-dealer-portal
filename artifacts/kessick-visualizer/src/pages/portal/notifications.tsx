@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { NotificationPreferences } from "./notification-preferences";
+import { DealerContentLink } from "@/components/dealer-content-link";
 
 export default function PortalNotifications() {
   const { data: notificationsData, isLoading: noticesLoading, isError, refetch } = usePortalNotifications();
@@ -76,7 +77,7 @@ export default function PortalNotifications() {
               >
                 {(isUnread || needsAck) && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#B39862]" />}
                 {n.imageUrl && <img src={n.imageUrl} alt="" className="max-h-64 w-full object-cover" />}
-                {n.linkUrl && <a className="text-sm underline underline-offset-4" href={n.linkUrl} target="_blank" rel="noopener noreferrer">Open announcement link</a>}
+                {n.linkUrl && <DealerContentLink className="text-sm underline underline-offset-4" href={n.linkUrl} target="_blank" rel="noopener noreferrer">Open announcement link</DealerContentLink>}
                 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <div className="space-y-2 flex-1">

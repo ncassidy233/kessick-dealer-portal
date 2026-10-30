@@ -26,6 +26,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
   }
 
   const required = location === "/admin" ? "admin:overview"
+    : location.startsWith("/admin/dealer-view") ? "dealer-view:read"
     : location.startsWith("/admin/pricing") ? "pricing:read"
     : location.startsWith("/admin/users") ? "users:read"
     : location.startsWith("/admin/groups") ? "groups:read"
@@ -38,7 +39,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
     : location.startsWith("/admin/concierge-insights")
       ? fullAdmin
       : null;
-  const staffDealerPreview = location === "/admin/dealer-view";
+  const staffDealerPreview = location === "/admin/dealer-view" || location.startsWith("/admin/dealer-view/");
   const denied = roleAllowed !== null
     ? !roleAllowed
     : (required && !session.capabilities.includes(required)) || (!required && !fullAdmin && !staffDealerPreview);

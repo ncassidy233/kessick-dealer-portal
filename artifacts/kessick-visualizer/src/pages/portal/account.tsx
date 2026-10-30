@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   getGetAccountQueryKey,
   useUpdateAccount,
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { portalSessionKey, usePortalSession } from "@/lib/portal-session";
+import { DealerPreviewContext, portalSessionKey, usePortalSession } from "@/lib/portal-session";
 
 type AssignedRep = {
   id: string;
@@ -36,7 +36,7 @@ export default function PortalAccount() {
   const sessionQuery = usePortalSession();
   const updateAccount = useUpdateAccount();
   const queryClient = useQueryClient();
-  const { signOut } = useClerk();
+  const previewDealerId = useContext(DealerPreviewContext);
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
@@ -106,10 +106,11 @@ export default function PortalAccount() {
             <h2 className="text-xl font-light text-[#121210]">Profile Details</h2>
             <div className="max-w-md space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-[#121210]/50">
+                <label htmlFor="account-email" className="text-[10px] font-semibold uppercase tracking-widest text-[#121210]/50">
                   Email Address
                 </label>
                 <Input
+                  id="account-email"
                   value={account.email}
                   disabled
                   className="rounded-none border-[#121210]/10 bg-[#121210]/[0.035] text-[#121210]/70"
@@ -231,16 +232,14 @@ export default function PortalAccount() {
             </div>
           </section>
 
-          <Button
-            variant="outline"
-            className="h-12 w-full justify-start rounded-none border-[#121210]/10 text-[#8b382b] hover:bg-[#8b382b]/5 hover:text-[#8b382b]"
-            onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}
-          >
-            <LogOut className="mr-3 h-4 w-4" />
-            Sign Out
-          </Button>
+          {!previewDealerId && <AccountSignOut />}
         </div>
       </div>
     </div>
   );
+}
+
+function AccountSignOut() {
+  const { signOut } = useClerk();
+  return <Button variant="outline" className="h-12 w-full justify-start rounded-none border-[#121210]/10 text-[#8b382b] hover:bg-[#8b382b]/5 hover:text-[#8b382b]" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}><LogOut className="mr-3 h-4 w-4" />Sign Out</Button>;
 }

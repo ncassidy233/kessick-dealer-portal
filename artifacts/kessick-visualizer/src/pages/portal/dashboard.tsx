@@ -20,6 +20,7 @@ import { usePortalContent, usePortalNotifications, usePortalProjects } from "@/h
 import type { PortalContent } from "@/hooks/use-portal-v2";
 import { usePortalSession } from "@/lib/portal-session";
 import { safeWebUrl } from "@/lib/content-links";
+import { DealerContentLink } from "@/components/dealer-content-link";
 
 type SearchResult = {
   id: string;
@@ -237,9 +238,9 @@ export default function PortalDashboard() {
                 {featuredAnnouncement.description && <p className="mt-2 text-sm leading-relaxed text-black/70">{featuredAnnouncement.description}</p>}
               </div>
               {featuredAnnouncementUrl ? (
-                <a href={featuredAnnouncementUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
+                <DealerContentLink href={featuredAnnouncementUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
                   View announcement <ArrowRight className="h-4 w-4" />
-                </a>
+                </DealerContentLink>
               ) : (
                 <Link href="/portal/notifications" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
                   View announcement <ArrowRight className="h-4 w-4" />
@@ -349,7 +350,7 @@ function SearchResultLink({ result }: { result: SearchResult }) {
   );
   const className = "flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5";
   return result.href.startsWith("https://") || result.href.startsWith("http://") ? (
-    <a href={result.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</a>
+    <DealerContentLink href={result.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</DealerContentLink>
   ) : (
     <Link href={result.href} className={className}>{content}</Link>
   );

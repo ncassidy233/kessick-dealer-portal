@@ -40,7 +40,6 @@ import {
 
 const router: IRouter = Router();
 const storage = new ObjectStorageService();
-router.use(requireAccount, requireActiveAccount);
 
 async function context(accountId: string) {
   const [membership] = await db.select({ organization: dealerOrganizationsTable, membership: organizationMembershipsTable })
@@ -168,7 +167,7 @@ router.get("/dealer-portal/pricing", async (req, res): Promise<void> => {
   const [book] = await db.select().from(pricebooksTable).where(isNotNull(pricebooksTable.approvedAt)).orderBy(desc(pricebooksTable.effectiveFrom)).limit(1);
   const lines = book ? await db.select().from(pricebookLinesTable).where(eq(pricebookLinesTable.pricebookId, book.id)) : [];
   if (book && !(await legacyTargetVisible(req.account!.id, c.groupIds, "price_book", book.id))) { res.json([]); return; }
-  const overrides = await db.select().from(portalPriceOverridesTable).where(or(eq(portalPriceOverridesTable.accountId, req.account!.id), c.groupIds.length ? inArray(portalPriceOverridesTable.groupId, c.groupIds) : eq(portalPriceOverridesTable.id, "__none__")));
+  const overrides = await db.select().from(portalPriceOverridesTable).where(or(eq(portalPriceOverridesTable.accountId, req.account!.id), c.groupIds.length ? inArray(portalPriceOverridesTable.groupId, c.groupIds) : sql`false`));
   const bySku = new Map<string, typeof overrides[number]>();
   const visibleSkus = new Set<string>();
   for (const line of lines) {
@@ -610,4 +609,6 @@ router.post("/staff/portal/seed", async (req, res): Promise<void> => {
   res.json({ seeded: true, groupsCreated: groups.length, organizationId: org.id, demoAccounts: demoAccounts.length, accessRules, priceOverrides, forms, resources, notifications, recipients: demoAccounts.length * notifications });
 });
 
-export default router;
+// Only the read-only staff gateway may dispatch these handlers without re-authenticating.
+export const portalHandlers = router;
+export default Router().use(requireAccount, requireActiveAccount, router);

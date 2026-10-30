@@ -1,4 +1,5 @@
 import { usePortalProjects } from "@/hooks/use-portal-v2";
+import { DealerContentLink } from "@/components/dealer-content-link";
 import { Loader2, Briefcase, AlertTriangle, FileText, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import demoRoomImg from '@assets/kessick-room-demo.jpg';
@@ -96,9 +97,9 @@ export default function PortalProjects() {
               <div className="mt-4 pt-2">
                 {proj.payload?.url ? (
                   <Button asChild variant="outline" className="w-full rounded-none border-border">
-                    <a href={proj.payload.url} target="_blank" rel="noopener noreferrer">
+                    <DealerContentLink href={proj.payload.url} target="_blank" rel="noopener noreferrer">
                       Open Project
-                    </a>
+                    </DealerContentLink>
                   </Button>
                 ) : (
                   <Button variant="outline" disabled className="w-full rounded-none border-border">

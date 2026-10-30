@@ -42,6 +42,7 @@ import AdminContent from '@/pages/admin/content';
 import AdminNotifications from '@/pages/admin/notifications';
 import AdminAudit from '@/pages/admin/audit';
 import AdminOverview from '@/pages/admin/overview';
+import DealerView from '@/pages/admin/dealer-view';
 import AdminPreviewPage from '@/pages/admin/preview';
 import AdminKnowledge from '@/pages/admin/knowledge';
 import AdminConciergeInsights from '@/pages/admin/concierge-insights';
@@ -319,7 +320,10 @@ function Router() {
 
         {/* Admin Routes */}
         <Route path="/admin/dealer-view">
-          <AuthGuard><StaffGuard><PortalLayout><DealerPortalPreview staffViewMode /></PortalLayout></StaffGuard></AuthGuard>
+          <AuthGuard><StaffGuard><DealerView /></StaffGuard></AuthGuard>
+        </Route>
+        <Route path="/admin/dealer-view/:dealerId/*">
+          {params => <AuthGuard><StaffGuard><DealerView dealerId={params.dealerId} /></StaffGuard></AuthGuard>}
         </Route>
         <Route path="/admin">
           <AuthGuard><StaffGuard><PortalLayout><AdminOverview /></PortalLayout></StaffGuard></AuthGuard>
@@ -435,6 +439,9 @@ function LocalCanvas() {
 
 function AppRoutes() {
   const [location] = useLocation();
+  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/dealer-view"))) {
+    return <LocalDealerView location={location} />;
+  }
   if (import.meta.env.DEV && location === "/__e2e/canvas") {
     return <LocalCanvas />;
   }
@@ -444,6 +451,14 @@ function AppRoutes() {
       <Router />
     </ClerkProviderWithRouter>
   );
+}
+
+function LocalDealerView({ location }: { location: string }) {
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
+  const dealerId = /^\/admin\/dealer-view\/([^/]+)\//.exec(location)?.[1];
+  return <QueryClientProvider client={client}><StaffGuard>
+    {location === "/admin" ? <PortalLayout signOutControl={null}><h1 className="p-6">Administration</h1></PortalLayout> : <DealerView dealerId={dealerId} />}
+  </StaffGuard></QueryClientProvider>;
 }
 
 function App() {

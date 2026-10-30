@@ -429,12 +429,6 @@ async function processPendingPushes(notification: typeof portalNotificationsV2Ta
   }
 }
 
-router.use(requireAccount, requireActiveAccount);
-router.use(async (req, _res, next) => {
-  await processDuePortalNotifications().catch((error) => req.log.warn({ err: error }, "Portal v2 scheduler cycle failed"));
-  next();
-});
-
 router.get("/portal-v2/bootstrap", async (req, res): Promise<void> => {
   if (!req.account) { res.status(404).json({ error: "Portal account not found." }); return; }
   const staffRole = await getStaffRole(req);
@@ -1019,4 +1013,9 @@ export function startPortalV2Scheduler() {
   run();
 }
 
-export default router;
+// Preview reads reuse the handlers but must not run notification delivery.
+export const portalV2Handlers = router;
+export default Router().use(requireAccount, requireActiveAccount, async (req, _res, next) => {
+  await processDuePortalNotifications().catch((error) => req.log.warn({ err: error }, "Portal v2 scheduler cycle failed"));
+  next();
+}, router);

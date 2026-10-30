@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useContext } from "react";
 import { Link, useLocation } from "wouter";
 import { BrandLogo } from "@/components/brand-logo";
-import { usePortalSession } from "@/lib/portal-session";
+import { DealerPreviewContext, usePortalSession } from "@/lib/portal-session";
 import { dealerAccessState } from "@/lib/dealer-access";
 import { useGetDealerPortalAccess, getGetDealerPortalAccessQueryKey } from "@workspace/api-client-react";
 import { usePortalNotifications } from "@/hooks/use-portal-v2";
@@ -28,15 +28,16 @@ import { Button } from "@/components/ui/button";
 import { useClerk } from "@clerk/react";
 import { Badge } from "@/components/ui/badge";
 
-export function PortalLayout({ children }: { children: ReactNode }) {
+export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: { children: ReactNode; signOutControl?: ReactNode }) {
   const [location] = useLocation();
   const sessionQuery = usePortalSession();
   const session = sessionQuery.data;
   const { data: notificationsData } = usePortalNotifications();
-  const { signOut } = useClerk();
+  const previewDealerId = useContext(DealerPreviewContext);
   
   const role = session?.role;
   const isStaff = role && role !== 'dealer' && role !== 'customer';
+  const canPreview = isStaff && session?.authorized && session.capabilities.includes("dealer-view:read");
   const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
   const { data: access } = useGetDealerPortalAccess({ query: { queryKey: getGetDealerPortalAccessQueryKey(), enabled: dealerAuthorized } });
   
@@ -119,7 +120,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             {isStaff ? 'Admin' : 'Portal'}
           </Badge>
         </div>
-        {isStaff && <Link href="/admin/dealer-view" className="inline-flex h-9 items-center gap-2 bg-[#121210] px-3 text-xs font-semibold text-white"><ArrowLeftRight className="h-4 w-4" /> Dealer View</Link>}
+        {canPreview && <Link href="/admin/dealer-view" className="inline-flex min-h-11 items-center gap-2 bg-[#121210] px-3 text-xs font-semibold text-white"><ArrowLeftRight className="h-4 w-4" /> Switch to Dealer View</Link>}
       </header>
 
       {/* Desktop Sidebar */}
@@ -175,10 +176,10 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
-              <Link href="/admin/dealer-view" className="mt-4 flex items-center gap-3 border border-[#121210]/15 px-3 py-2.5 text-sm font-semibold text-[#121210] transition-colors hover:bg-[#B39862]/10">
+              {canPreview && <Link href="/admin/dealer-view" className="mt-4 flex items-center gap-3 border border-[#121210]/15 px-3 py-2.5 text-sm font-semibold text-[#121210] transition-colors hover:bg-[#B39862]/10">
                 <ArrowLeftRight className="h-4 w-4 text-[#806936]" />
-                Dealer View
-              </Link>
+                Switch to Dealer View
+              </Link>}
             </nav>
           )}
         </div>
@@ -189,15 +190,14 @@ export function PortalLayout({ children }: { children: ReactNode }) {
               <span className="text-xs font-semibold truncate max-w-[140px] text-foreground">{session?.account?.displayName || session?.account?.email}</span>
               <span className="text-[10px] text-muted-foreground capitalize truncate">{session?.role}</span>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {!previewDealerId && signOutControl}
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative overflow-y-auto no-scrollbar pb-20 md:pb-0 bg-background">
+        {canPreview && <header className="hidden md:flex justify-end border-b border-border bg-white px-6 py-3"><Link href="/admin/dealer-view" className="inline-flex min-h-11 items-center gap-2 bg-[#121210] px-4 text-sm font-semibold text-white"><ArrowLeftRight className="h-4 w-4" />Switch to Dealer View</Link></header>}
         {children}
       </main>
       
@@ -222,4 +222,9 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       </nav>
     </div>
   );
+}
+
+function PortalSignOut() {
+  const { signOut } = useClerk();
+  return <Button aria-label="Sign out" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}><LogOut className="h-4 w-4" /></Button>;
 }

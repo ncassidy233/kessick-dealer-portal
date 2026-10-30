@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePortalContent, type PortalContent } from "@/hooks/use-portal-v2";
+import { DealerContentLink } from "@/components/dealer-content-link";
 
 type LegacyResource = {
   id: string;
@@ -223,7 +224,7 @@ export default function PortalResources() {
                           {downloadingId === resource.id ? "Downloading…" : "Download File"}
                         </button>
                       ) : resource.url ? (
-                        <a
+                        <DealerContentLink
                           href={resource.url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -238,7 +239,7 @@ export default function PortalResources() {
                               <ExternalLink className="mr-2 h-4 w-4" /> Open Link
                             </>
                           )}
-                        </a>
+                        </DealerContentLink>
                       ) : (
                         <span className="text-sm text-[#8b382b]">File unavailable</span>
                       )}
