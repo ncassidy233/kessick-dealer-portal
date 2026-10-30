@@ -28,7 +28,10 @@ export default function DealerView({ dealerId }: { dealerId?: string }) {
       <Link href={staffHome(staff?.role)} className="inline-flex min-h-11 items-center border border-[#B39862] px-4 text-sm font-semibold">Back to Administration</Link>
       <label className="flex w-full flex-wrap items-center gap-2 text-sm">View as dealer
         <select aria-label="View as dealer" value={dealerId ?? ""} className="min-h-11 max-w-full border border-white/30 bg-[#111110] p-2" onChange={event => {
-          if (event.target.value) window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/admin/dealer-view/${event.target.value}/portal`);
+          const nextDealerId = event.currentTarget.value;
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(nextDealerId)) {
+            window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/admin/dealer-view/${encodeURIComponent(nextDealerId)}/portal`);
+          }
         }}>
           <option value="">Select an approved dealer</option>
           {dealers.data?.dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.displayName || dealer.email}</option>)}

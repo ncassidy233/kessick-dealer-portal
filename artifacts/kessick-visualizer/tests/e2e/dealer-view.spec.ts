@@ -47,6 +47,15 @@ test("staff switch into actual published dealer components and back without logo
   await expect(page).toHaveURL(/\/admin$/);
 });
 
+test("dealer selection rejects malformed account identifiers", async ({ page }) => {
+  await page.goto("/admin/dealer-view");
+  const selector = page.getByLabel("View as dealer");
+  await expect(selector.getByRole("option", { name: "Dealer A", exact: true })).toBeAttached();
+  await selector.evaluate(element => (element as HTMLSelectElement).add(new Option("Invalid dealer", "../../admin/users")));
+  await selector.selectOption("../../admin/users");
+  await expect(page).toHaveURL(/\/admin\/dealer-view$/);
+});
+
 test("dealer identities cannot render staff preview controls", async ({ page }) => {
   await page.route("**/api/portal-v2/bootstrap", route => route.fulfill({ json: { role: "dealer", authorized: true, capabilities: ["content:read"], groups: [], account: { id: dealerA, status: "approved" } } }));
   await page.goto("/admin/dealer-view");
