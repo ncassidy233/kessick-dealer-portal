@@ -119,14 +119,18 @@ test("staff authors a targeted quote offer and dealers see its terms and officia
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(saved.payload.promotion).toMatchObject({ percentOff: 12, minimumOrder: 1000, maximumSavings: 500, collections: ["Estate"], combinable: false });
   expect(saved.visibility).toBe("everyone");
-  await expect(page.getByText("Active offer", { exact: true })).toBeVisible();
+  await expect(page.getByText("Active offer", { exact: true }).filter({ visible: true })).toBeVisible();
   await page.goto("/portal");
   const offer = page.getByRole("region", { name: "Dealer discount", exact: true });
   await expect(offer).toContainText("12% off");
   await expect(offer).toContainText("Maximum savings $500");
   await offer.getByText("Offer terms & eligibility", { exact: true }).click();
   await expect(offer).toContainText("Excludes freight");
-  expect(await page.locator('section[aria-labelledby="toolkit-heading"]').evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(244, 244, 250)");
+  const toolkit = page.locator('section[aria-labelledby="toolkit-heading"]');
+  expect(await toolkit.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(244, 244, 250)");
+  await expect(toolkit.locator("img")).toHaveCount(1);
+  expect(await toolkit.evaluate(el => el.getBoundingClientRect().height)).toBeLessThan(260);
+  await expect(page.getByRole("img", { name: "Kessick wine cellar installation", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath(`dealer-light-offer-${testInfo.project.name}.png`), fullPage: true });
@@ -134,4 +138,65 @@ test("staff authors a targeted quote offer and dealers see its terms and officia
   await expect(page.getByRole("region", { name: "Requested offer" })).toContainText(offerId);
   await expect(page.getByRole("link", { name: /Design Request/ })).toHaveAttribute("href", "https://kessickwinecellars.com/design-request/");
   await expect(page.getByRole("link", { name: /Design Request/ })).toContainText("Your submission is handled there");
+});
+
+test("staff sees edits before saving and is protected from accidental content loss", async ({ page }, testInfo) => {
+  const exampleRecord = { id: resourceId, title: "Estate catalog", description: "Official collection information", kind: "resource", payload: { url: "https://kessickwinecellars.com/estate/" }, published: true, visibility: "everyone", targets: { groupIds: [], accountIds: [] }, updatedAt: new Date().toISOString() };
+  const oldOffer = { ...exampleRecord, id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", title: "Previous offer", kind: "announcement", payload: { promotion: { percentOff: 37, startsAt: new Date(Date.now() - 86400000).toISOString(), endsAt: new Date(Date.now() + 86400000).toISOString(), collections: ["Reserve"], terms: "Previous offer rules", minimumOrder: 5000, maximumSavings: 99, combinable: true } } };
+  const regularAnnouncement = { ...exampleRecord, id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", title: "Regular announcement", kind: "announcement", payload: {}, published: false };
+  await page.route("**/api/**", async route => {
+    const { pathname } = new URL(route.request().url());
+    if (pathname === "/api/portal-v2/admin/content") return route.fulfill({ json: { content: [exampleRecord, oldOffer, regularAnnouncement] } });
+    if (pathname === "/api/portal-v2/admin/groups") return route.fulfill({ json: { groups: [] } });
+    if (pathname === "/api/portal-v2/admin/users") return route.fulfill({ json: { users: [] } });
+    if (["/api/staff/portal/forms", "/api/staff/portal/resources", "/api/staff/portal/form-submissions"].includes(pathname)) return route.fulfill({ json: [] });
+    return route.fallback();
+  });
+  await page.goto("/admin/content");
+  await expect(page.getByRole("button", { name: "Edit Estate catalog", exact: true }).filter({ visible: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "Edit Previous offer", exact: true }).filter({ visible: true }).click();
+  await expect(page.getByLabel("Percent off", { exact: true })).toHaveValue("37");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Edit Regular announcement", exact: true }).filter({ visible: true }).click();
+  await page.getByLabel("Discount / quote offer", { exact: true }).check();
+  await expect(page.getByLabel("Percent off", { exact: true })).toHaveValue("15");
+  await expect(page.getByLabel("Starts (your local time)")).toHaveValue("");
+  await expect(page.getByLabel("Terms and exclusions")).toHaveValue("");
+  await expect(page.getByLabel("Maximum savings (USD, optional)")).toHaveValue("");
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "New discount", exact: true }).click();
+  await page.getByLabel("Title", { exact: true }).fill("Preview offer — test data");
+  const unlabeledFields = await page.getByRole("dialog").locator("input, select, textarea").evaluateAll(fields => fields.filter(field => field.getClientRects().length && !field.getAttribute("aria-label") && !field.getAttribute("aria-labelledby") && !(field as HTMLInputElement).labels?.length).map(field => field.outerHTML));
+  expect(unlabeledFields).toEqual([]);
+  await page.getByLabel("Percent off", { exact: true }).fill("18");
+  await page.getByRole("button", { name: "Create content", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Choose a valid start date" })).toBeVisible();
+  await page.getByLabel("Starts (your local time)").fill(new Date().toISOString().slice(0,16));
+  if (testInfo.project.name !== "desktop") await page.getByRole("button", { name: "Preview changes", exact: true }).click();
+  const preview = page.getByRole("region", { name: "Discount preview", exact: true });
+  await expect(preview).toContainText("18% off · Preview offer — test data");
+  await expect(preview).toContainText("End date required");
+  await expect(page.getByRole("status").filter({ hasText: "Unsaved changes" })).toContainText("Will save as draft");
+  await page.screenshot({ path: testInfo.outputPath(`staff-content-live-preview-${testInfo.project.name}.png`), animations: "disabled" });
+  if (testInfo.project.name !== "desktop") await page.getByRole("button", { name: "Back to fields", exact: true }).click();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Preview offer — test data");
+  page.once("dialog", async dialog => { expect(dialog.message()).toContain("unsaved content changes"); await dialog.dismiss(); });
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.goto("/admin/page-studio");
+  if (testInfo.project.name !== "desktop") await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Heading", { exact: true }).fill("See this change before publishing");
+  await expect(page.getByText("Save your draft before publishing.", { exact: false })).toBeVisible();
+  if (testInfo.project.name === "desktop") {
+    await expect(page.frameLocator('iframe[title="Kessick draft device preview"]').getByRole("heading", { name: "See this change before publishing", exact: true })).toBeVisible();
+  } else {
+    await expect(page.getByLabel("Live section preview", { exact: true }).getByRole("heading", { name: "See this change before publishing", exact: true })).toBeVisible();
+  }
+  await page.screenshot({ path: testInfo.outputPath(`staff-studio-live-preview-${testInfo.project.name}.png`), animations: "disabled" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
