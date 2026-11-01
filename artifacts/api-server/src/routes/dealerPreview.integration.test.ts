@@ -172,6 +172,18 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
       assert.equal(preferences.status, 200);
       assert.equal((await preferences.json() as { preferences: { accountId: string } }).preferences.accountId, actor.id);
     }
+    // Staff bypass dealer audience targeting, while the publication boundary remains.
+    const linkedBookId = randomUUID();
+    await connection.query("INSERT INTO portal_content_v2(id,kind,title,published,visibility,created_by_account_id,payload) VALUES ($1,'price_book','Unpublished book',false,'individuals',$2,$3)", [linkedBookId, staff.id, JSON.stringify({ legacyId: bookId })]);
+    for (const actor of [staff, manager, sales, owner]) assert.deepEqual(await (await own("/dealer-portal/pricing", actor.id)).json(), []);
+    await connection.query("UPDATE portal_content_v2 SET published=true WHERE id=$1", [linkedBookId]);
+    for (const actor of [staff, manager, sales, owner]) {
+      const pricing = await own("/dealer-portal/pricing", actor.id);
+      assert.equal(pricing.status, 200);
+      assert.equal((await pricing.json() as { wholesaleAmount: string }[])[0].wholesaleAmount, "100.00");
+    }
+    await connection.query("UPDATE portal_content_v2 SET published=false WHERE id=$1", [resourceContentId]);
+    for (const actor of [staff, manager, sales, owner]) assert.deepEqual(await (await own("/dealer-portal/resources", actor.id)).json(), []);
     for (const path of ["/portal-v2/content", "/dealer-portal/resources", "/dealer-portal/dashboard"]) assert.equal((await own(path, unclaimed.id)).status, 403);
     await connection.query("UPDATE accounts SET status='suspended' WHERE id=$1", [sales.id]);
     assert.equal((await own("/portal-v2/content", sales.id)).status, 403);
