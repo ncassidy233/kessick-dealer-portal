@@ -19,7 +19,7 @@ import {
 import { getAuthorizedStaffRole } from "../middlewares/auth";
 import { hasPortalCapability } from "../lib/portalPermissions";
 import { isApprovedDealerAccount } from "../lib/portalDealerEligibility";
-import { dealerReadAccount } from "../lib/staffDealerRead";
+import { dealerReadAccount, staffHasFullDealerAccess } from "../lib/staffDealerRead";
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
 
 const router = Router();
@@ -253,7 +253,8 @@ for (const operation of ["publish", "restore"] as const) {
 router.get("/pages/:pageKey", async (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   const account = dealerReadAccount(req);
-  if (!account || !(await isApprovedDealerAccount(account.id))) {
+  const staffAccess = await staffHasFullDealerAccess(req);
+  if (!account || (!staffAccess && !(await isApprovedDealerAccount(account.id)))) {
     res.status(403).json({ error: "Approved dealer access required." });
     return;
   }
@@ -262,7 +263,7 @@ router.get("/pages/:pageKey", async (req, res) => {
     res.status(404).json({ error: "Published page not found." });
     return;
   }
-  if (key.data !== "home") {
+  if (!staffAccess && key.data !== "home") {
     const [memberships, assignments] = await Promise.all([
       db
         .select({ groupId: portalGroupMembershipsTable.groupId })

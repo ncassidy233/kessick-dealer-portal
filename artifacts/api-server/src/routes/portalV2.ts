@@ -37,7 +37,7 @@ import { isPortalTargetVisible, legacyPageCapabilityForContent, linkedResourceId
 import { logger } from "../lib/logger";
 import { approvedDealerAccountIds, isApprovedDealerAccount } from "../lib/portalDealerEligibility";
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
-import { dealerReadAccount } from "../lib/staffDealerRead";
+import { dealerReadAccount, staffHasFullDealerAccess } from "../lib/staffDealerRead";
 import linkedFormsRouter from "./linkedForms";
 import pageStudioRouter from "./pageStudio";
 import { dealerProvisioningPlan } from "../lib/portalDealerProvisioning";
@@ -81,6 +81,7 @@ async function getStaffRole(req: Request): Promise<StaffRole | null> {
   return profile.role;
 }
 async function requireApprovedDealer(req: Request, res: Response): Promise<boolean> {
+  if (await staffHasFullDealerAccess(req)) return true;
   const account = dealerReadAccount(req);
   if (!account || !await isApprovedDealerAccount(account.id)) {
     res.status(403).json({ error: "Approved dealer organization membership required." });
@@ -879,11 +880,13 @@ router.delete("/portal-v2/admin/content/:contentId", requireCapability("content:
 
 router.get("/portal-v2/content", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
+  const staffAccess = await staffHasFullDealerAccess(req);
   const accountId = dealerReadAccount(req)!.id;
   const query = z.object({ kind: contentKinds.optional() }).safeParse(req.query); if (!query.success) { res.status(400).json({ error: "Invalid content filter." }); return; }
   const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(eq(portalContentTable.published, true));
   const visible = await Promise.all(rows.filter((row) => !query.data.kind || row.kind === query.data.kind).map(async (row) => {
+    if (staffAccess) return row;
     const pageCapability = legacyPageCapabilityForContent(row.kind);
     if (pageCapability && !await canViewLegacyPortalCapability(accountId, groupIds, pageCapability)) return null;
     if (row.visibility === "everyone") return row;
@@ -893,13 +896,13 @@ router.get("/portal-v2/content", async (req, res): Promise<void> => {
   res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
 });
 router.get("/portal-v2/projects", async (req, res): Promise<void> => {
-  req.query.kind = "project"; // reuse the exact dealer visibility handler through a local redirect-free invocation is not possible.
   if (!await requireApprovedDealer(req, res)) return;
+  const staffAccess = await staffHasFullDealerAccess(req);
   const accountId = dealerReadAccount(req)!.id;
   const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(and(eq(portalContentTable.published, true), eq(portalContentTable.kind, "project")));
   const visible = await Promise.all(rows.map(async (row) => {
-    if (row.visibility === "everyone") return row;
+    if (staffAccess || row.visibility === "everyone") return row;
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
     return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));

@@ -19,15 +19,15 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
       "portal_content_v2", "portal_content_targets_v2", "portal_access_rules", "portal_resources", "portal_forms",
       "portal_notification_preferences_v2", "portal_notifications_v2", "portal_notification_recipients_v2",
       "portal_price_overrides", "pricebooks", "pricebook_lines", "audit_events"]) {
-      await connection.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING DEFAULTS) ON COMMIT DROP`);
+      await connection.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING DEFAULTS INCLUDING INDEXES) ON COMMIT DROP`);
     }
     queryMock = t.mock.method(pool, "query", connection.query.bind(connection));
-    const [staff, dealerA, dealerB, manager, unclaimed] = await db.insert(accountsTable).values(
-      (["staff", "dealer", "dealer", "staff", "staff"] as const).map(role => ({
+    const [staff, dealerA, dealerB, manager, unclaimed, sales, owner] = await db.insert(accountsTable).values(
+      (["staff", "dealer", "dealer", "staff", "staff", "staff", "staff"] as const).map(role => ({
         id: randomUUID(), clerkUserId: `test_${randomUUID()}`, email: `${randomUUID()}@example.invalid`, role, status: "approved" as const,
       })),
     ).returning();
-    for (const [account, role, clerkId] of [[staff, "staff_admin", staff.clerkUserId], [manager, "content_manager", manager.clerkUserId], [unclaimed, "staff_admin", "wrong_clerk_id"]] as const) {
+    for (const [account, role, clerkId] of [[staff, "staff_admin", staff.clerkUserId], [manager, "content_manager", manager.clerkUserId], [unclaimed, "staff_admin", "wrong_clerk_id"], [sales, "sales_rep", sales.clerkUserId], [owner, "super_admin", owner.clerkUserId]] as const) {
       await connection.query("INSERT INTO portal_staff_profiles(account_id,role,authorized_at,authorized_clerk_user_id) VALUES ($1,$2,now(),$3)", [account.id, role, clerkId]);
     }
     const orgId = randomUUID();
@@ -46,14 +46,18 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     const app = express();
     let authenticationCalls = 0;
     const observedActors: string[] = [];
-    app.use("/api/staff/dealer-view", createDealerPreviewRouter(async (req, res, next) => {
+    const authenticate: express.RequestHandler = async (req, res, next) => {
       authenticationCalls++;
       const id = req.header("x-test-account");
       if (!id) { res.status(401).end(); return; }
       [req.account] = await db.select().from(accountsTable).where(eq(accountsTable.id, id));
       res.once("finish", () => { observedActors.push(req.account!.id); });
       next();
-    }));
+    };
+    app.use("/api/staff/dealer-view", createDealerPreviewRouter(authenticate));
+    const { portalHandlers } = await import("./portal");
+    const { portalV2Handlers } = await import("./portalV2");
+    app.use("/api/own-portal", express.json(), authenticate, portalHandlers, portalV2Handlers);
     server = app.listen(0, "127.0.0.1");
     await new Promise<void>(resolve => server!.once("listening", resolve));
     const address = server.address();
@@ -150,8 +154,30 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
       assert.equal((await request(`/${dealerA.id}/portal-v2/content`)).status, 403);
       await connection.query(`UPDATE ${table} SET status='approved' WHERE ${column}=$1`, [value]);
     }
+    const own = (path: string, accountId: string, method = "GET", body?: unknown) => fetch(`http://127.0.0.1:${address.port}/api/own-portal${path}`, { method, headers: { "x-test-account": accountId, "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    // Staff access is their own authenticated context, without fake dealer memberships.
+    for (const actor of [staff, manager, sales, owner]) {
+      await connection.query("INSERT INTO portal_access_rules(subject_type,account_id,capability,enabled) VALUES ('account',$1,'page:resources',false)", [actor.id]);
+      const contentResponse = await own("/portal-v2/content?kind=resource", actor.id);
+      assert.equal(contentResponse.status, 200);
+      const ownContent = await contentResponse.json() as { content: { title: string }[] };
+      assert.ok(ownContent.content.some(row => row.title === "Dealer B only"));
+      assert.ok(ownContent.content.some(row => row.title === "Group only"));
+      assert.ok(!ownContent.content.some(row => row.title === "Draft secret"));
+      const resources = await own("/dealer-portal/resources", actor.id);
+      assert.equal(resources.status, 200);
+      assert.ok((await resources.text()).includes("Dealer B document"));
+      for (const path of ["/dealer-portal/dashboard", "/dealer-portal/forms", "/dealer-portal/pricing", "/dealer-portal/access", "/portal-v2/projects", "/portal-v2/notification-preferences"]) assert.equal((await own(path, actor.id)).status, 200, path);
+      const preferences = await own("/portal-v2/notification-preferences", actor.id, "PUT", { pushEnabled: false });
+      assert.equal(preferences.status, 200);
+      assert.equal((await preferences.json() as { preferences: { accountId: string } }).preferences.accountId, actor.id);
+    }
+    for (const path of ["/portal-v2/content", "/dealer-portal/resources", "/dealer-portal/dashboard"]) assert.equal((await own(path, unclaimed.id)).status, 403);
+    await connection.query("UPDATE accounts SET status='suspended' WHERE id=$1", [sales.id]);
+    assert.equal((await own("/portal-v2/content", sales.id)).status, 403);
     await connection.query("UPDATE portal_staff_profiles SET authorized_at=NULL WHERE account_id=$1", [staff.id]);
     assert.equal((await request(`/${dealerA.id}/portal-v2/content`)).status, 403);
+    assert.equal((await own("/portal-v2/content", staff.id)).status, 403);
   } finally {
     if (server) await new Promise<void>((resolve, reject) => server!.close(error => error ? reject(error) : resolve()));
     queryMock?.mock.restore();
