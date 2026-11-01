@@ -32,7 +32,7 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
   const isStaff = Boolean(session?.authorized && session.role !== "dealer" && session.role !== "customer");
   const staffWorkspace = isStaff && !location.startsWith("/portal");
   const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
-  const canDesign = isStaff && session?.capabilities.includes("content:read");
+  const canDesign = isStaff && session?.capabilities.includes("content:write");
   const unreadCount = notices?.notifications.filter(n => !n.readAt).length || 0;
   const dealerLinks: NavLink[] = [
     { href: "/portal", label: "Dashboard", icon: Home, exact: true },
@@ -64,7 +64,11 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
     { href: "/admin/audit", label: "Activity log", icon: Shield, adminOnly: true },
   ];
   const fullAdmin = ["super_admin", "staff_admin"].includes(session?.role ?? "");
-  const visibleAdminLinks = adminLinks.filter(link => isStaff && (fullAdmin || (!link.adminOnly && Boolean(link.capability && session?.capabilities.includes(link.capability)))));
+  const visibleAdminLinks = adminLinks.filter(link => {
+    if (!isStaff) return false;
+    if (link.href === "/admin/knowledge") return fullAdmin || session?.role === "content_manager";
+    return fullAdmin || (!link.adminOnly && Boolean(link.capability && session?.capabilities.includes(link.capability)));
+  });
   const links = staffWorkspace ? visibleAdminLinks : visibleDealerLinks;
   const current = links.find(link => link.exact ? location === link.href : location.startsWith(link.href));
   const mobileStaffLinks = visibleAdminLinks.filter(link => ["/admin", "/admin/page-studio", "/admin/users", "/admin/notifications"].includes(link.href));
