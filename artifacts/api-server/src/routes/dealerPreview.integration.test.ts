@@ -187,6 +187,23 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     for (const path of ["/portal-v2/content", "/dealer-portal/resources", "/dealer-portal/dashboard"]) assert.equal((await own(path, unclaimed.id)).status, 403);
     await connection.query("UPDATE accounts SET status='suspended' WHERE id=$1", [sales.id]);
     assert.equal((await own("/portal-v2/content", sales.id)).status, 403);
+    for (let index = 0; index < 3; index++) {
+      const id = randomUUID();
+      await connection.query("INSERT INTO portal_resources(id,title,category,url,enabled,created_by_account_id) VALUES ($1,$2,'Guides','https://example.invalid/staff-guide',true,$3)", [id, `Staff guide ${index}`, staff.id]);
+      await connection.query("INSERT INTO portal_content_v2(id,kind,title,published,visibility,created_by_account_id,payload) VALUES ($1,'resource',$2,true,'individuals',$3,$4)", [randomUUID(), `Staff guide ${index}`, staff.id, JSON.stringify({ legacyId: id })]);
+    }
+    for (let requestIndex = 0; requestIndex < 2; requestIndex++) {
+      const before: number = queryMock.mock.calls.length;
+      const resources = await own("/dealer-portal/resources", staff.id);
+      assert.equal(resources.status, 200);
+      assert.equal((await resources.json() as unknown[]).length, 3);
+      const mappingReadCount: number = queryMock.mock.calls.slice(before).filter(call => {
+        const query = call.arguments[0] as string | { text: string };
+        const text = typeof query === "string" ? query : query.text;
+        return text.includes('"portal_content_v2"') && text.includes("legacyId");
+      }).length;
+      assert.equal(mappingReadCount, 1, "Parallel resource visibility checks share one mapping read, scoped to this request");
+    }
     await connection.query("UPDATE portal_staff_profiles SET authorized_at=NULL WHERE account_id=$1", [staff.id]);
     assert.equal((await request(`/${dealerA.id}/portal-v2/content`)).status, 403);
     assert.equal((await own("/portal-v2/content", staff.id)).status, 403);
