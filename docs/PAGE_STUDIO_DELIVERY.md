@@ -1,7 +1,7 @@
 # Kessick Page Studio delivery — November 1, 2026
 
 This change extends `copilot/kessick-dealer-portal-development` at `5a2574da4e9b3e1f48d9edec038f7831e4ecdd43`.
-It is implemented and verified locally. It has not been uploaded or deployed: GitHub's connector rejected branch creation with `403 Resource not accessible by integration`.
+The tested changes are uploaded to `codex/finish-page-studio` in PR #14. The uploaded source tree was verified byte-for-byte against local commit `34c19907ebcc225e36e00c317d935719dee3ec49`. The additive publication-history migration was applied successfully on November 1, 2026. Render rollout is in progress. The GitHub connector remains read-only; uploads were completed through the user-authorized signed-in browser.
 
 ## Included
 
@@ -55,7 +55,7 @@ Build output retains existing source-map, CSS-selector and bundle-size warnings.
 5. Verify Clerk sign-in and real account bootstrap for approved dealer, pending dealer, content manager and staff admin. Verify staff role authorization is tied to the actual Clerk user. No automatic elevation of a new login is included.
 6. Confirm Page Studio save across two browsers, edit conflict, preview privacy, publish, dealer refresh within 30 seconds, version restore, and staff read-only Dealer View on the hosted deployment.
 
-GitHub's connection must gain repository write permission, or the user must authorize a signed-in browser fallback before uploading. No replacement API key is needed for local work.
+GitHub uploads are complete. Cloudflare Workers and Pages and Cursor were removed from the Kessick repository at the user's request. Render remains the deployment target. No credentials were committed or copied into chat.
 
 ## Boundaries still requiring follow-through
 
