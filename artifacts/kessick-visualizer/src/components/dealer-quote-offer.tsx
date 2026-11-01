@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { PortalLink as Link } from "@/components/portal-link";
 import type { activePromotion } from "@workspace/api-zod";
 type Offer = NonNullable<ReturnType<typeof activePromotion>>;
 /** The same offer card is used in the dealer portal and the staff draft preview. */
