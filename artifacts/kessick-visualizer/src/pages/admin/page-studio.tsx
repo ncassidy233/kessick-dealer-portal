@@ -160,6 +160,8 @@ function Editor({
   const dirty = serialized !== saved || revision === 0;
   const validation = studioPageDocumentSchema.safeParse(document);
   const section = document.sections.find((item) => item.id === selected);
+  const selectSection = (id: string) => { select(id); setPanel("settings"); };
+  const publishHint = !canPublish ? "A staff administrator can publish your draft." : dirty ? "Save your draft before publishing." : history.isError ? "Reload version history before publishing." : "Preview the saved draft, then publish it to dealers.";
   useEffect(() => {
     onDirty(dirty);
   }, [dirty, onDirty]);
@@ -331,7 +333,7 @@ function Editor({
               disabled={!canEdit || saving || !dirty || !validation.success}
               onClick={() => void save()}
             >
-              Save Draft
+              {saving ? "Saving…" : "Save Draft"}
             </button>
             <button className={button} onClick={() => setPreview(!preview)}>
               {preview ? "Back to Editor" : "Preview"}
@@ -358,7 +360,8 @@ function Editor({
             </button>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <p className="mt-3 text-xs text-[#171715]/70">Edit → Preview → Save Draft → Publish. {publishHint}</p>
+        <div className={`${!preview && panel === "settings" ? "hidden sm:flex" : "flex"} mt-4 flex-wrap items-center gap-2`}>
           <label className="flex items-center gap-2 text-xs">
             Page
             <select
@@ -508,7 +511,7 @@ function Editor({
                   <button
                     className="min-h-11 w-full break-words text-left text-sm"
                     aria-pressed={selected === item.id}
-                    onClick={() => select(item.id)}
+                    onClick={() => selectSection(item.id)}
                   >
                     {index + 1}. {item.heading || item.type}
                     {item.hidden ? " (hidden)" : ""}
@@ -566,7 +569,7 @@ function Editor({
                     event.target.value as StudioSection["type"],
                   );
                   edit({ ...document, sections: [...document.sections, next] });
-                  select(next.id);
+                  selectSection(next.id);
                 }}
               >
                 <option value="" disabled>
@@ -633,7 +636,7 @@ function Editor({
               document={document}
               preview
               selectedId={preview ? undefined : selected}
-              onSelect={preview ? undefined : select}
+              onSelect={preview ? undefined : selectSection}
             />
           </PreviewFrame>
         </main>
@@ -641,6 +644,7 @@ function Editor({
           <aside
             className={`${panel === "settings" ? "block" : "hidden"} xl:block space-y-4 border-t border-black/15 p-4 xl:sticky xl:top-48 xl:max-h-[75vh] xl:overflow-auto xl:border-l`}
           >
+            {section && <div aria-label="Live section preview" className="mb-4 max-h-64 overflow-auto rounded-xl border border-[#B39862]/50 xl:hidden"><p className="sticky top-0 z-10 bg-white p-2 text-xs font-semibold text-[#806731]">Live section preview · updates as you type</p><StudioPage document={{ ...document, sections: [section] }} preview /></div>}
             <h2 className="font-semibold">Section settings</h2>
             {section ? (
               <fieldset

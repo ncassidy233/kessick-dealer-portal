@@ -1,3 +1,4 @@
+import { DealerQuoteOffer } from "@/components/dealer-quote-offer";
 import { activePromotion } from "@workspace/api-zod";
 import { usePublishedLayout } from "@/components/studio-page";
 import { useMemo, useState, useEffect } from "react";
@@ -216,10 +217,11 @@ export default function PortalDashboard() {
           )}
         </section>
 
-        <img src={roomImage} alt="Kessick wine cellar installation" className="h-48 w-full rounded-2xl object-cover sm:h-64" />
-        <section aria-labelledby="toolkit-heading">
+        <section aria-labelledby="toolkit-heading" className="relative isolate overflow-hidden">
+          <img src={roomImage} alt="" aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 -z-20 h-full w-2/3 object-cover" />
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#f4f4fa] via-[#f4f4fa]/95 to-[#f4f4fa]/80" />
           <div className="mb-5 flex items-end justify-between gap-3">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#B39862]">At your service</p><h2 id="toolkit-heading" className="mt-1 text-xl font-medium sm:text-2xl">Your Dealer Toolkit</h2></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#806731]">At your service</p><h2 id="toolkit-heading" className="mt-1 text-xl font-medium sm:text-2xl">Your Dealer Toolkit</h2></div>
             <Link href="/portal/forms" className="hidden items-center gap-1 text-xs text-white/55 hover:text-white sm:flex">All dealer forms <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
           <div className="grid grid-cols-4 gap-2 sm:gap-4">
@@ -230,7 +232,7 @@ export default function PortalDashboard() {
           </div>
         </section>
 
-        {promotions.map(({ item, offer }) => <section key={item.id} aria-label="Dealer discount" className="rounded-2xl border border-[#8ea8bf] bg-[#b9cede] p-5 text-[#182c3c]"><p className="text-xs font-semibold uppercase tracking-widest">Dealer offer</p><h2 className="mt-2 text-2xl font-semibold">{offer.percentOff}% off · {item.title}</h2><p className="mt-2 text-sm">{offer.collections.join(", ")}{offer.maximumSavings ? ` · Maximum savings $${offer.maximumSavings.toLocaleString()}` : ""}{offer.minimumOrder > 0 ? ` · Minimum order $${offer.minimumOrder.toLocaleString()}` : ""}</p><p className="mt-2 text-xs">Ends {new Date(offer.endsAt).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" })} Eastern · {offer.combinable ? "May combine with other offers" : "Cannot combine with other offers"}</p><details className="mt-3 text-sm"><summary className="min-h-11 cursor-pointer">Offer terms & eligibility</summary><p className="whitespace-pre-line">{offer.terms}</p></details><Link href={`/portal/forms?offer=${encodeURIComponent(item.id)}`} className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-[#182c3c] px-4 text-sm font-semibold text-white">Request an eligible quote</Link><p className="mt-3 text-xs">Kessick confirms eligibility and savings in your quote.</p></section>)}
+        {promotions.map(({ item, offer }) => <DealerQuoteOffer key={item.id} title={item.title} offer={offer} href={`/portal/forms?offer=${encodeURIComponent(item.id)}`} />)}
         {featuredAnnouncement && (
           <section aria-label="Dealer announcement" className="relative isolate overflow-hidden rounded-2xl border border-[#d1b35f]/40 bg-[#d1b35f] text-[#191711]">
             <img

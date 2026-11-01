@@ -5,7 +5,10 @@ import { officialKessickContent, officialContentVersion, officialContentUrl } fr
 // A versioned, atomic import authorized for this release. The durable audit marker
 // ensures future restarts never resurrect deleted records or overwrite staff edits.
 export async function importOfficialKessickContent() {
-  return db.transaction(async tx => {
+  return db.transaction(importOfficialKessickContentInTransaction);
+}
+
+export async function importOfficialKessickContentInTransaction(tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${officialContentVersion}))`);
     const [done] = await tx.select({ id: auditEventsTable.id }).from(auditEventsTable)
       .where(and(eq(auditEventsTable.action, "portal.official_content.import"), eq(auditEventsTable.targetId, officialContentVersion))).limit(1);
@@ -14,7 +17,7 @@ export async function importOfficialKessickContent() {
       inArray(accountsTable.email, ["ncassidy@gerberchildrenswear.com", "ngcassid@gmail.com"]),
       eq(accountsTable.role, "staff"), eq(accountsTable.status, "approved"),
     )).limit(1);
-    if (!owner) throw new Error("Official content import requires an existing approved portal owner.");
+    if (!owner) return { imported: 0, alreadyImported: false, deferred: true };
     const existing = await tx.select().from(portalContentTable);
     let imported = 0;
     for (const entry of officialKessickContent) {
@@ -37,5 +40,4 @@ export async function importOfficialKessickContent() {
       metadata: { imported, source: "https://kessickwinecellars.com", preserveExisting: true },
     });
     return { imported, alreadyImported: false };
-  });
 }

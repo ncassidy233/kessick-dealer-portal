@@ -35,7 +35,7 @@ export function usePortalContent(kind?: string) {
   return useQuery({
     queryKey: dealerQueryKey(["portal-v2-content", kind], view),
     queryFn: ({ signal }) => customFetch<{ content: PortalContent[] }>(dealerReadUrl(`/api/portal-v2/content${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`, view), { responseType: "json", signal }),
-    refetchInterval: 30_000,
+    refetchInterval: kind === "announcement" ? 30_000 : false,
     enabled: dealerAccessState(sessionQuery) === "allowed"
   });
 }
