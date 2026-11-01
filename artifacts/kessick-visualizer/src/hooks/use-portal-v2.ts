@@ -11,6 +11,8 @@ export interface PortalContent {
   title: string;
   description?: string | null;
   payload?: {
+    externalForm?: boolean;
+    promotion?: unknown;
     legacyId?: string | null;
     contentType?: string | null;
     imageUrl?: string | null;
@@ -33,6 +35,7 @@ export function usePortalContent(kind?: string) {
   return useQuery({
     queryKey: dealerQueryKey(["portal-v2-content", kind], view),
     queryFn: ({ signal }) => customFetch<{ content: PortalContent[] }>(dealerReadUrl(`/api/portal-v2/content${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`, view), { responseType: "json", signal }),
+    refetchInterval: 30_000,
     enabled: dealerAccessState(sessionQuery) === "allowed"
   });
 }
