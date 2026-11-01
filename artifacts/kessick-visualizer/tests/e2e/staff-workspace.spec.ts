@@ -211,6 +211,55 @@ test("staff sees edits before saving and is protected from accidental content lo
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
+for (const deliveryStatus of ["submitted", "failed", "not_required"] as const) {
+  test(`staff add approved dealer access with invitation delivery ${deliveryStatus}`, async ({ page }, testInfo) => {
+    let requestBody: unknown;
+    await page.route("**/api/portal-v2/admin/groups", route => route.fulfill({ json: { groups: [] } }));
+    await page.route("**/api/portal-v2/admin/users**", async route => {
+      if (route.request().method() !== "POST") return route.fulfill({ json: { users: [] } });
+      requestBody = route.request().postDataJSON();
+      return route.fulfill({ status: deliveryStatus === "not_required" ? 200 : 201, json: { user: {
+        id: resourceId, email: "dealer@example.invalid", role: "dealer", portalRole: null,
+        status: "approved", groups: [], createdAt: new Date().toISOString(),
+        invitation: { deliveryStatus, ...(deliveryStatus === "submitted" ? { status: "pending" } : {}), url: "https://portal.example.invalid/sign-in?redirect_url=%2Fportal" },
+      } } });
+    });
+    await page.goto("/admin/users");
+    await page.getByRole("button", { name: "Add dealer", exact: true }).click();
+    await expect(page.getByText("Adding their email approves dealer access immediately.", { exact: false })).toBeVisible();
+    await expect(page.getByText("Initial status", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Pending verification", exact: true })).toHaveCount(0);
+    await page.getByPlaceholder("name@dealer.com").fill("dealer@example.invalid");
+    await page.getByRole("button", { name: "Add approved dealer", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Account access ready", exact: true })).toBeVisible();
+    expect(requestBody).toEqual({ email: "dealer@example.invalid", role: "dealer", status: "approved" });
+    await expect(page.getByText("No application review is required.", { exact: false })).toBeVisible();
+    if (deliveryStatus === "failed") {
+      await expect(page.getByText("Access is saved, but the invitation email could not be sent.", { exact: false })).toBeVisible();
+      await expect(page.getByText("An invitation was submitted for email delivery.", { exact: false })).toHaveCount(0);
+      await page.screenshot({ path: testInfo.outputPath(`dealer-preapproval-${testInfo.project.name}.png`), animations: "disabled" });
+    } else if (deliveryStatus === "not_required") {
+      await expect(page.getByText("This email already has a sign-in account.", { exact: false })).toBeVisible();
+    } else await expect(page.getByText("An invitation was submitted for email delivery.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy setup link", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
+test("adding a suspended dealer leaves the dialog open and reports the blocked access", async ({ page }) => {
+  await page.route("**/api/portal-v2/admin/groups", route => route.fulfill({ json: { groups: [] } }));
+  await page.route("**/api/portal-v2/admin/users**", route => route.request().method() === "POST"
+    ? route.fulfill({ status: 409, json: { error: "This account is suspended. Reactivate it explicitly before adding access." } })
+    : route.fulfill({ json: { users: [] } }));
+  await page.goto("/admin/users");
+  await page.getByRole("button", { name: "Add dealer", exact: true }).click();
+  await page.getByPlaceholder("name@dealer.com").fill("dealer@example.invalid");
+  await page.getByRole("button", { name: "Add approved dealer", exact: true }).click();
+  await expect(page.getByText("This account is suspended. Reactivate it explicitly before adding access.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Add dealer account", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account access ready", exact: true })).toHaveCount(0);
+});
+
 test("dealers cannot open any staff page or staff navigation", async ({ page }, testInfo) => {
   await page.route("**/api/account", route => route.fulfill({ json: { account: { id: accountId, role: "dealer", status: "approved", email: "dealer@example.invalid", emailVerified: true }, organization: null, membership: null } }));
   await page.route("**/api/portal-v2/bootstrap", route => route.fulfill({ json: { account: { id: accountId, role: "dealer", status: "approved", email: "dealer@example.invalid" }, role: "dealer", authorized: true, capabilities: ["content:read"], groups: [] } }));

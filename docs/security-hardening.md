@@ -56,3 +56,15 @@ PORT=21455 BASE_PATH=/kessick-concept-video/ pnpm --filter @workspace/kessick-co
 ### Operational limits requiring verification
 
 This is application hardening, not a guarantee against ransomware or every cyber risk. The live managed sign-in previously displayed Clerk development mode; a production Clerk instance and staff MFA require separate configuration and recovery testing. Database network restrictions are retained. The owner must verify independent/immutable backups, retention and a successful restore; no restore test or new backup service was performed in this sweep. Provider accounts, administrator devices, incident alerting, credential recovery and independent penetration testing remain part of operational security. Do not describe these as verified or claim the portal is 100% secure.
+
+## Staff-created dealer invitations
+
+Staff with `users:write` approve dealer access by adding the exact email address. The account, organization and membership are committed before invitation delivery. Existing applicants retain their identity and organization while receiving approval; suspended accounts, suspended memberships, suspended organizations, staff accounts and conflicting organization assignments are rejected. Email verification remains required when the invited placeholder is claimed.
+
+Invitation delivery is reported separately as submitted, failed or unnecessary for an existing sign-in account. A mail failure leaves the authorized account saved and provides a normal sign-in link; it never reports successful delivery. Public signups still follow the application review process.
+
+At startup, the repair checks old pending dealer accounts against staff provisioning audit records. It excludes later explicit status changes, public applications and suspended access. Repairs are transactional, idempotent and audited. This does not grant staff roles or change existing Clerk identity bindings.
+
+The Clerk application name was changed to Kessick Dealer Portal in the provider dashboard. Production sender-domain authentication and inbox placement remain operational work. Marking a message as not spam in one mailbox does not verify deliverability for every dealer.
+
+The November 1 logical backup was restored into an isolated PostgreSQL-compatible engine: 45 tables, 32 rows and 76 foreign-key constraints, with no invalid constraints. Render showed three days of point-in-time recovery and seven days of logical export retention. This was not a full Render PITR failover drill or verification of independent immutable backups.
