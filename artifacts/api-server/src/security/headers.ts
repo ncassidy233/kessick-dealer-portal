@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "base-uri 'self'",
+  "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self' https://accounts.google.com https://*.clerk.accounts.dev https://*.clerk.com",
@@ -23,6 +23,8 @@ export const PRODUCTION_SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
+  "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+  "Cross-Origin-Resource-Policy": "same-origin",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), xr-spatial-tracking=(self)",
   "X-Robots-Tag": "noindex, nofollow, noarchive",

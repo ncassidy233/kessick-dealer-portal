@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { DealerQuoteOffer } from "@/components/dealer-quote-offer";
+import { promotionSchema } from "@workspace/api-zod";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Edit3, FileText, GripVertical, Loader2, Plus, Search, Trash2, Upload, Users, X } from "lucide-react";
 import { toast } from "sonner";
@@ -50,8 +52,12 @@ const kindOptions: KindOption[] = [
   { value: "launch_kit", label: "Launch kits", apiKind: "launch_kit" },
   { value: "resource", label: "Docs & resources", apiKind: "resource" },
   { value: "form", label: "Forms & requests", apiKind: "form" },
-  { value: "announcement", label: "Announcements", apiKind: "announcement" },
+  { value: "announcement", label: "Announcements & discounts", apiKind: "announcement" },
 ];
+const defaultDiscount = () => ({ percentOff: 15, startsAt: "", endsAt: "", collections: "All collections", terms: "", minimumOrder: 0, combinable: false, maximumSavings: undefined as number | undefined });
+// Keep at most one dirty staff draft in memory across SPA Back/Forward navigation.
+// This never persists to browser storage and is only restored for the same authorized account.
+let retainedContentDraft: { accountId: string; values: string; baseline: string; editing: PortalContent | null; file: File | null } | null = null;
 const ivory = "bg-white text-[#121210]";
 const card = "border border-[#121210]/10 bg-white/70";
 const inputClass = "rounded-none border-[#121210]/15 bg-white/80 text-[#121210] placeholder:text-[#121210]/45";
@@ -167,21 +173,69 @@ export default function AdminContent() {
   const [clientName, setClientName] = useState("");
   const [demoData, setDemoData] = useState(false);
   const [featuredOnDashboard, setFeaturedOnDashboard] = useState(false);
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [discount, setDiscount] = useState(defaultDiscount);
   const [comingSoon, setComingSoon] = useState(false);
   const [finishColor, setFinishColor] = useState("");
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingForm, setIsSavingForm] = useState(false);
+  const [editorError, setEditorError] = useState("");
+  useEffect(() => { setEditorError(""); }, [isEditorOpen]);
+  const [showContentPreview, setShowContentPreview] = useState(false);
+  const editorBaseline = useRef<string | null>(null);
+  const editorSnapshot = JSON.stringify({ title, description, kind, published, target, targetGroupIds, targetAccountIds, formFields, resourceUrl, imageUrl, projectStatus, clientName, demoData, featuredOnDashboard, discountEnabled, discount, comingSoon, finishColor, file: resourceFile ? [resourceFile.name, resourceFile.size, resourceFile.lastModified] : null });
+  useEffect(() => {
+    if (isEditorOpen && editorBaseline.current === null) editorBaseline.current = editorSnapshot;
+    if (!isEditorOpen) { editorBaseline.current = null; setShowContentPreview(false); }
+  }, [isEditorOpen, editorSnapshot]);
+  useEffect(() => { setEditorError(""); }, [editorSnapshot]);
+  const showEditorError = (message: string) => { setEditorError(message); toast.error(message); };
+  const contentDirty = isEditorOpen && editorBaseline.current !== null && editorBaseline.current !== editorSnapshot;
+  useEffect(() => {
+    const before = (event: BeforeUnloadEvent) => { if (contentDirty) { event.preventDefault(); event.returnValue = ""; } };
+    window.addEventListener("beforeunload", before);
+    return () => window.removeEventListener("beforeunload", before);
+  }, [contentDirty]);
+  const accountId = bootstrap.data?.account.id;
+  useEffect(() => {
+    if (accountId && retainedContentDraft && retainedContentDraft.accountId !== accountId) retainedContentDraft = null;
+    const cached = retainedContentDraft;
+    if (!canEdit || !cached || cached.accountId !== accountId || isEditorOpen) return;
+    const value = JSON.parse(cached.values);
+    editorBaseline.current = cached.baseline;
+    setEditing(cached.editing); setResourceFile(cached.file);
+    setTitle(value.title); setDescription(value.description); setKind(value.kind);
+    setPublished(value.published); setTarget(value.target);
+    setTargetGroupIds(value.targetGroupIds); setTargetAccountIds(value.targetAccountIds);
+    setFormFields(value.formFields); setResourceUrl(value.resourceUrl); setImageUrl(value.imageUrl);
+    setProjectStatus(value.projectStatus); setClientName(value.clientName); setDemoData(value.demoData);
+    setFeaturedOnDashboard(value.featuredOnDashboard); setDiscountEnabled(value.discountEnabled);
+    setDiscount(value.discount); setComingSoon(value.comingSoon); setFinishColor(value.finishColor);
+    setIsEditorOpen(true);
+    toast.info("Your unsaved content edits were restored. Review them before saving.");
+  }, [accountId, canEdit, isEditorOpen]);
+  useEffect(() => {
+    if (contentDirty && accountId && canEdit) retainedContentDraft = { accountId, values: editorSnapshot, baseline: editorBaseline.current!, editing, file: resourceFile };
+  }, [contentDirty, accountId, canEdit, editorSnapshot, editing, resourceFile]);
+  const closeSavedEditor = () => { if (retainedContentDraft?.accountId === accountId) retainedContentDraft = null; setIsEditorOpen(false); };
+  const changeEditorOpen = (open: boolean) => {
+    if (!open && (isUploading || isSavingForm || createMutation.isPending || updateMutation.isPending)) return;
+    if (!open && contentDirty && !window.confirm("Discard your unsaved content changes?")) return;
+    if (!open && retainedContentDraft?.accountId === accountId) retainedContentDraft = null;
+    setIsEditorOpen(open);
+  };
   const imageKinds: UiKind[] = ["project", "product_series", "finish", "training", "launch_kit", "resource_category", "resource"];
   const urlKinds: UiKind[] = ["resource", "resource_category", "product_series", "finish", "price_book", "training", "launch_kit"];
   const supportsImage = imageKinds.includes(kind);
-  const supportsUrl = urlKinds.includes(kind);
+  const externalForm = kind === "form" && editing?.payload?.externalForm === true;
+  const supportsUrl = urlKinds.includes(kind) || externalForm;
   const existingStoredResource = kind === "resource" && typeof editing?.payload?.url === "string" &&
     /^\/objects\/portal-resources\/[0-9a-f-]{36}$/.test(editing.payload.url) ? editing.payload.url : null;
   const imageError = supportsImage && imageUrl.trim() && !safeWebUrl(imageUrl) ? "Enter an absolute http:// or https:// image URL without spaces or credentials." : "";
   const urlError = supportsUrl && resourceUrl.trim() && !safeWebUrl(resourceUrl) ? "Enter an absolute http:// or https:// link without spaces or credentials." : "";
-  const requiredLinkError = published && (kind === "training" || kind === "launch_kit") && !resourceUrl.trim()
-    ? "Published training and launch kits need a destination URL. Check the link yourself before publishing."
+  const requiredLinkError = published && (kind === "training" || kind === "launch_kit" || externalForm) && !resourceUrl.trim()
+    ? "Published training, launch kits and external forms need a destination URL. Check the link yourself before publishing."
     : "";
 
   const visibleContent = useMemo(() => {
@@ -234,6 +288,8 @@ export default function AdminContent() {
     setClientName("");
     setDemoData(false);
     setFeaturedOnDashboard(false);
+    setDiscountEnabled(false);
+    setDiscount(defaultDiscount());
     setComingSoon(false);
     setFinishColor("");
     setResourceFile(null);
@@ -257,6 +313,10 @@ export default function AdminContent() {
       setClientName(typeof item.payload?.clientName === "string" ? item.payload.clientName : "");
       setDemoData(item.payload?.demo === true);
       setFeaturedOnDashboard(item.payload?.featuredOnDashboard === true);
+      const promo = promotionSchema.safeParse(item.payload?.promotion);
+      setDiscountEnabled(promo.success);
+      if (promo.success) setDiscount({ ...promo.data, maximumSavings: promo.data.maximumSavings, startsAt: promo.data.startsAt, endsAt: promo.data.endsAt, collections: promo.data.collections.join(", ") });
+      else setDiscount(defaultDiscount());
       setComingSoon(item.payload?.comingSoon === true);
       setFinishColor(typeof item.payload?.color === "string" ? item.payload.color : "");
       setResourceFile(null);
@@ -293,33 +353,33 @@ export default function AdminContent() {
     if (isSavingForm) return;
     if (!title.trim()) return;
     if (kind === "form" && (title.trim().length > 200 || description.trim().length > 2000)) {
-      toast.error("Form titles must be at most 200 characters and descriptions at most 2000.");
+      showEditorError("Form titles must be at most 200 characters and descriptions at most 2000.");
       return;
     }
     if (imageError || urlError || requiredLinkError) {
-      toast.error(imageError || urlError || requiredLinkError);
+      showEditorError(imageError || urlError || requiredLinkError);
       return;
     }
     if (target === "groups" && targetGroupIds.length === 0) {
-      toast.error("Choose at least one group");
+      showEditorError("Choose at least one group");
       return;
     }
     if (target === "individuals" && targetAccountIds.length === 0) {
-      toast.error("Choose at least one dealer");
+      showEditorError("Choose at least one dealer");
       return;
     }
-    if (kind === "form") {
+    if (kind === "form" && !externalForm) {
       const error = formFieldsError(formFields);
-      if (error) { toast.error(error); return; }
+      if (error) { showEditorError(error); return; }
     }
     if (resourceFile && kind !== "resource") {
-      toast.error("Uploaded files are linked to Docs & resources. Use a secure URL for this content kind.");
+      showEditorError("Uploaded files are linked to Docs & resources. Use a secure URL for this content kind.");
       return;
     }
     setIsUploading(Boolean(resourceFile));
     setIsSavingForm(kind === "form");
     try {
-      if (kind === "form") {
+      if (kind === "form" && !externalForm) {
         const fieldDefinitions = formFields.map((field) => ({
           name: field.name.trim(),
           label: field.label.trim(),
@@ -344,7 +404,7 @@ export default function AdminContent() {
             }),
           },
         );
-        setIsEditorOpen(false);
+        closeSavedEditor();
         invalidate();
         queryClient.invalidateQueries({ queryKey: ["portal-v2", "legacy", "forms"] });
         toast.success(`${saved.content.title} ${editing ? "updated" : "created"}`);
@@ -371,6 +431,11 @@ export default function AdminContent() {
         delete payload.featuredOnDashboard;
         delete payload.comingSoon;
       }
+      if (kind === "announcement" && discountEnabled) {
+        const parsed = promotionSchema.safeParse({ ...discount, collections: discount.collections.split(",").map(v => v.trim()).filter(Boolean) });
+        if (!parsed.success) { showEditorError(discountValidationMessage(String(parsed.error.issues[0]?.path[0] ?? "schedule"))); return; }
+        payload.promotion = parsed.data;
+      } else delete payload.promotion;
       if (editing?.kind === "form" && !uploaded) delete payload.legacyId;
       const data: PortalContentInput = {
         kind: option.apiKind,
@@ -384,11 +449,11 @@ export default function AdminContent() {
       };
       if (editing) await updateMutation.mutateAsync({ id: editing.id, data });
       else await createMutation.mutateAsync(data);
-      setIsEditorOpen(false);
+      closeSavedEditor();
       invalidate();
       toast.success(editing ? "Content updated" : "Content created");
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      showEditorError(getErrorMessage(error));
     } finally {
       setIsUploading(false);
       setIsSavingForm(false);
@@ -414,29 +479,29 @@ export default function AdminContent() {
   return (
     <div className={`min-h-full ${ivory} px-4 py-6 md:px-8 md:py-8`}>
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 border-b border-[#121210]/15 pb-6 lg:flex-row lg:items-end lg:justify-between"><div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#B39862]">Publishing studio</p><h1 className="text-3xl font-medium tracking-[-0.03em] md:text-4xl">Content</h1><p className="mt-2 text-sm text-[#121210]/60">Create once, target precisely, and publish dealer-facing content without editing payloads by hand.</p></div>{canEdit && <Button className="rounded-none bg-[#121210] text-[#F3F0E8]" onClick={() => openEditor()}><Plus className="mr-2 h-4 w-4" /> New content</Button>}</header>
+        <header className="flex flex-col gap-4 border-b border-[#121210]/15 pb-6 lg:flex-row lg:items-end lg:justify-between"><div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#806936]">Publishing studio</p><h1 className="text-3xl font-medium tracking-[-0.03em] md:text-4xl">Content</h1><p className="mt-2 text-sm text-[#121210]/60">Create once, target precisely, and publish dealer-facing content without editing payloads by hand.</p></div>{canEdit && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { openEditor(); setKind("announcement"); setDiscountEnabled(true); }}>New discount</Button><Button className="rounded-none bg-[#121210] text-[#F3F0E8]" onClick={() => openEditor()}><Plus className="mr-2 h-4 w-4" /> New content</Button></div>}</header>
          <section className="grid gap-3 sm:grid-cols-3"><Stat label="Published" value={content.filter((item) => item.published).length} detail="visible records" /><Stat label="Drafts" value={content.filter((item) => !item.published).length} detail="not yet published" /><Stat label="Results" value={visibleContent.length} detail="matching this view" /></section>
           {canReviewResponses && <section className={`${card} overflow-hidden`}>
-            <div className="flex items-center justify-between border-b border-[#121210]/10 px-4 py-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B39862]">Response review</p><h2 className="mt-1 text-lg font-medium">Form submissions</h2></div><span className="text-xs text-[#121210]/50">{submissions.length} response{submissions.length === 1 ? "" : "s"}</span></div>
+            <div className="flex items-center justify-between border-b border-[#121210]/10 px-4 py-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#806936]">Response review</p><h2 className="mt-1 text-lg font-medium">Form submissions</h2></div><span className="text-xs text-[#121210]/50">{submissions.length} response{submissions.length === 1 ? "" : "s"}</span></div>
             {submissionsQuery.error ? <p className="p-4 text-sm text-[#8b382b]">Responses are temporarily unavailable: {getErrorMessage(submissionsQuery.error)}</p> : submissions.length === 0 ? <p className="p-4 text-sm text-[#121210]/55">No dealer responses have been submitted yet.</p> : <>
               <div className="flex flex-wrap items-center gap-2 border-b border-[#121210]/10 p-4"><Input aria-label="Search responses" value={submissionSearch} onChange={(event) => setSubmissionSearch(event.target.value)} placeholder="Search form, dealer, or response" className={`${inputClass} min-w-48 flex-1`} /><select aria-label="Filter by form" value={submissionFormId} onChange={(event) => setSubmissionFormId(event.target.value)} className="h-10 border border-[#121210]/15 bg-white/80 px-3 text-sm"><option value="">All forms</option>{Array.from(new Map(submissions.map((item) => [item.form.id, item.form.title])).entries()).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><Button type="button" variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" disabled={!filteredSubmissions.length} onClick={exportSubmissions}>Export filtered CSV</Button></div>
               {filteredSubmissions.length === 0 ? <p className="p-4 text-sm text-[#121210]/55">No responses match these filters.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b border-[#121210]/10 bg-[#121210]/[0.035] text-[10px] uppercase tracking-[0.18em] text-[#121210]/55"><tr><th className="px-4 py-3 font-semibold">Form</th><th className="px-4 py-3 font-semibold">Dealer</th><th className="px-4 py-3 font-semibold">Submitted</th><th className="px-4 py-3 font-semibold">Response</th></tr></thead><tbody className="divide-y divide-[#121210]/10">{filteredSubmissions.map((item) => <tr key={item.submission.id}><td className="px-4 py-3 font-medium">{item.form.title}</td><td className="px-4 py-3 text-xs text-[#121210]/60">{item.account.displayName || item.account.email}<div>{item.account.email}</div></td><td className="px-4 py-3 text-xs text-[#121210]/55">{new Date(item.submission.submittedAt).toLocaleString()}</td><td className="max-w-sm px-4 py-3"><div className="flex flex-wrap gap-1">{Object.entries(item.submission.values).map(([key, value]) => <span key={key} className="border border-[#121210]/10 bg-white/60 px-2 py-1 text-xs"><strong className="font-medium">{key}:</strong> {formatResponseValue(value)}</span>)}</div></td></tr>)}</tbody></table></div>}
             </>}
           </section>}
          {canEdit && (legacyFormsQuery.error || legacyResourcesQuery.error) ? <section className={`${card} p-4 text-sm text-[#8b382b]`}>Legacy records could not be checked for v2 visibility links. Existing dealer access remains unchanged.</section> : null}
-         {canEdit && (unsyncedForms.length > 0 || unsyncedResources.length > 0) && <section className={`${card} overflow-hidden`}><div className="border-b border-[#121210]/10 px-4 py-4"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B39862]">Visibility migration</p><h2 className="mt-1 text-lg font-medium">Link existing forms and resources</h2><p className="mt-1 text-xs text-[#121210]/55">Linking creates a v2 record with the legacy ID so private targets remain authoritative without deleting the existing file or submissions.</p></div><div className="divide-y divide-[#121210]/10">{[...unsyncedForms.map((item) => ({ ...item, legacyKind: "form" as const })), ...unsyncedResources.map((item) => ({ ...item, legacyKind: "resource" as const }))].map((item) => <div key={`${item.legacyKind}-${item.id}`} className="flex items-center justify-between gap-4 px-4 py-3"><div><p className="text-sm font-medium">{item.title}</p><p className="text-xs text-[#121210]/50">{item.legacyKind === "form" ? "Existing form and submissions" : "Existing stored resource"} · {item.enabled ? "enabled" : "disabled"}</p></div><Button variant="outline" size="sm" className="shrink-0 rounded-none border-[#121210]/20 bg-transparent" disabled={syncingLegacyId === item.id} onClick={() => syncLegacyRecord(item, item.legacyKind)}>{syncingLegacyId === item.id ? "Linking…" : "Link for targeting"}</Button></div>)}</div></section>}
+         {canEdit && (unsyncedForms.length > 0 || unsyncedResources.length > 0) && <section className={`${card} overflow-hidden`}><div className="border-b border-[#121210]/10 px-4 py-4"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#806936]">Visibility migration</p><h2 className="mt-1 text-lg font-medium">Link existing forms and resources</h2><p className="mt-1 text-xs text-[#121210]/55">Linking creates a v2 record with the legacy ID so private targets remain authoritative without deleting the existing file or submissions.</p></div><div className="divide-y divide-[#121210]/10">{[...unsyncedForms.map((item) => ({ ...item, legacyKind: "form" as const })), ...unsyncedResources.map((item) => ({ ...item, legacyKind: "resource" as const }))].map((item) => <div key={`${item.legacyKind}-${item.id}`} className="flex items-center justify-between gap-4 px-4 py-3"><div><p className="text-sm font-medium">{item.title}</p><p className="text-xs text-[#121210]/50">{item.legacyKind === "form" ? "Existing form and submissions" : "Existing stored resource"} · {item.enabled ? "enabled" : "disabled"}</p></div><Button variant="outline" size="sm" className="shrink-0 rounded-none border-[#121210]/20 bg-transparent" disabled={syncingLegacyId === item.id} onClick={() => syncLegacyRecord(item, item.legacyKind)}>{syncingLegacyId === item.id ? "Linking…" : "Link for targeting"}</Button></div>)}</div></section>}
         <section className={`${card} space-y-4 p-4`}>
-          <div className="relative max-w-lg"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#121210]/45" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search content" className={`${inputClass} pl-9`} /></div>
-          <div className="flex flex-wrap gap-2">{[{ value: "all" as const, label: "All content" }, ...kindOptions].map((item) => <button key={item.value} type="button" onClick={() => setActiveKind(item.value)} className={`border px-3 py-2 text-xs font-semibold transition ${activeKind === item.value ? "border-[#121210] bg-[#121210] text-[#F3F0E8]" : "border-[#121210]/15 bg-white/50 text-[#121210]/60 hover:border-[#B39862]"}`}>{item.label}</button>)}</div>
+          <div className="relative max-w-lg"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#121210]/45" /><Input aria-label="Search content" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search content" className={`${inputClass} pl-9`} /></div>
+          <div className="flex flex-wrap gap-2">{[{ value: "all" as const, label: "All content" }, ...kindOptions].map((item) => <button key={item.value} type="button" aria-pressed={activeKind === item.value} onClick={() => setActiveKind(item.value)} className={`border px-3 py-2 text-xs font-semibold transition ${activeKind === item.value ? "border-[#121210] bg-[#121210] text-[#F3F0E8]" : "border-[#121210]/15 bg-white/50 text-[#121210]/60 hover:border-[#B39862]"}`}>{item.label}</button>)}</div>
         </section>
-        {visibleContent.length === 0 ? <div className={`${card} px-6 py-16 text-center`}><FileText className="mx-auto h-8 w-8 text-[#B39862]" /><h2 className="mt-3 font-medium">No content in this view</h2><p className="mt-1 text-sm text-[#121210]/55">Create a record or adjust your filters.</p></div> : <section className={`${card} overflow-hidden`}><div className="overflow-x-auto"><table className="w-full min-w-[800px] text-left text-sm"><thead className="border-b border-[#121210]/10 bg-[#121210]/[0.035] text-[10px] uppercase tracking-[0.18em] text-[#121210]/55"><tr><th className="px-4 py-4 font-semibold">Content</th><th className="px-4 py-4 font-semibold">Audience</th><th className="px-4 py-4 font-semibold">Status</th><th className="px-4 py-4 font-semibold">Updated</th><th className="px-4 py-4 text-right font-semibold">Actions</th></tr></thead><tbody className="divide-y divide-[#121210]/10">{visibleContent.map((item) => <tr key={item.id} className="transition hover:bg-[#B39862]/[0.06]"><td className="px-4 py-4"><div className="flex items-start gap-3"><div className="mt-0.5 border border-[#B39862]/40 bg-[#B39862]/10 p-2 text-[#806936]"><FileText className="h-4 w-4" /></div><div><div className="font-medium">{item.title}</div><div className="mt-1 text-xs text-[#B39862]">{kindOptions.find((kindItem) => kindItem.value === contentUiKind(item))?.label || item.kind}</div>{item.description && <div className="mt-1 max-w-sm truncate text-xs text-[#121210]/50">{item.description}</div>}</div></div></td><td className="px-4 py-4 text-xs text-[#121210]/60">{item.visibility === "everyone" ? "Everyone" : item.visibility === "groups" ? `${item.targets.groupIds.length} group${item.targets.groupIds.length === 1 ? "" : "s"}` : `${item.targets.accountIds.length} dealer${item.targets.accountIds.length === 1 ? "" : "s"}`}</td><td className="px-4 py-4"><span className={`border px-2 py-1 text-[10px] uppercase tracking-[0.14em] ${item.published ? "border-[#55704b]/35 bg-[#55704b]/10 text-[#3d5a35]" : "border-[#121210]/15 text-[#121210]/55"}`}>{item.published ? "Published" : "Draft"}</span></td><td className="px-4 py-4 text-xs text-[#121210]/50">{new Date(item.updatedAt).toLocaleDateString()}</td><td className="px-4 py-4"><div className="flex justify-end gap-1">{canEdit && <><Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-[#B39862]/15" onClick={() => openEditor(item)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 rounded-none text-[#8b382b] hover:bg-[#a64c3b]/10" onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button></>}</div></td></tr>)}</tbody></table></div></section>}
+        {visibleContent.length === 0 ? <div className={`${card} px-6 py-16 text-center`}><FileText className="mx-auto h-8 w-8 text-[#806936]" /><h2 className="mt-3 font-medium">No content in this view</h2><p className="mt-1 text-sm text-[#121210]/55">Create a record or adjust your filters.</p></div> : <section className={`${card} overflow-hidden`}><div className="grid gap-3 p-3 lg:hidden">{visibleContent.map(item => <article key={item.id} className="space-y-3 rounded-lg border border-[#121210]/15 bg-white p-4"><h2 className="break-words font-medium">{item.title}</h2><p className="text-xs text-[#121210]/65">{kindOptions.find(option => option.value === contentUiKind(item))?.label} · <span>{promotionStatus(item)}</span> · {item.visibility === "everyone" ? "Everyone" : item.visibility === "groups" ? `${item.targets.groupIds.length} groups` : `${item.targets.accountIds.length} selected dealers`}</p>{item.description && <p className="line-clamp-2 text-sm text-[#121210]/65">{item.description}</p>}{canEdit && <div className="flex gap-2"><Button variant="outline" className="min-h-11 flex-1" aria-label={`Edit ${item.title}`} onClick={() => openEditor(item)}>Edit content</Button><Button variant="outline" className="min-h-11" aria-label={`Delete ${item.title}`} onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button></div>}</article>)}</div><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[800px] text-left text-sm"><thead className="border-b border-[#121210]/10 bg-[#121210]/[0.035] text-[10px] uppercase tracking-[0.18em] text-[#121210]/55"><tr><th className="px-4 py-4 font-semibold">Content</th><th className="px-4 py-4 font-semibold">Audience</th><th className="px-4 py-4 font-semibold">Status</th><th className="px-4 py-4 font-semibold">Updated</th><th className="px-4 py-4 text-right font-semibold">Actions</th></tr></thead><tbody className="divide-y divide-[#121210]/10">{visibleContent.map((item) => <tr key={item.id} className="transition hover:bg-[#B39862]/[0.06]"><td className="px-4 py-4"><div className="flex items-start gap-3"><div className="mt-0.5 border border-[#B39862]/40 bg-[#B39862]/10 p-2 text-[#806936]"><FileText className="h-4 w-4" /></div><div><div className="font-medium">{item.title}</div><div className="mt-1 text-xs text-[#806936]">{kindOptions.find((kindItem) => kindItem.value === contentUiKind(item))?.label || item.kind}</div>{item.description && <div className="mt-1 max-w-sm truncate text-xs text-[#121210]/50">{item.description}</div>}</div></div></td><td className="px-4 py-4 text-xs text-[#121210]/60">{item.visibility === "everyone" ? "Everyone" : item.visibility === "groups" ? `${item.targets.groupIds.length} group${item.targets.groupIds.length === 1 ? "" : "s"}` : `${item.targets.accountIds.length} dealer${item.targets.accountIds.length === 1 ? "" : "s"}`}</td><td className="px-4 py-4"><span className={`border px-2 py-1 text-[10px] uppercase tracking-[0.14em] ${item.published ? "border-[#55704b]/35 bg-[#55704b]/10 text-[#3d5a35]" : "border-[#121210]/15 text-[#121210]/55"}`}>{promotionStatus(item)}</span></td><td className="px-4 py-4 text-xs text-[#121210]/50">{new Date(item.updatedAt).toLocaleDateString()}</td><td className="px-4 py-4"><div className="flex justify-end gap-1">{canEdit && <><Button variant="ghost" size="icon" className="h-11 w-11 rounded-none hover:bg-[#B39862]/15" aria-label={`Edit ${item.title}`} onClick={() => openEditor(item)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-11 w-11 rounded-none text-[#8b382b] hover:bg-[#a64c3b]/10" aria-label={`Delete ${item.title}`} onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button></>}</div></td></tr>)}</tbody></table></div></section>}
       </div>
 
-      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}><DialogContent className="max-h-[92vh] overflow-y-auto rounded-none border-[#121210]/15 bg-[#F3F0E8] text-[#121210] sm:max-w-2xl"><DialogHeader><DialogTitle className="text-2xl font-medium">{editing ? "Edit content" : "Create content"}</DialogTitle></DialogHeader><div className="space-y-5 py-3"><div className="grid gap-4 sm:grid-cols-2"><Field label="Content type"><select value={kind} onChange={(event) => { const nextKind = event.target.value as UiKind; setKind(nextKind); setFeaturedOnDashboard(false); setComingSoon(false); if (!imageKinds.includes(nextKind)) setImageUrl(""); if (nextKind !== "project") { setProjectStatus(""); setClientName(""); setDemoData(false); } if (nextKind !== "finish") setFinishColor(""); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">{kindOptions.map((item) => <option key={item.value} value={item.value} disabled={Boolean(editing) && ((contentUiKind(editing!) === "form") !== (item.value === "form"))}>{item.label}</option>)}</select></Field><Field label="Title"><Input value={title} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder="A clear dealer-facing title" /></Field></div><Field label="Description (optional)"><Textarea value={description} onChange={(event) => setDescription(event.target.value)} className={`${inputClass} resize-none`} rows={3} placeholder="Give dealers enough context to act." /></Field>
-            {supportsImage && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]">Dealer gallery card</p><p className="mt-1 text-xs text-[#121210]/55">Optional image for dealer cards. Leave blank to remove the saved image URL.</p></div><Field label="Image URL"><Input type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} className={inputClass} placeholder="https://images.example.com/card.jpg" /></Field>{imageError && <p role="alert" className="text-xs text-[#8b382b]">{imageError}</p>}{kind === "project" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Project status"><Input value={projectStatus} onChange={(event) => setProjectStatus(event.target.value)} className={inputClass} placeholder="Featured, planning, installed" /></Field><Field label="Client display name"><Input value={clientName} onChange={(event) => setClientName(event.target.value)} className={inputClass} placeholder="Smith Residence" /></Field></div>}{kind === "project" && <label className="flex items-center gap-2 text-xs text-[#121210]/65"><input type="checkbox" checked={demoData} onChange={(event) => setDemoData(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Demo data (show a DEMO badge in dealer galleries)</label>}{kind === "finish" && <Field label="Finish color"><div className="flex gap-2"><Input type="color" value={finishColor || "#B39862"} onChange={(event) => setFinishColor(event.target.value)} className="h-10 w-14 cursor-pointer rounded-none border-[#121210]/15 bg-white/80 p-1" /><Input value={finishColor} onChange={(event) => setFinishColor(event.target.value)} className={inputClass} placeholder="#B39862" /></div></Field>}</div>}
-          {kind === "form" && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4">
+      <Dialog open={isEditorOpen} onOpenChange={changeEditorOpen}><DialogContent aria-describedby="content-editor-help" className="max-h-[92dvh] w-[calc(100%-2rem)] max-w-5xl overflow-y-auto rounded-xl border-[#121210]/15 bg-[#F3F0E8] p-4 text-[#121210] sm:p-6 sm:max-w-5xl"><DialogHeader className="sticky top-0 z-20 bg-[#F3F0E8] pb-3 pr-6"><DialogTitle className="text-2xl font-medium">{editing ? "Edit content" : "Create content"}</DialogTitle><p id="content-editor-help" className="text-xs text-[#121210]/65">Choose the content and audience, preview your changes, then save. Drafts stay private until published.</p><p role="status" className="text-xs font-semibold text-[#806936]">{contentDirty ? "Unsaved changes" : "Ready to edit"} · {published ? "Will publish when saved" : "Will save as draft"}</p>{editorError && <p role="alert" className="rounded-lg border border-red-700/30 bg-red-50 p-3 text-sm text-red-900">{editorError}</p>}<Button type="button" variant="outline" className="mt-2 min-h-11 lg:hidden" onClick={() => setShowContentPreview(!showContentPreview)}>{showContentPreview ? "Back to fields" : "Preview changes"}</Button></DialogHeader><div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,.8fr)]"><div className={`${showContentPreview ? "hidden lg:block" : "block"} space-y-5 py-3`}><div className="grid gap-4 sm:grid-cols-2"><Field label="Content type"><select value={kind} onChange={(event) => { const nextKind = event.target.value as UiKind; setKind(nextKind); setFeaturedOnDashboard(false); setComingSoon(false); if (!imageKinds.includes(nextKind)) setImageUrl(""); if (nextKind !== "project") { setProjectStatus(""); setClientName(""); setDemoData(false); } if (nextKind !== "finish") setFinishColor(""); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">{kindOptions.map((item) => <option key={item.value} value={item.value} disabled={Boolean(editing) && ((contentUiKind(editing!) === "form") !== (item.value === "form"))}>{item.label}</option>)}</select></Field><Field label="Title"><Input required aria-required="true" value={title} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder="A clear dealer-facing title" /></Field></div><Field label="Description (optional)"><Textarea value={description} onChange={(event) => setDescription(event.target.value)} className={`${inputClass} resize-none`} rows={3} placeholder="Give dealers enough context to act." /></Field>
+            {supportsImage && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#806936]">Dealer gallery card</p><p className="mt-1 text-xs text-[#121210]/55">Optional image for dealer cards. Leave blank to remove the saved image URL.</p></div><Field label="Image URL"><Input type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} className={inputClass} placeholder="https://images.example.com/card.jpg" /></Field>{imageError && <p role="alert" className="text-xs text-[#8b382b]">{imageError}</p>}{kind === "project" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Project status"><Input value={projectStatus} onChange={(event) => setProjectStatus(event.target.value)} className={inputClass} placeholder="Featured, planning, installed" /></Field><Field label="Client display name"><Input value={clientName} onChange={(event) => setClientName(event.target.value)} className={inputClass} placeholder="Smith Residence" /></Field></div>}{kind === "project" && <label className="flex items-center gap-2 text-xs text-[#121210]/65"><input type="checkbox" checked={demoData} onChange={(event) => setDemoData(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Demo data (show a DEMO badge in dealer galleries)</label>}{kind === "finish" && <Field label="Finish color"><div className="flex gap-2"><Input aria-label="Finish color picker" type="color" value={finishColor || "#B39862"} onChange={(event) => setFinishColor(event.target.value)} className="h-10 w-14 cursor-pointer rounded-none border-[#121210]/15 bg-white/80 p-1" /><Input aria-label="Finish color hex value" value={finishColor} onChange={(event) => setFinishColor(event.target.value)} className={inputClass} placeholder="#B39862" /></div></Field>}</div>}
+          {kind === "form" && !externalForm && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]">Visual form builder</p><p className="mt-1 text-xs text-[#121210]/55">Build fields without editing JSON. Keep field keys stable after collecting responses.</p></div>
+              <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#806936]">Visual form builder</p><p className="mt-1 text-xs text-[#121210]/55">Build fields without editing JSON. Keep field keys stable after collecting responses.</p></div>
               <Button type="button" variant="outline" size="sm" className="rounded-none border-[#121210]/20 bg-transparent" disabled={formFields.length >= 100} onClick={() => setFormFields((fields) => { let index = fields.length; while (fields.some((field) => field.name === `field_${index + 1}`)) index++; return [...fields, newField(index)]; })}><Plus className="mr-1 h-3.5 w-3.5" /> Add field</Button>
             </div>
             {formFields.map((field, index) => <div key={index} className="border border-[#121210]/10 bg-white/70 p-3">
@@ -452,17 +517,20 @@ export default function AdminContent() {
             {formFieldsError(formFields) && <p role="alert" className="text-xs text-[#8b382b]">{formFieldsError(formFields)}</p>}
           </div>}
             {supportsUrl && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><Field label={published && (kind === "training" || kind === "launch_kit") ? "Destination URL (required to publish)" : "External URL (optional)"}><Input type="url" value={resourceUrl} onChange={(event) => { setResourceUrl(event.target.value); if (event.target.value) setResourceFile(null); }} className={inputClass} placeholder="https://…" /></Field>{(urlError || requiredLinkError) && <p role="alert" className="text-xs text-[#8b382b]">{urlError || requiredLinkError}</p>}{existingStoredResource && !resourceUrl && !resourceFile && <p className="text-xs text-[#121210]/60">Existing uploaded file remains attached.</p>}<p className="text-xs text-[#121210]/50">Only http(s) links are accepted. Saving does not verify that a destination is reachable or accessible to dealers.</p>{kind === "resource" && <><div className="text-center text-xs uppercase tracking-[0.16em] text-[#121210]/40">or</div><label className="flex cursor-pointer items-center justify-center gap-2 border border-dashed border-[#121210]/20 bg-white/50 px-4 py-5 text-sm text-[#121210]/55 hover:border-[#B39862]"><Upload className="h-4 w-4" />{resourceFile ? resourceFile.name : "Upload a safe file (up to 25 MB)"}<input type="file" className="sr-only" accept=".pdf,.txt,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.target.files?.[0] || null; setResourceFile(file); if (file) setResourceUrl(""); }} /></label><p className="text-xs text-[#121210]/45">PDF, plain text, JPEG, PNG, and WebP are accepted. Office and ZIP files must be shared as external links because embedded active content cannot be safely verified.</p></>}</div>}
+            {kind === "announcement" && <section className="space-y-3 border border-[#121210]/15 p-4"><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={discountEnabled} onChange={e => setDiscountEnabled(e.target.checked)} />Discount / quote offer</label>{discountEnabled && <><Field label="Percent off"><Input type="number" min="0.01" max="100" step="0.01" value={discount.percentOff} onChange={e => setDiscount({ ...discount, percentOff: Number(e.target.value) })} /></Field><Field label="Starts (your local time)"><Input type="datetime-local" value={localDateTime(discount.startsAt)} onChange={e => setDiscount({ ...discount, startsAt: e.target.value ? new Date(e.target.value).toISOString() : "" })} /></Field><Field label="Ends (your local time)"><Input type="datetime-local" value={localDateTime(discount.endsAt)} onChange={e => setDiscount({ ...discount, endsAt: e.target.value ? new Date(e.target.value).toISOString() : "" })} /></Field><Field label="Eligible collections, separated by commas"><Input value={discount.collections} onChange={e => setDiscount({ ...discount, collections: e.target.value })} /></Field><Field label="Minimum order (USD)"><Input type="number" min="0" max="10000000" step="0.01" value={discount.minimumOrder} onChange={e => setDiscount({ ...discount, minimumOrder: Number(e.target.value) })} /></Field><Field label="Maximum savings (USD, optional)"><Input type="number" min="0.01" max="10000000" step="0.01" value={discount.maximumSavings ?? ""} onChange={e => setDiscount({ ...discount, maximumSavings: e.target.value ? Number(e.target.value) : undefined })} /></Field><Field label="Terms and exclusions"><Textarea maxLength={2000} value={discount.terms} onChange={e => setDiscount({ ...discount, terms: e.target.value })} /></Field><label className="flex gap-2 text-xs"><input type="checkbox" checked={discount.combinable} onChange={e => setDiscount({ ...discount, combinable: e.target.checked })} />Can combine with other offers</label><p className="text-xs text-muted-foreground">Use the audience controls below to select eligible dealers. Unpublish to pause. Scheduled and expired offers are hidden automatically. This portal requests quotes; Kessick confirms eligibility and final savings in the quote.</p></>}</section>}
             {kind === "announcement" && <label className="flex items-start gap-2 border border-[#121210]/10 bg-white/45 p-4 text-xs text-[#121210]/70"><input type="checkbox" checked={featuredOnDashboard} onChange={(event) => setFeaturedOnDashboard(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#B39862]" /><span><span className="block font-semibold text-[#121210]">Feature as the dealer dashboard announcement</span><span className="mt-1 block">Only published, account-visible announcements appear in dealer workspaces.</span></span></label>}
-            {kind === "product_series" && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]">Dealer dashboard display</p><label className="flex items-center gap-2 text-xs text-[#121210]/70"><input type="checkbox" checked={featuredOnDashboard} onChange={(event) => setFeaturedOnDashboard(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Feature this collection</label><label className="flex items-center gap-2 text-xs text-[#121210]/70"><input type="checkbox" checked={comingSoon} onChange={(event) => setComingSoon(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Label this collection “Coming soon”</label><p className="text-xs text-[#121210]/50">Unpublished and audience-targeted collections remain subject to their existing visibility settings.</p></div>}
-          <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]">Audience</p><p className="mt-1 text-xs text-[#121210]/55">Choose exactly who can see this record.</p></div><div className="grid gap-2 sm:grid-cols-3">{(["everyone", "groups", "individuals"] as const).map((value) => <button key={value} type="button" onClick={() => setTarget(value)} className={`border px-3 py-3 text-left text-xs font-semibold capitalize ${target === value ? "border-[#121210] bg-[#121210] text-[#F3F0E8]" : "border-[#121210]/15 bg-white/50 text-[#121210]/60"}`}>{value === "individuals" ? "Selected dealers" : value}</button>)}</div>{target === "groups" && (canReadTargets ? <div className="max-h-36 space-y-2 overflow-y-auto border border-[#121210]/10 bg-white/60 p-3">{groups.map((group) => <label key={group.id} className="flex items-center justify-between py-1 text-sm"><span>{group.name}</span><input type="checkbox" checked={targetGroupIds.includes(group.id)} onChange={() => setTargetGroupIds((ids) => ids.includes(group.id) ? ids.filter((id) => id !== group.id) : [...ids, group.id])} className="h-4 w-4 accent-[#B39862]" /></label>)}{groups.length === 0 && <p className="text-xs text-[#121210]/50">No groups available.</p>}</div> : <TargetUnavailable />)}{target === "individuals" && (canReadTargets ? <div className="max-h-36 space-y-2 overflow-y-auto border border-[#121210]/10 bg-white/60 p-3">{users.map((user) => <label key={user.id} className="flex items-center justify-between py-1 text-sm"><span><span className="block">{user.displayName || user.email}</span><span className="text-xs text-[#121210]/45">{user.email}</span></span><input type="checkbox" checked={targetAccountIds.includes(user.id)} onChange={() => setTargetAccountIds((ids) => ids.includes(user.id) ? ids.filter((id) => id !== user.id) : [...ids, user.id])} className="h-4 w-4 accent-[#B39862]" /></label>)}{users.length === 0 && <p className="text-xs text-[#121210]/50">No dealer accounts available.</p>}</div> : <TargetUnavailable />)}</div>
+            {kind === "product_series" && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#806936]">Dealer dashboard display</p><label className="flex items-center gap-2 text-xs text-[#121210]/70"><input type="checkbox" checked={featuredOnDashboard} onChange={(event) => setFeaturedOnDashboard(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Feature this collection</label><label className="flex items-center gap-2 text-xs text-[#121210]/70"><input type="checkbox" checked={comingSoon} onChange={(event) => setComingSoon(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Label this collection “Coming soon”</label><p className="text-xs text-[#121210]/50">Unpublished and audience-targeted collections remain subject to their existing visibility settings.</p></div>}
+          <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#806936]">Audience</p><p className="mt-1 text-xs text-[#121210]/55">Choose exactly who can see this record.</p></div><div className="grid gap-2 sm:grid-cols-3">{(["everyone", "groups", "individuals"] as const).map((value) => <button key={value} type="button" onClick={() => setTarget(value)} className={`border px-3 py-3 text-left text-xs font-semibold capitalize ${target === value ? "border-[#121210] bg-[#121210] text-[#F3F0E8]" : "border-[#121210]/15 bg-white/50 text-[#121210]/60"}`}>{value === "individuals" ? "Selected dealers" : value}</button>)}</div>{target === "groups" && (canReadTargets ? <div className="max-h-36 space-y-2 overflow-y-auto border border-[#121210]/10 bg-white/60 p-3">{groups.map((group) => <label key={group.id} className="flex items-center justify-between py-1 text-sm"><span>{group.name}</span><input type="checkbox" checked={targetGroupIds.includes(group.id)} onChange={() => setTargetGroupIds((ids) => ids.includes(group.id) ? ids.filter((id) => id !== group.id) : [...ids, group.id])} className="h-4 w-4 accent-[#B39862]" /></label>)}{groups.length === 0 && <p className="text-xs text-[#121210]/50">No groups available.</p>}</div> : <TargetUnavailable />)}{target === "individuals" && (canReadTargets ? <div className="max-h-36 space-y-2 overflow-y-auto border border-[#121210]/10 bg-white/60 p-3">{users.map((user) => <label key={user.id} className="flex items-center justify-between py-1 text-sm"><span><span className="block">{user.displayName || user.email}</span><span className="text-xs text-[#121210]/45">{user.email}</span></span><input type="checkbox" checked={targetAccountIds.includes(user.id)} onChange={() => setTargetAccountIds((ids) => ids.includes(user.id) ? ids.filter((id) => id !== user.id) : [...ids, user.id])} className="h-4 w-4 accent-[#B39862]" /></label>)}{users.length === 0 && <p className="text-xs text-[#121210]/50">No dealer accounts available.</p>}</div> : <TargetUnavailable />)}</div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={published} onChange={(event) => setPublished(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Publish immediately</label>
-           <section aria-label="Draft card preview" className="border border-[#121210]/15 bg-white/70 p-4">
-             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#B39862]">Preview · current editor values</p>
+
+        </div><aside className={`${showContentPreview ? "block" : "hidden"} min-w-0 lg:sticky lg:top-32 lg:block`}>
+           <section aria-label="Draft card preview" className="min-w-0 rounded-xl border border-[#121210]/15 bg-white/70 p-4">
+             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#806936]">Live preview · updates as you type</p>
              <p className="mt-1 text-xs text-[#121210]/55">Staff-only preview; not a live dealer view. Links and images are not checked for availability.</p>
-             <div className="mt-3 max-w-sm border border-[#121210]/10 bg-white">
+             {kind === "announcement" && discountEnabled ? <div className="mt-3"><DealerQuoteOffer preview title={title.trim() || "Untitled offer"} offer={{ ...discount, collections: discount.collections.split(",").map(value => value.trim()).filter(Boolean), terms: discount.terms || "Add terms and exclusions in the editor." }} /></div> : <div className="mt-3 border border-[#121210]/10 bg-white">
                {supportsImage && <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-[#121210]/5 text-xs text-[#121210]/40">{safeWebUrl(imageUrl) ? <img src={safeWebUrl(imageUrl)!} alt="" className="h-full w-full object-cover" /> : "No card image"}{demoData && kind === "project" && <span className="absolute right-2 top-2 bg-white px-2 py-1 text-[10px] text-[#121210]">DEMO</span>}</div>}
                <div className="space-y-2 p-4">
-                 <p className="text-[10px] font-semibold uppercase tracking-widest text-[#B39862]">{kindOptions.find((option) => option.value === kind)?.label}</p>
+                 <p className="text-[10px] font-semibold uppercase tracking-widest text-[#806936]">{kindOptions.find((option) => option.value === kind)?.label}</p>
                  <h3 className="font-medium">{title.trim() || "Untitled content"}</h3>
                  {description.trim() && <p className="text-xs text-[#121210]/60">{description.trim()}</p>}
                  {kind === "project" && (projectStatus.trim() || clientName.trim()) && <p className="text-xs text-[#121210]/60">{[projectStatus.trim(), clientName.trim()].filter(Boolean).join(" · ")}</p>}
@@ -471,16 +539,21 @@ export default function AdminContent() {
                  {supportsUrl && <p className="break-all text-xs text-[#121210]/60">{resourceFile ? `Selected file: ${resourceFile.name}` : safeWebUrl(resourceUrl) ? `Destination: ${resourceUrl.trim()}` : resourceUrl.trim() ? "Invalid destination URL" : existingStoredResource ? "Existing uploaded file" : "No destination link"}</p>}
                  {supportsUrl && safeWebUrl(resourceUrl) && !resourceFile && <a href={safeWebUrl(resourceUrl)!} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-[#806936] underline">Open destination to check access ↗</a>}
                </div>
-             </div>
-             <p className="mt-2 text-xs text-[#121210]/55">{published ? "Published" : "Draft"} · {target === "everyone" ? "Everyone" : target === "groups" ? `${targetGroupIds.length} selected group(s)` : `${targetAccountIds.length} selected dealer(s)`}</p>
+             </div>}
+             <p className="mt-2 text-xs text-[#121210]/55">{published ? "Will publish when saved" : "Private draft"} · {target === "everyone" ? "Everyone" : target === "groups" ? `${targetGroupIds.length} selected group(s)` : `${targetAccountIds.length} selected dealer(s)`}</p>
            </section>
-        </div><DialogFooter><Button variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={() => setIsEditorOpen(false)}>Cancel</Button><Button className="rounded-none bg-[#121210] text-[#F3F0E8]" disabled={!title.trim() || isUploading || isSavingForm || createMutation.isPending || updateMutation.isPending} onClick={save}>{isUploading ? "Uploading…" : isSavingForm || createMutation.isPending || updateMutation.isPending ? "Saving…" : editing ? "Save content" : "Create content"}</Button></DialogFooter></DialogContent></Dialog>
+        </aside></div><DialogFooter className="sticky bottom-0 z-20 gap-2 border-t border-[#121210]/15 bg-[#F3F0E8] pt-3"><Button variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={() => changeEditorOpen(false)}>Cancel</Button><Button className="rounded-none bg-[#121210] text-[#F3F0E8]" disabled={!title.trim() || isUploading || isSavingForm || createMutation.isPending || updateMutation.isPending} onClick={save}>{isUploading ? "Uploading…" : isSavingForm || createMutation.isPending || updateMutation.isPending ? "Saving…" : editing ? "Save content" : "Create content"}</Button></DialogFooter></DialogContent></Dialog>
     </div>
   );
 }
 
 function Stat({ label, value, detail }: { label: string; value: number; detail: string }) { return <div className={`${card} p-4`}><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#121210]/50">{label}</p><p className="mt-2 text-3xl font-medium">{value}</p><p className="mt-1 text-xs text-[#121210]/50">{detail}</p></div>; }
-function Field({ label, children }: { label: string; children: ReactNode }) { return <div className="space-y-1.5"><label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#121210]/55">{label}</label>{children}</div>; }
+function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="block space-y-1.5"><span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#121210]/55">{label}</span>{children}</label>; }
 function TargetUnavailable() { return <p className="border border-[#B39862]/30 bg-[#B39862]/10 p-3 text-xs text-[#121210]/60">Your role can publish content, but cannot enumerate dealer audiences. Choose Everyone or ask a staff admin for targeting.</p>; }
-function Loading() { return <div className={`flex min-h-[60vh] items-center justify-center ${ivory}`}><Loader2 className="h-6 w-6 animate-spin text-[#B39862]" /></div>; }
+function Loading() { return <div className={`flex min-h-[60vh] items-center justify-center ${ivory}`}><Loader2 className="h-6 w-6 animate-spin text-[#806936]" /></div>; }
 function ErrorState({ message }: { message: string }) { return <div className={`min-h-[60vh] ${ivory} p-6 md:p-10`}><div className="mx-auto max-w-2xl border border-[#a64c3b]/30 bg-[#a64c3b]/10 p-5 text-[#8b382b]"><AlertTriangle className="mb-3 h-5 w-5" /><h2 className="font-medium">Content is unavailable</h2><p className="mt-1 text-sm opacity-80">{message}</p></div></div>; }
+function localDateTime(value: string) { if (!value || !Number.isFinite(Date.parse(value))) return ""; const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0,16); }
+
+function promotionStatus(item: PortalContent) { if (!item.published) return "Draft"; const promo = promotionSchema.safeParse(item.payload?.promotion); if (!promo.success) return "Published"; if (Date.now() < Date.parse(promo.data.startsAt)) return "Scheduled"; return Date.now() >= Date.parse(promo.data.endsAt) ? "Expired" : "Active offer"; }
+
+function discountValidationMessage(field: string) { const messages: Record<string, string> = { percentOff: "Enter a discount greater than 0% and no more than 100%.", startsAt: "Choose a valid start date for this offer.", endsAt: "Choose a valid end date for this offer.", collections: "Enter 1–20 eligible collection names, each 1–80 characters long.", terms: "Enter offer terms and exclusions between 1 and 2,000 characters.", minimumOrder: "Enter a minimum order from $0 to $10,000,000.", maximumSavings: "Enter a savings cap greater than $0 and no more than $10,000,000, or leave it blank." }; return messages[field] ?? "The offer’s end date must follow its start date."; }

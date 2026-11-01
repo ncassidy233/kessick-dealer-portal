@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useGetDealerPortalPricing } from "@workspace/api-client-react";
+import { useGetDealerPortalPricing } from "@/hooks/use-dealer-api";
 import {
   AlertTriangle,
   ExternalLink,
@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { usePortalContent, type PortalContent } from "@/hooks/use-portal-v2";
 import { Input } from "@/components/ui/input";
+import { DealerContentLink } from "@/components/dealer-content-link";
 
 type PriceLine = {
   sku?: unknown;
@@ -139,14 +140,14 @@ export default function PortalPricing() {
                   </div>
                   {url?.startsWith("http") && (
                     <div className="mt-5 border-t border-[#121210]/10 pt-4">
-                      <a
+                      <DealerContentLink
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-sm font-medium text-[#806936] transition-colors hover:text-[#121210] hover:underline"
                       >
                         <ExternalLink className="mr-2 h-4 w-4" /> Open pricebook
-                      </a>
+                      </DealerContentLink>
                     </div>
                   )}
                 </div>

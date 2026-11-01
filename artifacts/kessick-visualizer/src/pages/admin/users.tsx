@@ -67,6 +67,10 @@ function statusTone(status: UserStatus) {
 }
 
 function getErrorMessage(error: unknown) {
+  if (error && typeof error === "object" && "data" in error) {
+    const data = error.data;
+    if (data && typeof data === "object" && "error" in data && typeof data.error === "string") return data.error;
+  }
   return error instanceof Error ? error.message : "Something went wrong. Try again.";
 }
 
@@ -88,10 +92,10 @@ export default function AdminUsers() {
   const [activeUser, setActiveUser] = useState<PortalUser | null>(null);
   const [roleUser, setRoleUser] = useState<PortalUser | null>(null);
   const [createdUser, setCreatedUser] = useState<PortalUser | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [newRole, setNewRole] = useState<PortalRole>("dealer");
-  const [newStatus, setNewStatus] = useState<UserStatus>("approved");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [repId, setRepId] = useState("");
   const [bulkStatus, setBulkStatus] = useState<UserStatus>("approved");
@@ -158,30 +162,32 @@ export default function AdminUsers() {
   });
 
   const resetCreate = () => {
+    setCreateError(null);
     setEmail("");
     setDisplayName("");
     setNewRole("dealer");
-    setNewStatus("approved");
   };
 
   const handleCreate = async () => {
     if (!email.trim() || !email.includes("@")) return;
     if (newRole !== "dealer" && !isSuperAdmin) return;
+    setCreateError(null);
     try {
       const result = await createMutation.mutateAsync({
         email: email.trim(),
         ...(displayName.trim() ? { displayName: displayName.trim() } : {}),
         role: newRole,
-        status: newStatus,
+        status: "approved",
       });
       setCreatedUser(result.user);
       setIsCreateOpen(false);
       setIsInviteOpen(true);
       resetCreate();
       invalidateUsers();
-      toast.success(`${newRole === "dealer" ? "Dealer" : "Staff account"} provisioned`);
+      if (result.user.invitation?.deliveryStatus === "failed") toast.warning("Access saved. The invitation email could not be sent.");
+      else toast.success(newRole === "dealer" ? "Dealer access approved" : "Staff account added");
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      setCreateError(getErrorMessage(error));
     }
   };
 
@@ -296,7 +302,6 @@ export default function AdminUsers() {
                 onClick={() => {
                   resetCreate();
                   setNewRole("staff_admin");
-                    setNewStatus("approved");
                   setIsCreateOpen(true);
                 }}
               >
@@ -308,7 +313,6 @@ export default function AdminUsers() {
               onClick={() => {
                 resetCreate();
                 setNewRole("dealer");
-                  setNewStatus("pending");
                 setIsCreateOpen(true);
               }}
             >
@@ -522,29 +526,26 @@ export default function AdminUsers() {
           <DialogHeader><DialogTitle className="text-2xl font-medium">Add {newRole === "dealer" ? "dealer" : "staff"} account</DialogTitle></DialogHeader>
           <div className="space-y-4 py-3">
             <p className="border-l-2 border-[#B39862] bg-[#B39862]/10 px-3 py-2 text-xs text-[#121210]/65">
-              The client will receive an account setup link and choose their own password.
+              {newRole === "dealer"
+                ? "Adding their email approves dealer access immediately. They only need to verify their email and finish signing in. Existing applicants are approved here too."
+                : "Adding their email approves staff access immediately with the selected role. They only need to verify their email and finish signing in. No application review is required."}
             </p>
             <Field label="Email address"><Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} placeholder="name@dealer.com" /></Field>
             <Field label="Display name (optional)"><Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className={inputClass} placeholder="Jordan Lee" /></Field>
             {isSuperAdmin && (
               <Field label="Role">
-                 <select value={newRole} onChange={(event) => { const nextRole = event.target.value as PortalRole; setNewRole(nextRole); setNewStatus("approved"); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">
+                 <select value={newRole} onChange={(event) => setNewRole(event.target.value as PortalRole)} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">
                   <option value="dealer">Dealer</option>
                   {roles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </select>
               </Field>
             )}
-            <Field label="Initial status">
-              <select value={newStatus} onChange={(event) => setNewStatus(event.target.value as UserStatus)} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">
-                <option value="pending">Pending verification</option>
-                <option value="approved">Approved</option>
-              </select>
-            </Field>
+            {createError && <p role="alert" className="border border-[#a64c3b]/30 bg-[#a64c3b]/10 p-3 text-sm text-[#8b382b]">{createError}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
             <Button className="rounded-none bg-[#121210] text-[#F3F0E8]" disabled={!email.includes("@") || createMutation.isPending} onClick={handleCreate}>
-              {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} Provision account
+              {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} {newRole === "dealer" ? "Add approved dealer" : "Add staff account"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -552,22 +553,26 @@ export default function AdminUsers() {
 
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="rounded-none border-[#121210]/15 bg-[#F3F0E8] text-[#121210] sm:max-w-lg">
-          <DialogHeader><DialogTitle className="text-2xl font-medium">Preview access ready</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-2xl font-medium">Account access ready</DialogTitle></DialogHeader>
           {createdUser && (
             <div className="space-y-4 py-3">
               <div><p className="font-medium">{createdUser.displayName || createdUser.email}</p><p className="text-sm text-[#121210]/55">{createdUser.email}</p></div>
               <div className="border border-[#121210]/10 bg-white/70 p-4">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]"><MailPlus className="h-4 w-4" /> Invitation record</div>
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#B39862]"><ShieldCheck className="h-4 w-4" /> {createdUser.status === "approved" ? "Access approved" : "Account saved"}</div>
                 <p className="mt-2 text-sm text-[#121210]/65">
-                  A setup email was sent. The client can set their own password there. Share this link for preview access.
-                  {createdUser.status === "pending" && " This account is pending; use Verify in the user list before they can enter the portal."}
+                  {createdUser.invitation?.deliveryStatus === "failed"
+                    ? "Access is saved, but the invitation email could not be sent. Share the portal link below or use Resend invite in the account list."
+                    : createdUser.invitation?.deliveryStatus === "not_required"
+                      ? "This email already has a sign-in account. Their access is approved; they can sign in using their existing account."
+                      : "An invitation was submitted for email delivery. They can follow the setup link, verify their email, and sign in."}
+                  {createdUser.status === "approved" && " No application review is required."}
                 </p>
                 {createdUser.invitation?.url ? (
                   <div className="mt-3 flex gap-2">
                     <Input readOnly value={createdUser.invitation.url} className={`${inputClass} text-xs`} />
-                    <Button variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={copyInvite}><Clipboard className="h-4 w-4" /></Button>
+                    <Button aria-label="Copy setup link" variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={copyInvite}><Clipboard className="h-4 w-4" /></Button>
                   </div>
-                ) : <p className="mt-3 text-xs text-[#121210]/50">The invitation email was sent. Ask the client to check their inbox.</p>}
+                ) : <p className="mt-3 text-xs text-[#121210]/50">They can sign in using their approved email address.</p>}
               </div>
             </div>
           )}

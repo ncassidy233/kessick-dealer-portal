@@ -58,7 +58,7 @@ export default function PublicLanding() {
               <Link href="/portal/preview">View Dealer Preview</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold border-[#B39862]/50 text-[#F3F0E8] hover:bg-[#B39862]/10 hover:border-[#B39862] transition-colors w-full sm:w-auto">
-              <Link href="/admin/preview">View Staff Preview</Link>
+              <Link href="/admin">Staff Portal</Link>
             </Button>
             <Button asChild size="lg" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold bg-[#B39862] text-white hover:bg-[#B39862]/90 transition-colors w-full sm:w-auto shadow-2xl">
               <Link href="/sign-in">Partner Sign In</Link>

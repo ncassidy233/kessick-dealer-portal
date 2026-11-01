@@ -1,7 +1,8 @@
 import { usePortalContent } from "@/hooks/use-portal-v2";
 import { Loader2, GraduationCap, PlayCircle, BookOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { safeWebUrl } from "@/lib/content-links";
+import { safeContentUrl } from "@/lib/content-links";
+import { DealerContentLink } from "@/components/dealer-content-link";
 
 export default function PortalTraining() {
   const { data: trainingData, isLoading: trainingLoading, error: trainingError } = usePortalContent("training");
@@ -60,11 +61,11 @@ export default function PortalTraining() {
                   {item.description && <p className="text-muted-foreground mt-2 text-sm">{item.description}</p>}
                 </div>
                 <div className="mt-6 pt-2">
-                  {safeWebUrl(item.payload?.url) ? (
+                  {safeContentUrl(item.payload?.url) ? (
                     <Button asChild variant="outline" className="w-fit rounded-none border-sidebar-primary/50 text-sidebar-primary">
-                      <a href={safeWebUrl(item.payload?.url)!} target="_blank" rel="noopener noreferrer">
+                      <DealerContentLink href={safeContentUrl(item.payload?.url)!} target="_blank" rel="noopener noreferrer">
                         View Launch Kit
-                      </a>
+                      </DealerContentLink>
                     </Button>
                   ) : (
                     <Button disabled variant="outline" className="w-fit rounded-none border-border">
@@ -85,8 +86,8 @@ export default function PortalTraining() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {training.map(item => {
-              const url = safeWebUrl(item.payload?.url);
-              const image = safeWebUrl(item.payload?.imageUrl);
+              const url = safeContentUrl(item.payload?.url);
+              const image = safeContentUrl(item.payload?.imageUrl);
               const InnerContent = (
                 <>
                   <div className="aspect-video bg-muted flex items-center justify-center relative overflow-hidden">
@@ -110,9 +111,9 @@ export default function PortalTraining() {
 
               if (url) {
                 return (
-                   <a key={item.id} href={url} target="_blank" rel="noopener noreferrer" className={`${className} cursor-pointer`}>
+                   <DealerContentLink key={item.id} href={url} target="_blank" rel="noopener noreferrer" className={`${className} cursor-pointer`}>
                     {InnerContent}
-                  </a>
+                  </DealerContentLink>
                 );
               }
               return (

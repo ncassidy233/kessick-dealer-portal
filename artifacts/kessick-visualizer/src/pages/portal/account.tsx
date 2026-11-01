@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import {
-  getGetAccountQueryKey,
-  useUpdateAccount,
-} from "@workspace/api-client-react";
+import { getGetAccountQueryKey } from "@workspace/api-client-react";
+import { useUpdateAccount } from "@/hooks/use-dealer-api";
+import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
 import { useClerk } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -36,7 +35,7 @@ export default function PortalAccount() {
   const sessionQuery = usePortalSession();
   const updateAccount = useUpdateAccount();
   const queryClient = useQueryClient();
-  const { signOut } = useClerk();
+  const previewDealerId = useStaffDealerView();
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
@@ -69,12 +68,14 @@ export default function PortalAccount() {
     );
   }
 
-  const { account, role, groups } = sessionQuery.data;
+  const { account, role } = sessionQuery.data;
+  const groups = sessionQuery.data.groups ?? [];
   const assignedRep = (account as typeof account & { assignedRep?: AssignedRep | null }).assignedRep;
   const isApproved = account.status === "approved";
   const hasChanges = displayName !== (account.displayName || "");
 
   const saveProfile = () => {
+    if (previewDealerId?.readOnly) return;
     updateAccount.mutate(
       { data: { displayName: displayName.trim() || null } },
       {
@@ -106,10 +107,11 @@ export default function PortalAccount() {
             <h2 className="text-xl font-light text-[#121210]">Profile Details</h2>
             <div className="max-w-md space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-[#121210]/50">
+                <label htmlFor="account-email" className="text-[10px] font-semibold uppercase tracking-widest text-[#121210]/50">
                   Email Address
                 </label>
                 <Input
+                  id="account-email"
                   value={account.email}
                   disabled
                   className="rounded-none border-[#121210]/10 bg-[#121210]/[0.035] text-[#121210]/70"
@@ -125,6 +127,7 @@ export default function PortalAccount() {
                 <Input
                   id="display-name"
                   value={displayName}
+                  disabled={previewDealerId?.readOnly}
                   onChange={(event) => setDisplayName(event.target.value)}
                   placeholder="Enter your name"
                   className="rounded-none border-[#121210]/20 bg-white text-[#121210] focus-visible:ring-[#B39862]"
@@ -132,7 +135,7 @@ export default function PortalAccount() {
               </div>
               <Button
                 onClick={saveProfile}
-                disabled={updateAccount.isPending || !hasChanges}
+                disabled={previewDealerId?.readOnly || updateAccount.isPending || !hasChanges}
                 className="rounded-none bg-[#121210] text-[#F3F0E8] hover:bg-[#121210]/85"
               >
                 {updateAccount.isPending ? "Saving…" : "Save Changes"}
@@ -231,16 +234,14 @@ export default function PortalAccount() {
             </div>
           </section>
 
-          <Button
-            variant="outline"
-            className="h-12 w-full justify-start rounded-none border-[#121210]/10 text-[#8b382b] hover:bg-[#8b382b]/5 hover:text-[#8b382b]"
-            onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}
-          >
-            <LogOut className="mr-3 h-4 w-4" />
-            Sign Out
-          </Button>
+          {!previewDealerId && <AccountSignOut />}
         </div>
       </div>
     </div>
   );
+}
+
+function AccountSignOut() {
+  const { signOut } = useClerk();
+  return <Button variant="outline" className="h-12 w-full justify-start rounded-none border-[#121210]/10 text-[#8b382b] hover:bg-[#8b382b]/5 hover:text-[#8b382b]" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}><LogOut className="mr-3 h-4 w-4" />Sign Out</Button>;
 }

@@ -1,6 +1,8 @@
 import { usePortalProjects } from "@/hooks/use-portal-v2";
+import { DealerContentLink } from "@/components/dealer-content-link";
 import { Loader2, Briefcase, AlertTriangle, FileText, ArrowRight } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { portalRelativeTime } from "@/lib/portal-dates";
+import { safeContentUrl } from "@/lib/content-links";
 import demoRoomImg from '@assets/kessick-room-demo.jpg';
 import { Button } from "@/components/ui/button";
 
@@ -76,8 +78,8 @@ export default function PortalProjects() {
           {projects.map((proj) => (
             <div key={proj.id} className="group border border-border bg-card p-6 hover:border-sidebar-primary/50 transition-colors flex flex-col overflow-hidden relative">
               <div className="w-full h-32 mb-4 bg-muted flex items-center justify-center overflow-hidden relative">
-                {proj.payload?.imageUrl ? (
-                  <img src={proj.payload.imageUrl} alt={proj.title} className="w-full h-full object-cover" />
+                {safeContentUrl(proj.payload?.imageUrl) ? (
+                  <img src={safeContentUrl(proj.payload?.imageUrl)!} alt={proj.title} className="w-full h-full object-cover" />
                 ) : (
                   <FileText className="w-8 h-8 text-muted-foreground/30" />
                 )}
@@ -90,15 +92,15 @@ export default function PortalProjects() {
                   <p className="text-sm text-muted-foreground mt-3 line-clamp-2">{proj.description}</p>
                 )}
                 <div className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
-                  Updated {formatDistanceToNow(new Date(proj.updatedAt), { addSuffix: true })}
+                  Updated {portalRelativeTime(proj.updatedAt) ?? "Unknown date"}
                 </div>
               </div>
               <div className="mt-4 pt-2">
-                {proj.payload?.url ? (
+                {safeContentUrl(proj.payload?.url) ? (
                   <Button asChild variant="outline" className="w-full rounded-none border-border">
-                    <a href={proj.payload.url} target="_blank" rel="noopener noreferrer">
+                    <DealerContentLink href={safeContentUrl(proj.payload?.url)!} target="_blank" rel="noopener noreferrer">
                       Open Project
-                    </a>
+                    </DealerContentLink>
                   </Button>
                 ) : (
                   <Button variant="outline" disabled className="w-full rounded-none border-border">

@@ -10,6 +10,7 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { payloadBudget } from "./security/payloadBudget";
 import { csrfGuard } from "./security/csrf";
 import { securityHeaders } from "./security/headers";
 import { configuredOrigins } from "./security/origin";
@@ -76,8 +77,9 @@ app.use(
   }),
 );
 app.use("/api", apiRateLimit);
-app.use(express.json({ limit: "1mb", strict: true }));
-app.use(express.urlencoded({ extended: false, limit: "32kb" }));
+app.use(express.json({ limit: "1mb", strict: true, inflate: false }));
+app.use(express.urlencoded({ extended: false, limit: "32kb", inflate: false }));
+app.use(payloadBudget);
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(

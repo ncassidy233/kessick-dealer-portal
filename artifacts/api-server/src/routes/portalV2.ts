@@ -1,3 +1,4 @@
+import { promotionSchema, activePromotion } from "@workspace/api-zod";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { createClerkClient } from "@clerk/backend";
 import {
@@ -37,8 +38,10 @@ import { isPortalTargetVisible, legacyPageCapabilityForContent, linkedResourceId
 import { logger } from "../lib/logger";
 import { approvedDealerAccountIds, isApprovedDealerAccount } from "../lib/portalDealerEligibility";
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
+import { dealerReadAccount, staffHasFullDealerAccess } from "../lib/staffDealerRead";
 import linkedFormsRouter from "./linkedForms";
-import { dealerProvisioningPlan } from "../lib/portalDealerProvisioning";
+import pageStudioRouter from "./pageStudio";
+import { DealerProvisioningConflict, provisionStaffAddedDealer } from "../lib/staffDealerProvisioning";
 import { portalInvitationRedirectUrl } from "../lib/portalInvitation";
 import { requestSourceOrigin } from "../security/origin";
 import {
@@ -79,7 +82,9 @@ async function getStaffRole(req: Request): Promise<StaffRole | null> {
   return profile.role;
 }
 async function requireApprovedDealer(req: Request, res: Response): Promise<boolean> {
-  if (!req.account || !await isApprovedDealerAccount(req.account.id)) {
+  if (await staffHasFullDealerAccess(req)) return true;
+  const account = dealerReadAccount(req);
+  if (!account || !await isApprovedDealerAccount(account.id)) {
     res.status(403).json({ error: "Approved dealer organization membership required." });
     return false;
   }
@@ -429,27 +434,24 @@ async function processPendingPushes(notification: typeof portalNotificationsV2Ta
   }
 }
 
-router.use(requireAccount, requireActiveAccount);
-router.use(async (req, _res, next) => {
-  await processDuePortalNotifications().catch((error) => req.log.warn({ err: error }, "Portal v2 scheduler cycle failed"));
-  next();
-});
+router.use("/portal-v2", pageStudioRouter);
 
 router.get("/portal-v2/bootstrap", async (req, res): Promise<void> => {
-  if (!req.account) { res.status(404).json({ error: "Portal account not found." }); return; }
-  const staffRole = await getStaffRole(req);
+  const account = dealerReadAccount(req);
+  if (!account) { res.status(404).json({ error: "Portal account not found." }); return; }
+  const staffRole = account.role === "staff" ? await getStaffRole(req) : null;
   const access = resolvePortalBootstrapAccess(
-    req.account,
+    account,
     staffRole,
-    req.account.role === "dealer"
-      ? await isApprovedDealerAccount(req.account.id)
+    account.role === "dealer"
+      ? await isApprovedDealerAccount(account.id)
       : false,
   );
   if (!access) { res.status(404).json({ error: "Portal account not found." }); return; }
   const [membership] = await db.select({ organization: dealerOrganizationsTable })
     .from(organizationMembershipsTable).innerJoin(dealerOrganizationsTable, eq(organizationMembershipsTable.organizationId, dealerOrganizationsTable.id))
-    .where(and(eq(organizationMembershipsTable.accountId, req.account.id), eq(organizationMembershipsTable.status, "approved"), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
-  res.json({ account: await userDto(req.account), role: access.role, authorized: access.authorized, organization: membership?.organization ?? null, groups: await groupsForAccount(req.account.id), capabilities: portalCapabilities[access.role], push: { configured: pushConfigured, message: pushConfiguration.error } });
+    .where(and(eq(organizationMembershipsTable.accountId, account.id), eq(organizationMembershipsTable.status, "approved"), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
+  res.json({ account: await userDto(account), role: access.role, authorized: access.authorized, organization: membership?.organization ?? null, groups: await groupsForAccount(account.id), capabilities: portalCapabilities[access.role], push: { configured: pushConfigured, message: pushConfiguration.error } });
 });
 router.post("/portal-v2/bootstrap", async (req, res): Promise<void> => {
   const body = z.object({ displayName: z.string().trim().min(1).max(200).optional() }).safeParse(req.body);
@@ -495,78 +497,57 @@ router.get("/portal-v2/admin/users", requireCapability("users:read"), async (req
 });
 
 router.post("/portal-v2/admin/users", requireCapability("users:write"), async (req, res): Promise<void> => {
-  const body = z.object({ email: z.string().email().max(320).transform((value) => value.toLowerCase()), displayName: z.string().trim().min(1).max(200).optional(), role: z.union([z.literal("dealer"), staffRoles]), status: accountStatus.optional(), organizationId: uuid.optional(), organizationName: z.string().trim().min(1).max(200).optional() }).safeParse(req.body);
+  const body = z.object({ email: z.string().trim().email().max(320).transform((value) => value.toLowerCase()), displayName: z.string().trim().min(1).max(200).optional(), role: z.union([z.literal("dealer"), staffRoles]), status: accountStatus.optional(), organizationId: uuid.optional(), organizationName: z.string().trim().min(1).max(200).optional() }).safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Invalid user." }); return; }
   const actorRole = staffRole(req);
   if (actorRole !== "super_admin" && body.data.role !== "dealer") { res.status(403).json({ error: "Only super admins may provision staff." }); return; }
-  const [existing] = await db.select({ id: accountsTable.id }).from(accountsTable).where(eq(accountsTable.email, body.data.email)).limit(1);
-  if (existing) { res.status(409).json({ error: "An account with that email already exists." }); return; }
   if (body.data.organizationId && body.data.role !== "dealer") { res.status(400).json({ error: "Only dealer accounts can join an organization." }); return; }
-  if (body.data.organizationId) {
-    const [organization] = await db.select({ id: dealerOrganizationsTable.id }).from(dealerOrganizationsTable)
-      .where(and(eq(dealerOrganizationsTable.id, body.data.organizationId), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
-    if (!organization) { res.status(404).json({ error: "Approved dealer organization not found." }); return; }
-  }
-  let invitation: Awaited<ReturnType<typeof clerk.invitations.createInvitation>>;
-  try {
-    invitation = await createPortalInvitation(
-      req,
-      body.data.email,
-      body.data.role === "dealer" ? "dealer" : "staff",
-    );
-  } catch (error) {
-    req.log.error({ err: error }, "Clerk invitation could not be created");
-    if ((error as { status?: number }).status === 403) {
-      res.status(403).json({ error: "Request origin could not be verified." });
-      return;
-    }
-    res.status(502).json({ error: "Account invitation could not be created. No account was provisioned." });
-    return;
-  }
+  if (body.data.status === "suspended") { res.status(400).json({ error: "Add approved access first. Suspension is a separate action." }); return; }
+  const origin = requestSourceOrigin(req);
+  if (!origin) { res.status(403).json({ error: "Request origin could not be verified." }); return; }
   let account: typeof accountsTable.$inferSelect;
+  let created = true;
   try {
-    [account] = await db.transaction(async (tx) => {
-      const plan = body.data.role === "dealer" ? dealerProvisioningPlan(body.data.status, body.data.organizationId) : null;
-      const initialStatus = plan?.status ?? (body.data.status ?? "approved");
-      const [created] = await tx.insert(accountsTable).values({
-        clerkUserId: body.data.role === "dealer" ? `invited:${body.data.email}` : `staff:${body.data.email}`,
-        email: body.data.email, displayName: body.data.displayName ?? null,
-        role: body.data.role === "dealer" ? "dealer" : "staff",
-        status: initialStatus,
-        emailVerified: false,
-      }).returning();
-      if (body.data.role !== "dealer") await tx.insert(portalStaffProfilesTable).values({ accountId: created.id, role: body.data.role, assignedByAccountId: req.account!.id });
-      if (body.data.role === "dealer") {
-        const organizationId = body.data.organizationId ?? (await tx.insert(dealerOrganizationsTable).values({
-          name: body.data.organizationName ?? body.data.displayName ?? `${body.data.email} Dealer Account`,
-          slug: `dealer-${created.id}`,
-          status: plan!.status,
-          createdByAccountId: created.id,
-          approvedByAccountId: plan!.status === "approved" ? req.account!.id : null,
-          approvedAt: plan!.status === "approved" ? new Date() : null,
-        }).returning())[0].id;
-        await tx.insert(organizationMembershipsTable).values({
-          organizationId,
-          accountId: created.id,
-          role: plan!.membershipRole,
-          status: plan!.membershipStatus,
-        });
-      }
-      return [created];
-    });
-  } catch (error) {
-    try {
-      await clerk.invitations.revokeInvitation(invitation.id);
-    } catch (revokeError) {
-      req.log.error({ err: revokeError }, "Orphaned Clerk invitation could not be revoked");
+    if (body.data.role === "dealer") {
+      ({ account, created } = await provisionStaffAddedDealer({ ...body.data, actorAccountId: req.account!.id }));
+    } else {
+      const [existing] = await db.select({ id: accountsTable.id }).from(accountsTable).where(eq(accountsTable.email, body.data.email)).limit(1);
+      if (existing) { res.status(409).json({ error: "An account with that email already exists." }); return; }
+      const role = body.data.role;
+      account = await db.transaction(async tx => {
+        const [staffAccount] = await tx.insert(accountsTable).values({
+          clerkUserId: `staff:${body.data.email}`, email: body.data.email,
+          displayName: body.data.displayName ?? null, role: "staff",
+          status: "approved", emailVerified: false,
+        }).returning();
+        await tx.insert(portalStaffProfilesTable).values({ accountId: staffAccount.id, role, assignedByAccountId: req.account!.id });
+        return staffAccount;
+      });
     }
+  } catch (error) {
+    if (error instanceof DealerProvisioningConflict) { res.status(409).json({ error: error.message }); return; }
     throw error;
   }
-  await audit(req, "portal_v2.user.provisioned", "account", account.id, { role: body.data.role });
-  res.status(201).json({
+  await audit(req, "portal_v2.user.provisioned", "account", account.id, { role: body.data.role, created });
+  const unclaimed = ["pending:", "invited:", "staff:"].some(prefix => account.clerkUserId.startsWith(prefix));
+  const fallbackUrl = portalInvitationRedirectUrl(origin, process.env.BASE_PATH ?? "/", account.role === "dealer" ? "dealer" : "staff", "sign-in");
+  let invitation: { status?: "pending"; deliveryStatus: "submitted" | "failed" | "not_required"; url: string } = {
+    deliveryStatus: "not_required", url: fallbackUrl,
+  };
+  if (unclaimed) {
+    try {
+      const sent = await createPortalInvitation(req, account.email, account.role === "dealer" ? "dealer" : "staff", true);
+      invitation = { status: "pending", deliveryStatus: "submitted", url: sent.url ?? fallbackUrl };
+    } catch (error) {
+      req.log.error({ err: error }, "Account saved; Clerk invitation could not be sent");
+      await audit(req, "portal_v2.invitation.failed", "account", account.id);
+      invitation = { deliveryStatus: "failed", url: fallbackUrl };
+    }
+  }
+  res.status(created ? 201 : 200).json({
     user: {
       ...await userDto(account),
-      invitation: { status: "pending", url: invitation.url },
+      invitation,
     },
   });
 });
@@ -795,6 +776,7 @@ router.get("/portal-v2/admin/content", requireCapability("content:read"), async 
 router.post("/portal-v2/admin/content", requireCapability("content:write"), async (req, res): Promise<void> => {
   const body = contentInput.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Invalid content." }); return; }
+  if (body.data.payload?.promotion !== undefined && (body.data.kind !== "announcement" || !promotionSchema.safeParse(body.data.payload.promotion).success)) { res.status(400).json({ error: "Discounts require valid dates, amount, collections and terms." }); return; }
   const targetError = validateContentTargets(body.data); if (targetError) { res.status(400).json({ error: targetError }); return; }
   try { await assertGroups(body.data.groupIds ?? []); await assertDealerAccounts(body.data.accountIds ?? []); } catch (error: any) { res.status(400).json({ error: error.message }); return; }
   const resourceId = linkedResourceId(body.data.kind, body.data.payload);
@@ -814,7 +796,7 @@ router.post("/portal-v2/admin/content", requireCapability("content:write"), asyn
     return row;
   });
   if (!content) { res.status(400).json({ error: "Linked resource not found." }); return; }
-  await audit(req, "portal_v2.content.created", "content", content.id, { kind: content.kind });
+  await audit(req, "portal_v2.content.created", "content", content.id, { kind: content.kind, ...(body.data.payload?.promotion ? { promotion: body.data.payload.promotion, published: content.published, visibility: content.visibility, groupIds: body.data.groupIds ?? [], accountIds: body.data.accountIds ?? [] } : {}) });
   res.status(201).json({ content: await contentDto(content) });
 });
 router.patch("/portal-v2/admin/content/:contentId", requireCapability("content:write"), async (req, res): Promise<void> => {
@@ -823,6 +805,7 @@ router.patch("/portal-v2/admin/content/:contentId", requireCapability("content:w
   const [existing] = await db.select().from(portalContentTable).where(eq(portalContentTable.id, id.data)).limit(1);
   if (!existing) { res.status(404).json({ error: "Content not found." }); return; }
   const merged = { ...existing, ...body.data, groupIds: body.data.groupIds ?? (await contentDto(existing)).targets.groupIds, accountIds: body.data.accountIds ?? (await contentDto(existing)).targets.accountIds };
+  if (merged.payload && typeof merged.payload === "object" && "promotion" in merged.payload && (merged.kind !== "announcement" || !promotionSchema.safeParse(merged.payload.promotion).success)) { res.status(400).json({ error: "Invalid discount configuration." }); return; }
   const targetError = validateContentTargets(merged); if (targetError) { res.status(400).json({ error: targetError }); return; }
   try { await assertGroups(merged.groupIds); await assertDealerAccounts(merged.accountIds); } catch (error: any) { res.status(400).json({ error: error.message }); return; }
   const previousResourceId = linkedResourceId(existing.kind, existing.payload);
@@ -850,7 +833,7 @@ router.patch("/portal-v2/admin/content/:contentId", requireCapability("content:w
     return row;
   });
   if (!content) { res.status(400).json({ error: "Linked resource not found." }); return; }
-  await audit(req, "portal_v2.content.updated", "content", content.id, { changed: Object.keys(body.data) });
+  await audit(req, "portal_v2.content.updated", "content", content.id, { changed: Object.keys(body.data), ...((existing.kind === "announcement" && (existing.payload as Record<string, unknown>)?.promotion) || body.data.payload?.promotion ? { before: existing.payload, after: content.payload, published: content.published, visibility: content.visibility, groupIds: merged.groupIds, accountIds: merged.accountIds } : {}) });
   res.json({ content: await contentDto(content) });
 });
 router.delete("/portal-v2/admin/content/:contentId", requireCapability("content:write"), async (req, res): Promise<void> => {
@@ -879,27 +862,32 @@ router.delete("/portal-v2/admin/content/:contentId", requireCapability("content:
 
 router.get("/portal-v2/content", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
+  const staffAccess = await staffHasFullDealerAccess(req);
+  const accountId = dealerReadAccount(req)!.id;
   const query = z.object({ kind: contentKinds.optional() }).safeParse(req.query); if (!query.success) { res.status(400).json({ error: "Invalid content filter." }); return; }
-  const groupIds = (await groupsForAccount(req.account!.id)).map((group) => group.id);
+  const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(eq(portalContentTable.published, true));
   const visible = await Promise.all(rows.filter((row) => !query.data.kind || row.kind === query.data.kind).map(async (row) => {
+    if (row.kind === "announcement" && row.payload && typeof row.payload === "object" && "promotion" in row.payload && !activePromotion(row.payload.promotion)) return null;
+    if (staffAccess) return row;
     const pageCapability = legacyPageCapabilityForContent(row.kind);
-    if (pageCapability && !await canViewLegacyPortalCapability(req.account!.id, groupIds, pageCapability)) return null;
+    if (pageCapability && !await canViewLegacyPortalCapability(accountId, groupIds, pageCapability)) return null;
     if (row.visibility === "everyone") return row;
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
-    return isPortalTargetVisible(row.visibility, targets, req.account!.id, groupIds) ? row : null;
+    return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));
   res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
 });
 router.get("/portal-v2/projects", async (req, res): Promise<void> => {
-  req.query.kind = "project"; // reuse the exact dealer visibility handler through a local redirect-free invocation is not possible.
   if (!await requireApprovedDealer(req, res)) return;
-  const groupIds = (await groupsForAccount(req.account!.id)).map((group) => group.id);
+  const staffAccess = await staffHasFullDealerAccess(req);
+  const accountId = dealerReadAccount(req)!.id;
+  const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(and(eq(portalContentTable.published, true), eq(portalContentTable.kind, "project")));
   const visible = await Promise.all(rows.map(async (row) => {
-    if (row.visibility === "everyone") return row;
+    if (staffAccess || row.visibility === "everyone") return row;
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
-    return isPortalTargetVisible(row.visibility, targets, req.account!.id, groupIds) ? row : null;
+    return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));
   res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
 });
@@ -969,11 +957,12 @@ router.get("/portal-v2/admin/notifications/:notificationId/history", requireCapa
 
 router.get("/portal-v2/notifications", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
+  const accountId = dealerReadAccount(req)!.id;
   const [preferences] = await db.select().from(portalNotificationPreferencesTable)
-    .where(eq(portalNotificationPreferencesTable.accountId, req.account!.id)).limit(1);
+    .where(eq(portalNotificationPreferencesTable.accountId, accountId)).limit(1);
   const rows = await db.select({ notification: portalNotificationsV2Table, recipient: portalNotificationRecipientsV2Table }).from(portalNotificationRecipientsV2Table)
     .innerJoin(portalNotificationsV2Table, eq(portalNotificationRecipientsV2Table.notificationId, portalNotificationsV2Table.id))
-    .where(and(eq(portalNotificationRecipientsV2Table.accountId, req.account!.id), eq(portalNotificationsV2Table.status, "sent"))).orderBy(desc(portalNotificationsV2Table.sentAt));
+    .where(and(eq(portalNotificationRecipientsV2Table.accountId, accountId), eq(portalNotificationsV2Table.status, "sent"))).orderBy(desc(portalNotificationsV2Table.sentAt));
   res.json({
     notifications: rows.filter(({ notification }) =>
       shouldListDealerNotification(
@@ -998,8 +987,9 @@ router.post("/portal-v2/notifications/:notificationId/read", async (req, res): P
 router.post("/portal-v2/notifications/:notificationId/acknowledge", async (req, res): Promise<void> => { await recipientAction(req, res, "acknowledgedAt"); });
 router.get("/portal-v2/notification-preferences", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
-  const [preferences] = await db.select().from(portalNotificationPreferencesTable).where(eq(portalNotificationPreferencesTable.accountId, req.account!.id)).limit(1);
-  res.json({ preferences: preferences ?? { accountId: req.account!.id, inAppEnabled: true, pushEnabled: true, priorityThreshold: "low" } });
+  const accountId = dealerReadAccount(req)!.id;
+  const [preferences] = await db.select().from(portalNotificationPreferencesTable).where(eq(portalNotificationPreferencesTable.accountId, accountId)).limit(1);
+  res.json({ preferences: preferences ?? { accountId, inAppEnabled: true, pushEnabled: true, priorityThreshold: "low" } });
 });
 router.put("/portal-v2/notification-preferences", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
@@ -1019,4 +1009,9 @@ export function startPortalV2Scheduler() {
   run();
 }
 
-export default router;
+// Preview reads reuse the handlers but must not run notification delivery.
+export const portalV2Handlers = router;
+export default Router().use(requireAccount, requireActiveAccount, async (req, _res, next) => {
+  await processDuePortalNotifications().catch((error) => req.log.warn({ err: error }, "Portal v2 scheduler cycle failed"));
+  next();
+}, router);

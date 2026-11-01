@@ -15,6 +15,8 @@ function requestWith(headers: Record<string, string>) {
 
 test("production security headers deny framing, sniffing, indexing, and excess permissions", () => {
   assert.equal(PRODUCTION_SECURITY_HEADERS["X-Frame-Options"], "DENY");
+  assert.equal(PRODUCTION_SECURITY_HEADERS["Cross-Origin-Opener-Policy"], "same-origin-allow-popups");
+  assert.equal(PRODUCTION_SECURITY_HEADERS["Cross-Origin-Resource-Policy"], "same-origin");
   assert.equal(PRODUCTION_SECURITY_HEADERS["X-Content-Type-Options"], "nosniff");
   assert.match(PRODUCTION_SECURITY_HEADERS["X-Robots-Tag"], /noindex/);
   assert.match(PRODUCTION_SECURITY_HEADERS["Permissions-Policy"], /camera=\(self\)/);

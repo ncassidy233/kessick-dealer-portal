@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import staffBoundary from "../middlewares/staffBoundary";
 import healthRouter from "./health";
 import catalogRouter from "./catalog";
 import accountsRouter from "./accounts";
@@ -8,15 +9,18 @@ import mcpRouter from "./mcp";
 import oauthRouter from "./oauth";
 import portalRouter from "./portal";
 import portalV2Router, { startPortalV2Scheduler } from "./portalV2";
+import dealerPreviewRouter from "./dealerPreview";
 
 const router: IRouter = Router();
 
+router.use(staffBoundary);
 router.use(healthRouter);
 router.use(catalogRouter);
 router.use(conciergeRouter);
 router.use(conciergeKnowledgeRouter);
 router.use(mcpRouter);
 router.use(oauthRouter);
+router.use("/staff/dealer-view", dealerPreviewRouter);
 router.use(accountsRouter);
 router.use(portalRouter);
 router.use(portalV2Router);

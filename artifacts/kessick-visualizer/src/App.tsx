@@ -14,15 +14,17 @@ import ProjectsPage from '@/pages/workspace/projects';
 import ProjectEditorPage from '@/pages/workspace/project-editor';
 import InvitationPage from '@/pages/invitation';
 import AccountPage from '@/pages/account';
-import { AppProvider } from '@/store';
+import { CanvasStateProvider } from '@/store';
 import { HomeInner } from '@/pages/home';
-import { AuthGuard } from '@/components/auth/auth-guard';
+import { ProjectsModal } from '@/components/projects-modal';
+import { AuthGuard, AccountDataGuard } from '@/components/auth/auth-guard';
 import { StaffGuard } from '@/components/auth/staff-guard';
 import { WorkspaceLayout } from '@/components/layouts/workspace-layout';
 import { ClerkProvider, useUser } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { resolveOAuthAuthorizationDestination } from "@/lib/oauth-navigation";
+import { StaffDealerViewContext } from "@/lib/staff-dealer-view-context";
 
 import DemoPresentationPage from '@/pages/demo/index';
 import { PortalLayout } from '@/components/layouts/portal-layout';
@@ -33,6 +35,8 @@ import PortalForms from '@/pages/portal/forms';
 import PortalResources from '@/pages/portal/resources';
 import PortalNotifications from '@/pages/portal/notifications';
 import PortalAccount from '@/pages/portal/account';
+import PageStudio from '@/pages/admin/page-studio';
+import { PublishedPortalPage } from '@/components/studio-page';
 import AdminUsers from '@/pages/admin/users';
 import AdminGroups from '@/pages/admin/groups';
 import AdminAccess from '@/pages/admin/access';
@@ -41,6 +45,7 @@ import AdminContent from '@/pages/admin/content';
 import AdminNotifications from '@/pages/admin/notifications';
 import AdminAudit from '@/pages/admin/audit';
 import AdminOverview from '@/pages/admin/overview';
+import DealerView from '@/pages/admin/dealer-view';
 import AdminPreviewPage from '@/pages/admin/preview';
 import AdminKnowledge from '@/pages/admin/knowledge';
 import AdminConciergeInsights from '@/pages/admin/concierge-insights';
@@ -204,13 +209,6 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <Switch>
-        {import.meta.env.DEV && (
-          <Route path="/__e2e/canvas">
-            <AppProvider persistLocal={false} persistImages={false}>
-              <HomeInner />
-            </AppProvider>
-          </Route>
-        )}
         <Route path="/" component={PublicLanding} />
         <Route path="/app" component={PublicLanding} />
         <Route path="/demo">
@@ -269,19 +267,19 @@ function Router() {
         <Route path="/portal">
           <AuthGuard>
             <PortalLayout>
-              <PortalDashboard />
+              <PublishedPortalPage pageKey="home"><PortalDashboard /></PublishedPortalPage>
             </PortalLayout>
           </AuthGuard>
         </Route>
 
         <Route path="/portal/projects">
-          <AuthGuard><PortalLayout><PortalProjects /></PortalLayout></AuthGuard>
+          <AuthGuard><PortalLayout><PublishedPortalPage pageKey="projects"><PortalProjects /></PublishedPortalPage></PortalLayout></AuthGuard>
         </Route>
         <Route path="/portal/collections">
-          <AuthGuard><PortalLayout><PortalCollections /></PortalLayout></AuthGuard>
+          <AuthGuard><PortalLayout><PublishedPortalPage pageKey="collections"><PortalCollections /></PublishedPortalPage></PortalLayout></AuthGuard>
         </Route>
         <Route path="/portal/training">
-          <AuthGuard><PortalLayout><PortalTraining /></PortalLayout></AuthGuard>
+          <AuthGuard><PortalLayout><PublishedPortalPage pageKey="training"><PortalTraining /></PublishedPortalPage></PortalLayout></AuthGuard>
         </Route>
         <Route path="/portal/pricing">
           <AuthGuard>
@@ -302,7 +300,7 @@ function Router() {
         <Route path="/portal/resources">
           <AuthGuard>
             <PortalLayout>
-              <PortalResources />
+              <PublishedPortalPage pageKey="resources"><PortalResources /></PublishedPortalPage>
             </PortalLayout>
           </AuthGuard>
         </Route>
@@ -325,7 +323,10 @@ function Router() {
 
         {/* Admin Routes */}
         <Route path="/admin/dealer-view">
-          <AuthGuard><StaffGuard><PortalLayout><DealerPortalPreview staffViewMode /></PortalLayout></StaffGuard></AuthGuard>
+          <AuthGuard><StaffGuard><DealerView /></StaffGuard></AuthGuard>
+        </Route>
+        <Route path="/admin/dealer-view/:dealerId/*">
+          {params => <AuthGuard><StaffGuard><DealerView dealerId={params.dealerId} /></StaffGuard></AuthGuard>}
         </Route>
         <Route path="/admin">
           <AuthGuard><StaffGuard><PortalLayout><AdminOverview /></PortalLayout></StaffGuard></AuthGuard>
@@ -370,6 +371,9 @@ function Router() {
           </AuthGuard>
         </Route>
 
+        <Route path="/admin/page-studio">
+          <AuthGuard><StaffGuard><PortalLayout><PageStudio /></PortalLayout></StaffGuard></AuthGuard>
+        </Route>
         <Route path="/admin/content">
           <AuthGuard>
             <StaffGuard>
@@ -424,13 +428,56 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function LocalCanvas() {
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [testClient] = useState(() => new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  }));
+  return (
+    <QueryClientProvider client={testClient}>
+      <CanvasStateProvider userName="Local canvas">
+        <HomeInner onExitProject={() => setProjectsOpen(true)} />
+        <ProjectsModal open={projectsOpen} onOpenChange={setProjectsOpen} />
+      </CanvasStateProvider>
+    </QueryClientProvider>
+  );
+}
+
 function AppRoutes() {
+  const [location] = useLocation();
+  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1") {
+    if (location === "/portal/preview") return <DealerPortalPreview />;
+    if (location === "/__e2e/dealer-preview-context") {
+      return <StaffDealerViewContext.Provider value={{ selectedDealerAccountId: new URLSearchParams(window.location.search).get("selectedDealerAccountId") ?? "", readOnly: true }}>
+        <DealerPortalPreview />
+      </StaffDealerViewContext.Provider>;
+    }
+  }
+  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/") || location === "/portal" || location.startsWith("/portal/"))) {
+    return <LocalDealerView location={location} />;
+  }
+  if (import.meta.env.DEV && location === "/__e2e/canvas") {
+    return <LocalCanvas />;
+  }
   if (!clerkPubKey) return <AuthConfigurationError />;
   return (
     <ClerkProviderWithRouter>
       <Router />
     </ClerkProviderWithRouter>
   );
+}
+
+function LocalDealerView({ location }: { location: string }) {
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
+  const dealerId = /^\/admin\/dealer-view\/([^/]+)\//.exec(location)?.[1];
+  const dealerPages = { "/portal": PortalDashboard, "/portal/projects": PortalProjects, "/portal/collections": PortalCollections, "/portal/training": PortalTraining, "/portal/pricing": PortalPricing, "/portal/resources": PortalResources, "/portal/forms": PortalForms, "/portal/notifications": PortalNotifications, "/portal/account": PortalAccount };
+  const adminPages = { "/admin": AdminOverview, "/admin/page-studio": PageStudio, "/admin/content": AdminContent, "/admin/users": AdminUsers, "/admin/groups": AdminGroups, "/admin/pricing": AdminPricing, "/admin/notifications": AdminNotifications, "/admin/access": AdminAccess, "/admin/audit": AdminAudit };
+  const DealerPage = dealerPages[location as keyof typeof dealerPages];
+  const AdminPage = adminPages[location as keyof typeof adminPages] ?? NotFound;
+  return <QueryClientProvider client={client}>{DealerPage
+    ? <AccountDataGuard><PortalLayout signOutControl={null}><DealerPage /></PortalLayout></AccountDataGuard>
+    : <AccountDataGuard><StaffGuard>{location.startsWith("/admin/dealer-view") ? <DealerView dealerId={dealerId} /> : <PortalLayout signOutControl={null}><AdminPage /></PortalLayout>}</StaffGuard></AccountDataGuard>}
+  </QueryClientProvider>;
 }
 
 function App() {
