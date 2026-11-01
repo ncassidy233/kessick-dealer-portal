@@ -7,6 +7,7 @@ const capabilities = ["admin:overview", "dealer-view:read", "users:read", "conte
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/**", async route => {
     const url = new URL(route.request().url());
+    if (url.pathname === "/api/account") return route.fulfill({ json: { account: { id: "staff", role: "staff", status: "approved", email: "staff@example.invalid", emailVerified: true }, organization: null, membership: null } });
     if (url.pathname === "/api/portal-v2/bootstrap") return route.fulfill({ json: { role: "staff_admin", authorized: true, capabilities, groups: [], account: { id: "staff", displayName: "Staff member", status: "approved" } } });
     if (url.pathname === "/api/portal-v2/admin/overview") return route.fulfill({ json: { counts: { dealers: 2, approvedDealers: 2, staff: 1, groups: 0, content: 0, notifications: 0, unreadAcknowledgements: 0 }, recentAudit: [] } });
     if (url.pathname === "/api/staff/dealer-view") return route.fulfill({ json: { dealers: [{ id: dealerA, displayName: "Dealer A" }, { id: dealerB, displayName: "Dealer B" }] } });
@@ -97,7 +98,8 @@ test("all inline pages use selected-account GETs and disable mutation and push i
     if (!path.startsWith("/api/")) return;
     reads.push(path);
     if (request.method() !== "GET") writes.push(path);
-    if (!path.startsWith("/api/staff/dealer-view") && path !== "/api/portal-v2/bootstrap") unexpected.push(path);
+    // The real staff actor is verified separately; dealer data stays in selected-account endpoints.
+    if (!path.startsWith("/api/staff/dealer-view") && path !== "/api/portal-v2/bootstrap" && path !== "/api/account") unexpected.push(path);
   });
   await page.goto(`/admin/dealer-view/${dealerA}/portal/resources`);
   await expect(page.getByText("Legacy Dealer A resource", { exact: true })).toBeVisible();
