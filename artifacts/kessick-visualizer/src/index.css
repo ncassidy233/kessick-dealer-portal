@@ -432,3 +432,9 @@
     padding-right: var(--gutter);
   }
 }
+
+/* Page Studio grids respond to their preview/dealer container, including scaled frames. */
+.studio-content-grid { grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 700px) {
+  .studio-content-grid { grid-template-columns: repeat(var(--studio-grid-columns, 3), minmax(0, 1fr)); }
+}
