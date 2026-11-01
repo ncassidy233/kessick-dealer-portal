@@ -1,5 +1,6 @@
+import { activePromotion } from "@workspace/api-zod";
 import { usePublishedLayout } from "@/components/studio-page";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ArrowRight,
   Bell,
@@ -51,7 +52,10 @@ export default function PortalDashboard() {
 
   const notifications = notificationsData?.notifications ?? [];
   const unreadNotifications = notifications.filter((item) => !item.readAt);
+  const [offerClock, setOfferClock] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setOfferClock(Date.now()), 30000); return () => clearInterval(timer); }, []);
   const announcements = announcementsData?.content ?? [];
+  const promotions = announcements.flatMap(item => { const offer = activePromotion((item.payload as Record<string, unknown> | null)?.promotion, new Date(offerClock)); return offer ? [{ item, offer }] : []; });
   const projects = projectsData?.content ?? [];
   const productSeries = seriesData?.content ?? [];
   const resources = resourcesData?.content ?? [];
@@ -63,7 +67,7 @@ export default function PortalDashboard() {
     description?: string | null;
   }[];
   const featuredAnnouncement =
-    announcements.find((item) => item.payload?.featuredOnDashboard === true) ?? announcements[0];
+    announcements.find((item) => item.payload?.featuredOnDashboard === true && !(item.payload as Record<string, unknown>)?.promotion) ?? announcements.find(item => !(item.payload as Record<string, unknown>)?.promotion);
   const featuredAnnouncementUrl = safeContentUrl(featuredAnnouncement?.payload?.url);
   const featuredSeries = productSeries.find(
     (item) => item.payload?.featuredOnDashboard === true || item.payload?.comingSoon === true,
@@ -146,7 +150,7 @@ export default function PortalDashboard() {
 
   return (
     <div className="dealer-dashboard min-h-full bg-[#10100f] pb-5 text-[#f4f0e8]">
-      {!customHero && <section className="dealer-hero relative isolate min-h-[330px] overflow-hidden sm:min-h-[390px]">
+      {!customHero && <section className="dealer-hero relative isolate min-h-[220px] overflow-hidden sm:min-h-[270px]">
         <img
           src="/kessick-headquarters-hero.webp"
           alt="Kessick Wine Cellars headquarters"
@@ -212,6 +216,7 @@ export default function PortalDashboard() {
           )}
         </section>
 
+        <img src={roomImage} alt="Kessick wine cellar installation" className="h-48 w-full rounded-2xl object-cover sm:h-64" />
         <section aria-labelledby="toolkit-heading">
           <div className="mb-5 flex items-end justify-between gap-3">
             <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#B39862]">At your service</p><h2 id="toolkit-heading" className="mt-1 text-xl font-medium sm:text-2xl">Your Dealer Toolkit</h2></div>
@@ -225,6 +230,7 @@ export default function PortalDashboard() {
           </div>
         </section>
 
+        {promotions.map(({ item, offer }) => <section key={item.id} aria-label="Dealer discount" className="rounded-2xl border border-[#8ea8bf] bg-[#b9cede] p-5 text-[#182c3c]"><p className="text-xs font-semibold uppercase tracking-widest">Dealer offer</p><h2 className="mt-2 text-2xl font-semibold">{offer.percentOff}% off · {item.title}</h2><p className="mt-2 text-sm">{offer.collections.join(", ")}{offer.maximumSavings ? ` · Maximum savings $${offer.maximumSavings.toLocaleString()}` : ""}{offer.minimumOrder > 0 ? ` · Minimum order $${offer.minimumOrder.toLocaleString()}` : ""}</p><p className="mt-2 text-xs">Ends {new Date(offer.endsAt).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" })} Eastern · {offer.combinable ? "May combine with other offers" : "Cannot combine with other offers"}</p><details className="mt-3 text-sm"><summary className="min-h-11 cursor-pointer">Offer terms & eligibility</summary><p className="whitespace-pre-line">{offer.terms}</p></details><Link href={`/portal/forms?offer=${encodeURIComponent(item.id)}`} className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-[#182c3c] px-4 text-sm font-semibold text-white">Request an eligible quote</Link><p className="mt-3 text-xs">Kessick confirms eligibility and savings in your quote.</p></section>)}
         {featuredAnnouncement && (
           <section aria-label="Dealer announcement" className="relative isolate overflow-hidden rounded-2xl border border-[#d1b35f]/40 bg-[#d1b35f] text-[#191711]">
             <img
