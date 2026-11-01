@@ -70,3 +70,20 @@ test("staff can find the editor on every screen and switch into the full dealer 
   }
   expect(errors).toEqual([]);
 });
+
+test("sales staff have dealer access while navigation respects knowledge permissions", async ({ page }, testInfo) => {
+  await page.route("**/api/portal-v2/bootstrap", route => route.fulfill({ json: { role: "sales_rep", authorized: true, capabilities: ["content:read", "users:read", "groups:read", "notifications:read"], account: { id: accountId, status: "approved", email: "sales@example.invalid", displayName: "Sales Staff" }, groups: [] } }));
+  await page.route("**/api/portal-v2/admin/pages/home/draft", route => route.fulfill({ json: { draft: { document: { schemaVersion: 1, title: "Dealer home", sections: [{ id: resourceId, type: "text", heading: "Published welcome", body: "Dealer resources", background: "light", spacing: "comfortable" }] }, revision: 1, updatedAt: new Date().toISOString(), updatedByAccountId: accountId } } }));
+  await page.goto("/admin/page-studio");
+  await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Concierge knowledge", exact: true })).toHaveCount(0);
+  if (testInfo.project.name === "phone") {
+    await page.getByRole("button", { name: "All staff tools", exact: true }).click();
+    await expect(page.getByRole("navigation", { name: "All portal tools", exact: true }).getByRole("link", { name: "Concierge knowledge", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+  }
+  await page.getByRole("navigation", { name: "Portal switch", exact: true }).filter({ visible: true }).getByRole("link", { name: "Dealer View", exact: true }).click();
+  await expect(page).toHaveURL(/\/portal$/);
+  await expect(page.getByRole("heading", { name: "Your Kessick project desk.", exact: true })).toBeVisible();
+});
