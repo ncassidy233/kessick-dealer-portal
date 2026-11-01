@@ -17,7 +17,7 @@ import AccountPage from '@/pages/account';
 import { CanvasStateProvider } from '@/store';
 import { HomeInner } from '@/pages/home';
 import { ProjectsModal } from '@/components/projects-modal';
-import { AuthGuard } from '@/components/auth/auth-guard';
+import { AuthGuard, AccountDataGuard } from '@/components/auth/auth-guard';
 import { StaffGuard } from '@/components/auth/staff-guard';
 import { WorkspaceLayout } from '@/components/layouts/workspace-layout';
 import { ClerkProvider, useUser } from "@clerk/react";
@@ -453,7 +453,7 @@ function AppRoutes() {
       </StaffDealerViewContext.Provider>;
     }
   }
-  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/dealer-view") || location === "/admin/page-studio")) {
+  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/") || location === "/portal" || location.startsWith("/portal/"))) {
     return <LocalDealerView location={location} />;
   }
   if (import.meta.env.DEV && location === "/__e2e/canvas") {
@@ -470,9 +470,14 @@ function AppRoutes() {
 function LocalDealerView({ location }: { location: string }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
   const dealerId = /^\/admin\/dealer-view\/([^/]+)\//.exec(location)?.[1];
-  return <QueryClientProvider client={client}><StaffGuard>
-    {location === "/admin/page-studio" ? <PageStudio /> : location === "/admin" ? <PortalLayout signOutControl={null}><h1 className="p-6">Administration</h1></PortalLayout> : <DealerView dealerId={dealerId} />}
-  </StaffGuard></QueryClientProvider>;
+  const dealerPages = { "/portal": PortalDashboard, "/portal/projects": PortalProjects, "/portal/collections": PortalCollections, "/portal/training": PortalTraining, "/portal/pricing": PortalPricing, "/portal/resources": PortalResources, "/portal/forms": PortalForms, "/portal/notifications": PortalNotifications, "/portal/account": PortalAccount };
+  const adminPages = { "/admin": AdminOverview, "/admin/page-studio": PageStudio, "/admin/content": AdminContent, "/admin/users": AdminUsers, "/admin/groups": AdminGroups, "/admin/pricing": AdminPricing, "/admin/notifications": AdminNotifications, "/admin/access": AdminAccess, "/admin/audit": AdminAudit };
+  const DealerPage = dealerPages[location as keyof typeof dealerPages];
+  const AdminPage = adminPages[location as keyof typeof adminPages] ?? NotFound;
+  return <QueryClientProvider client={client}>{DealerPage
+    ? <AccountDataGuard><PortalLayout signOutControl={null}><DealerPage /></PortalLayout></AccountDataGuard>
+    : <StaffGuard>{location.startsWith("/admin/dealer-view") ? <DealerView dealerId={dealerId} /> : <PortalLayout signOutControl={null}><AdminPage /></PortalLayout>}</StaffGuard>}
+  </QueryClientProvider>;
 }
 
 function App() {

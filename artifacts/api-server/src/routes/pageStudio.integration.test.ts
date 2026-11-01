@@ -220,6 +220,10 @@ test(
             (await request("/pages/resources", dealer.id)).status,
             403,
           );
+          for (const actor of [staff, sales, admin]) {
+            assert.equal((await request("/pages/resources", actor.id)).status, 200);
+            assert.equal((await request("/pages/home", actor.id)).status, 200);
+          }
           const publishBody = {
             expectedDraftRevision: 3,
             expectedPublishedRevision: 1,

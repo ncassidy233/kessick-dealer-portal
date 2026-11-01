@@ -30,9 +30,9 @@ import {
 } from "@/lib/page-studio";
 
 const button =
-  "inline-flex min-h-11 items-center justify-center border border-[#171715]/20 px-3 py-2 text-sm font-medium enabled:hover:bg-[#B39862]/15 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-[#171715]/20 px-3 py-2 text-sm font-medium enabled:hover:bg-[#B39862]/15 disabled:cursor-not-allowed disabled:opacity-40";
 const input =
-  "min-h-11 w-full min-w-0 border border-[#171715]/20 bg-white px-3 py-2 text-sm text-[#171715]";
+  "min-h-11 w-full min-w-0 rounded-lg border border-[#171715]/20 bg-white px-3 py-2 text-sm text-[#171715]";
 const errors = (error: unknown) =>
   error instanceof Error ? error.message : "Unable to complete this action.";
 
@@ -137,7 +137,9 @@ function Editor({
   const [status, setStatus] = useState(
     initial ? "Saved draft" : "Template — save to create a draft",
   );
-  const [device, setDevice] = useState<keyof typeof studioSizes>("Desktop");
+  const [device, setDevice] = useState<keyof typeof studioSizes>(() =>
+    window.innerWidth < 640 ? "Mobile" : window.innerWidth < 1100 ? "Tablet" : "Desktop",
+  );
   const [rotated, rotate] = useState(false);
   const [preview, setPreview] = useState(false);
   const [panel, setPanel] = useState<"layers" | "canvas" | "settings">(
@@ -310,9 +312,9 @@ function Editor({
   const dimensions = studioSizes[device];
   return (
     <div
-      className={`bg-[#f3f0e8] text-[#171715] ${fullscreen ? "fixed inset-0 z-[80] overflow-auto" : "min-h-full"}`}
+      className={`bg-white text-[#171715] ${fullscreen ? "fixed inset-0 z-[80] overflow-auto" : "min-h-full"}`}
     >
-      <header className="sticky top-0 z-30 border-b border-black/15 bg-[#f3f0e8] p-4">
+      <header className={`sticky z-30 border-b border-black/10 bg-white p-4 ${fullscreen ? "top-0" : "top-[76px]"}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[.22em] text-[#806731]">
@@ -323,7 +325,7 @@ function Editor({
               {status} · Live version {history.data?.publishedRevision ?? "…"}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
             <button
               className={button}
               disabled={!canEdit || saving || !dirty || !validation.success}
@@ -617,7 +619,7 @@ function Editor({
           </aside>
         )}
         <main
-          className={`${preview || panel === "canvas" ? "block" : "hidden"} xl:block min-w-0 space-y-4 bg-[#dcd9d1] p-3 md:p-5`}
+          className={`${preview || panel === "canvas" ? "block" : "hidden"} xl:block min-w-0 space-y-4 bg-[#f0f1f2] p-3 md:p-5`}
         >
           <p className="text-xs">
             Draft changes are private until Publish. Existing dealer tools

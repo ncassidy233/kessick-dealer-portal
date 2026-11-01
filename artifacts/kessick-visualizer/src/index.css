@@ -127,6 +127,7 @@
 }
 
 .staff-portal {
+  --radius: 0.5rem;
   --background: 0 0% 100%;
   --foreground: 0 0% 7%;
   --card: 0 0% 100%;

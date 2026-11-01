@@ -3,9 +3,9 @@ import type { PortalSession } from "./portal-session";
 type DealerSession = Pick<PortalSession, "role" | "authorized" | "account">;
 
 export function canAccessDealerPortal(session: DealerSession | null | undefined): boolean {
-  return session?.role === "dealer"
+  return Boolean(session && session.role !== "customer"
     && session.authorized === true
-    && session.account?.status === "approved";
+    && session.account?.status === "approved");
 }
 
 export function dealerAccessState(query: {

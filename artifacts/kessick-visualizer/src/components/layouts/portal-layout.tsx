@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { PortalLink as Link } from "@/components/portal-link";
 import { BrandLogo } from "@/components/brand-logo";
@@ -7,53 +7,33 @@ import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
 import { dealerAccessState } from "@/lib/dealer-access";
 import { useGetDealerPortalAccess } from "@/hooks/use-dealer-api";
 import { usePortalNotifications } from "@/hooks/use-portal-v2";
-import { 
-  LogOut, 
-  User, 
-  Home, 
-  DollarSign, 
-  FileText, 
-  FolderOpen, 
-  Bell,
-  Users,
-  Shield,
-  MessageSquare,
-  Briefcase,
-  Layers,
-  GraduationCap,
-  BookOpen,
-  BarChart3,
-  ArrowLeftRight,
-  Headphones,
+import {
+  LogOut, User, Home, DollarSign, FileText, FolderOpen, Bell, Users,
+  Shield, MessageSquare, Briefcase, Layers, GraduationCap, BookOpen,
+  BarChart3, Headphones, Menu, Paintbrush, ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useClerk } from "@clerk/react";
-import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+
+type NavLink = { href: string; label: string; icon: typeof Home; exact?: boolean; badge?: number };
 
 export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: { children: ReactNode; signOutControl?: ReactNode }) {
   const [routeLocation] = useLocation();
-  const previewDealerId = useStaffDealerView();
-  const location = previewDealerId ? routeLocation.replace(`/admin/dealer-view/${previewDealerId.selectedDealerAccountId}`, "") : routeLocation;
+  const selectedDealer = useStaffDealerView();
+  const location = selectedDealer ? routeLocation.replace(`/admin/dealer-view/${selectedDealer.selectedDealerAccountId}`, "") : routeLocation;
   const sessionQuery = usePortalSession();
   const session = sessionQuery.data;
-  const { data: notificationsData } = usePortalNotifications();
-  
-  const role = session?.role;
-  const isStaff = role && role !== 'dealer' && role !== 'customer';
-  const canPreview = isStaff && session?.authorized && session.capabilities.includes("dealer-view:read");
-  const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
+  const { data: notices } = usePortalNotifications();
   const { data: access } = useGetDealerPortalAccess();
-  
-  const unreadCount = notificationsData?.notifications?.filter(n => !n.readAt).length || 0;
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => setMenuOpen(false), [routeLocation]);
 
-  type NavLink = {
-    href: string;
-    label: string;
-    icon: typeof Home;
-    exact?: boolean;
-    badge?: number;
-  };
-
+  const isStaff = Boolean(session?.authorized && session.role !== "dealer" && session.role !== "customer");
+  const staffWorkspace = isStaff && !location.startsWith("/portal");
+  const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
+  const canDesign = isStaff && session?.capabilities.includes("content:read");
+  const unreadCount = notices?.notifications.filter(n => !n.readAt).length || 0;
   const dealerLinks: NavLink[] = [
     { href: "/portal", label: "Dashboard", icon: Home, exact: true },
     { href: "/portal/projects", label: "Projects", icon: Briefcase },
@@ -61,175 +41,77 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
     { href: "/portal/training", label: "Training", icon: GraduationCap },
     { href: "/portal/pricing", label: "Pricing", icon: DollarSign },
     { href: "/portal/resources", label: "Resources", icon: FolderOpen },
-    { href: "/portal/forms", label: "Forms", icon: FileText },
-    { href: "/portal/notifications", label: "Notices", icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
+    { href: "/portal/forms", label: "Forms & support", icon: FileText },
+    { href: "/portal/notifications", label: "Notices", icon: Bell, badge: unreadCount || undefined },
     { href: "/portal/account", label: "Account", icon: User },
   ];
-
-  const visibleDealerLinks = dealerLinks.filter((link) => {
+  const visibleDealerLinks = dealerLinks.filter(link => {
     if (!dealerAuthorized) return link.href === "/portal/account";
-    if (link.href === "/portal" || link.href === "/portal/account") return true;
-    const pageKey = `page:${link.href.split("/").pop()}`;
-    if ((access?.capabilities as Record<string, boolean> | undefined)?.[pageKey] === false) return false;
-    return true;
+    if (isStaff || link.href === "/portal" || link.href === "/portal/account") return true;
+    return (access?.capabilities as Record<string, boolean> | undefined)?.[`page:${link.href.split("/").pop()}`] !== false;
   });
-  const mobileDealerLinks: NavLink[] = [
-    { href: "/portal", label: "Home", icon: Home, exact: true },
-    { href: "/portal/account", label: "Account", icon: User },
-    { href: "/portal/notifications", label: "Notices", icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
-    { href: "/portal/forms", label: "Support", icon: Headphones },
+  const adminLinks: (NavLink & { capability?: string; adminOnly?: boolean })[] = [
+    { href: "/admin", label: "Overview", icon: Home, exact: true, capability: "admin:overview" },
+    { href: "/admin/page-studio", label: "Layout & Theme", icon: Paintbrush, capability: "content:read" },
+    { href: "/admin/users", label: "Accounts", icon: Users, capability: "users:read" },
+    { href: "/admin/groups", label: "Dealer groups", icon: Layers, capability: "groups:read" },
+    { href: "/admin/content", label: "Content & resources", icon: FolderOpen, capability: "content:read" },
+    { href: "/admin/pricing", label: "Pricing", icon: DollarSign, capability: "pricing:read" },
+    { href: "/admin/notifications", label: "Notifications", icon: MessageSquare, capability: "notifications:read" },
+    { href: "/admin/access", label: "Access rules", icon: Shield, adminOnly: true },
+    { href: "/admin/knowledge", label: "Concierge knowledge", icon: BookOpen, capability: "content:read" },
+    { href: "/admin/concierge-insights", label: "Concierge insights", icon: BarChart3, adminOnly: true },
+    { href: "/admin/audit", label: "Activity log", icon: Shield, adminOnly: true },
   ];
-  const visibleMobileDealerLinks = mobileDealerLinks.filter((link) =>
-    visibleDealerLinks.some((visible) => visible.href === link.href),
-  );
+  const fullAdmin = ["super_admin", "staff_admin"].includes(session?.role ?? "");
+  const visibleAdminLinks = adminLinks.filter(link => isStaff && (fullAdmin || (!link.adminOnly && Boolean(link.capability && session?.capabilities.includes(link.capability)))));
+  const links = staffWorkspace ? visibleAdminLinks : visibleDealerLinks;
+  const current = links.find(link => link.exact ? location === link.href : location.startsWith(link.href));
+  const mobileStaffLinks = visibleAdminLinks.filter(link => ["/admin", "/admin/page-studio", "/admin/users", "/admin/notifications"].includes(link.href));
+  const mobileDealerLinks = visibleDealerLinks.filter(link => ["/portal", "/portal/account", "/portal/notifications", "/portal/forms"].includes(link.href));
 
-  const adminLinks: NavLink[] = [
-    { href: "/admin", label: "Overview", icon: Home, exact: true },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/groups", label: "Groups", icon: Users },
-    { href: "/admin/access", label: "Access Rules", icon: Shield },
-    { href: "/admin/pricing", label: "Pricing", icon: DollarSign },
-    { href: "/admin/page-studio", label: "Page Studio", icon: FileText },
-    { href: "/admin/content", label: "Content", icon: FileText },
-    { href: "/admin/notifications", label: "Notifications", icon: MessageSquare },
-    { href: "/admin/knowledge", label: "Concierge Knowledge", icon: BookOpen },
-    { href: "/admin/concierge-insights", label: "Concierge Insights", icon: BarChart3 },
-    { href: "/admin/audit", label: "Audit Log", icon: Shield },
-  ];
+  function NavItem({ link, compact = false }: { link: NavLink; compact?: boolean }) {
+    const active = link.exact ? location === link.href : location.startsWith(link.href);
+    return <Link href={link.href} aria-current={active ? "page" : undefined}
+      className={compact
+        ? `relative flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold ${active ? "text-primary" : "text-muted-foreground"}`
+        : `flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-[#171715] text-white shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+      <link.icon className={compact ? "h-5 w-5 shrink-0" : `h-[18px] w-[18px] shrink-0 ${active ? "text-[#c9ad72]" : ""}`} />
+      <span className="truncate">{compact && link.href === "/admin/page-studio" ? "Editor" : compact && link.href === "/portal/forms" ? "Support" : link.label}</span>
+      {Boolean(link.badge) && <span className={compact ? "absolute right-3 top-1 h-2 w-2 rounded-full bg-[#b39862]" : "ml-auto rounded-full bg-[#b39862]/15 px-2 py-0.5 text-[10px]"}>{compact ? null : link.badge}</span>}
+    </Link>;
+  }
+  const switcher = isStaff && <nav aria-label="Portal switch" className="inline-flex shrink-0 items-center rounded-full border border-current/15 p-1 text-xs font-semibold">
+    <Link href="/admin" aria-current={staffWorkspace ? "page" : undefined} className={`inline-flex min-h-9 items-center rounded-full px-3 ${staffWorkspace ? "bg-[#171715] text-white" : "text-current/70"}`}>Staff View</Link>
+    <Link href="/portal" aria-current={!staffWorkspace ? "page" : undefined} className={`inline-flex min-h-9 items-center rounded-full px-3 ${!staffWorkspace ? "bg-[#b39862] text-[#121210]" : "text-[#5e5e59]"}`}>Dealer View</Link>
+  </nav>;
 
-  const visibleAdminLinks = adminLinks.filter(link => {
-    if (!session) return false;
-    if (link.href === "/admin/knowledge") return ["super_admin", "staff_admin", "content_manager"].includes(session.role);
-    if (link.href === "/admin/concierge-insights") return ["super_admin", "staff_admin"].includes(session.role);
-    if (["super_admin", "staff_admin"].includes(session.role)) return true;
-    
-    const required = link.href === "/admin" ? "admin:overview"
-      : link.href === "/admin/users" ? "users:read"
-      : link.href === "/admin/groups" ? "groups:read"
-      : link.href === "/admin/page-studio" ? "content:read"
-      : link.href === "/admin/content" ? "content:read"
-      : link.href === "/admin/notifications" ? "notifications:read"
-      : null;
-      
-    if (required && session.capabilities?.includes(required)) return true;
-    return false;
-  });
-
-  return (
-    <div className={`min-h-[100dvh] flex flex-col md:flex-row dealer-portal ${isStaff ? "staff-portal bg-white text-[#121210]" : "bg-background text-foreground"} selection:bg-sidebar-primary/30 selection:text-sidebar-primary`}>
-      {/* Mobile Header */}
-      <header className="md:hidden h-14 border-b border-border flex items-center justify-between px-4 bg-background/70 sticky top-0 z-50 shrink-0 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <BrandLogo tone="dark" className="h-4 w-auto" />
-          <Badge variant="outline" className="text-[9px] uppercase tracking-widest bg-transparent border-border rounded-none px-1.5 py-0.5 text-muted-foreground">
-            {isStaff ? 'Admin' : 'Portal'}
-          </Badge>
-        </div>
-        {canPreview && <Link href="/admin/dealer-view" className="inline-flex min-h-11 items-center gap-2 bg-[#121210] px-3 text-xs font-semibold text-white"><ArrowLeftRight className="h-4 w-4" /> Switch to Dealer View</Link>}
-      </header>
-
-      {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex w-64 flex-col border-r border-border ${isStaff ? "bg-white" : "bg-card"} shrink-0 sticky top-0 h-[100dvh] overflow-y-auto no-scrollbar`}>
-        <div className="p-6">
-          <BrandLogo tone="dark" className="h-5 w-auto" />
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-3">
-            {isStaff ? 'Staff Admin' : 'Dealer Portal'}
-          </p>
-        </div>
-
-        <div className="flex-1 px-4 py-2 space-y-8">
-          {!isStaff && (
-            <nav className="space-y-1">
-              {visibleDealerLinks.map((link) => {
-                const isActive = link.exact ? location === link.href : location.startsWith(link.href);
-                return (
-                  <Link 
-                    key={link.href} 
-                    href={link.href}
-                    className={`flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-foreground text-background' : 'text-foreground/70 hover:bg-muted'} rounded-none`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <link.icon className={`h-4 w-4 ${isActive ? 'text-sidebar-primary' : 'text-muted-foreground'}`} />
-                      {link.label}
-                    </div>
-                    {link.badge !== undefined && link.badge > 0 && (
-                      <Badge variant="default" className="h-5 min-w-[20px] rounded-none px-1 text-[10px] bg-sidebar-primary text-primary-foreground flex items-center justify-center">
-                        {link.badge}
-                      </Badge>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
-
-          {isStaff && (
-            <nav className="space-y-1">
-              <h4 className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Management</h4>
-              {visibleAdminLinks.map((link) => {
-                const isActive = link.exact ? location === link.href : location.startsWith(link.href);
-                return (
-                  <Link 
-                    key={link.href} 
-                    href={link.href}
-                    className={`flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-sidebar-primary/10 text-sidebar-primary border-l-2 border-sidebar-primary' : 'text-foreground/70 hover:bg-muted border-l-2 border-transparent'} rounded-none`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <link.icon className={`h-4 w-4 ${isActive ? 'text-sidebar-primary' : 'text-muted-foreground'}`} />
-                      {link.label}
-                    </div>
-                  </Link>
-                );
-              })}
-              {canPreview && <Link href="/admin/dealer-view" className="mt-4 flex items-center gap-3 border border-[#121210]/15 px-3 py-2.5 text-sm font-semibold text-[#121210] transition-colors hover:bg-[#B39862]/10">
-                <ArrowLeftRight className="h-4 w-4 text-[#806936]" />
-                Switch to Dealer View
-              </Link>}
-            </nav>
-          )}
-        </div>
-
-        <div className={`p-4 border-t border-border space-y-4 ${isStaff ? "bg-white" : "bg-card"}`}>
-          <div className="flex items-center justify-between px-2">
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold truncate max-w-[140px] text-foreground">{session?.account?.displayName || session?.account?.email}</span>
-              <span className="text-[10px] text-muted-foreground capitalize truncate">{session?.role}</span>
-            </div>
-            {!previewDealerId && signOutControl}
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-y-auto no-scrollbar pb-20 md:pb-0 bg-background">
-        {canPreview && <header className="hidden md:flex justify-end border-b border-border bg-white px-6 py-3"><Link href="/admin/dealer-view" className="inline-flex min-h-11 items-center gap-2 bg-[#121210] px-4 text-sm font-semibold text-white"><ArrowLeftRight className="h-4 w-4" />Switch to Dealer View</Link></header>}
-        {children}
-      </main>
-      
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border flex justify-around overflow-x-auto p-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {(isStaff ? visibleAdminLinks.filter(l => ['Overview', 'Users', 'Content', 'Notifications'].includes(l.label)) : visibleMobileDealerLinks).map((link) => {
-          const isActive = link.exact ? location === link.href : location.startsWith(link.href);
-          return (
-            <Link 
-              key={link.href} 
-              href={link.href}
-              className={`flex flex-col items-center justify-center p-2 min-w-[64px] transition-colors relative ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
-            >
-              <link.icon className={`h-5 w-5 mb-1 ${isActive ? 'text-sidebar-primary' : ''}`} />
-              <span className="text-[10px] font-medium leading-none">{link.label}</span>
-              {link.badge !== undefined && link.badge > 0 && (
-                <div className="absolute top-1 right-2 w-2 h-2 rounded-full bg-sidebar-primary" />
-              )}
-            </Link>
-          );
-        })}
+  return <div className={`min-h-[100dvh] min-w-0 flex flex-col md:flex-row ${staffWorkspace ? "staff-portal bg-white text-[#171715]" : "dealer-portal bg-background text-foreground"}`}>
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex sticky top-0 h-[100dvh] overflow-y-auto">
+      <div className="border-b border-border px-6 py-6"><BrandLogo tone="dark" className="h-6 w-auto" /><p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{staffWorkspace ? "Staff Portal" : "Dealer Portal"}</p></div>
+      <nav aria-label={staffWorkspace ? "Staff navigation" : "Dealer navigation"} className="flex-1 space-y-1 px-3 py-5">{links.map(link => <NavItem key={link.href} link={link} />)}
+        {staffWorkspace && session?.capabilities.includes("dealer-view:read") && <Link href="/admin/dealer-view" className="mt-5 flex min-h-11 items-center gap-2 border-t border-border px-3 pt-4 text-xs text-muted-foreground">View a specific dealer<ArrowUpRight className="ml-auto h-4 w-4" /></Link>}
       </nav>
+      <div className="flex items-center gap-2 border-t border-border p-4"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b39862]/15 text-sm font-bold text-[#806936]">{(session?.account.displayName || session?.account.email || "K").charAt(0).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{session?.account.displayName || session?.account.email}</p><p className="mt-1 text-[10px] capitalize text-muted-foreground">{session?.role.replaceAll("_", " ")}</p></div>{!selectedDealer && signOutControl}</div>
+    </aside>
+    <div className="min-w-0 flex-1">
+      <header className={`sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur ${staffWorkspace ? "text-[#171715]" : "text-foreground"}`}>
+        <div className="flex min-h-[76px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
+          <div className="flex min-w-0 items-center gap-3"><BrandLogo tone="dark" className="h-5 w-auto md:hidden" /><div className="hidden md:block"><p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{staffWorkspace ? "Kessick staff workspace" : isStaff ? "Kessick staff · dealer access" : "Kessick dealer network"}</p><p className="mt-1 text-sm font-semibold">{current?.label || (staffWorkspace ? "Staff Portal" : "Dealer Portal")}</p></div></div>
+          <div className="flex items-center gap-2">{switcher}{staffWorkspace && canDesign && <Link href="/admin/page-studio" className="hidden min-h-11 items-center gap-2 rounded-lg bg-[#b39862] px-4 text-xs font-semibold text-[#171715] lg:inline-flex"><Paintbrush className="h-4 w-4" />Edit dealer portal</Link>}<button aria-label={staffWorkspace ? "All staff tools" : "All dealer pages"} onClick={() => setMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border md:hidden"><Menu className="h-5 w-5" /></button></div>
+        </div>
+      </header>
+      <main id="portal-content" className="min-w-0 pb-24 md:pb-0">{children}</main>
     </div>
-  );
+    <nav aria-label={staffWorkspace ? "Mobile staff navigation" : "Mobile dealer navigation"} className="fixed inset-x-0 bottom-0 z-40 flex items-center border-t border-border bg-card/95 px-2 pb-safe backdrop-blur md:hidden">
+      {(staffWorkspace ? mobileStaffLinks : mobileDealerLinks).map(link => <NavItem key={link.href} link={link} compact />)}
+      <button aria-label={staffWorkspace ? "More staff tools" : "More dealer pages"} onClick={() => setMenuOpen(true)} className="flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-muted-foreground"><Menu className="h-5 w-5" />More</button>
+    </nav>
+    <Sheet open={menuOpen} onOpenChange={setMenuOpen}><SheetContent className={`${staffWorkspace ? "staff-portal bg-white text-[#171715]" : "dealer-portal bg-background text-foreground"} w-[min(90vw,380px)] overflow-y-auto`}><SheetHeader className="mb-6 text-left"><SheetTitle>{staffWorkspace ? "Staff tools" : "Dealer portal"}</SheetTitle><SheetDescription>Choose a workspace.</SheetDescription></SheetHeader><nav aria-label="All portal tools" className="space-y-1">{links.map(link => <NavItem key={link.href} link={link} />)}</nav>{isStaff && <div className="mt-6 border-t border-border pt-5">{switcher}{staffWorkspace && session?.capabilities.includes("dealer-view:read") && <Link href="/admin/dealer-view" className="mt-4 block text-sm underline">View a specific dealer</Link>}</div>}<div className="mt-6 flex items-center justify-between border-t border-border pt-5"><p className="min-w-0 truncate text-xs text-muted-foreground">{session?.account.email}</p>{!selectedDealer && signOutControl}</div></SheetContent></Sheet>
+  </div>;
 }
 
 function PortalSignOut() {
   const { signOut } = useClerk();
-  return <Button aria-label="Sign out" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}><LogOut className="h-4 w-4" /></Button>;
+  return <Button aria-label="Sign out" variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}><LogOut className="h-4 w-4" /></Button>;
 }

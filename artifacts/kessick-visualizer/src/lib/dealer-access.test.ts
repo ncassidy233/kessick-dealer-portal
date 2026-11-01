@@ -19,11 +19,14 @@ test("private dealer pages require the server's dealer authorization", () => {
   assert.equal(canAccessDealerPortal(null), false);
 });
 
-test("customer and staff roles never inherit private dealer access", () => {
-  const roles: PortalSession["role"][] = ["customer", "super_admin", "staff_admin", "sales_rep", "content_manager"];
+test("all authorized staff roles can open the dealer portal without a dealer membership", () => {
+  const roles: PortalSession["role"][] = ["super_admin", "staff_admin", "sales_rep", "content_manager"];
   for (const role of roles) {
-    assert.equal(canAccessDealerPortal({ ...dealer, role }), false, role);
+    assert.equal(canAccessDealerPortal({ ...dealer, role }), true, role);
+    assert.equal(canAccessDealerPortal({ ...dealer, role, authorized: false }), false, role);
+    assert.equal(canAccessDealerPortal({ ...dealer, role, account: { ...dealer.account, status: "suspended" } }), false, role);
   }
+  assert.equal(canAccessDealerPortal({ ...dealer, role: "customer" }), false);
 });
 
 test("pending and suspended accounts cannot use stale dealer authorization", () => {

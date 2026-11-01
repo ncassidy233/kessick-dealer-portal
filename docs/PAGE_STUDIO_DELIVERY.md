@@ -1,7 +1,17 @@
 # Kessick Page Studio delivery — November 1, 2026
 
 This change extends `copilot/kessick-dealer-portal-development` at `5a2574da4e9b3e1f48d9edec038f7831e4ecdd43`.
-The tested changes are uploaded to `codex/finish-page-studio` in PR #14. The uploaded source tree was verified byte-for-byte against local commit `34c19907ebcc225e36e00c317d935719dee3ec49`. The additive publication-history migration was applied successfully on November 1, 2026. Render rollout is in progress. The GitHub connector remains read-only; uploads were completed through the user-authorized signed-in browser.
+The tested changes are uploaded to `codex/finish-page-studio` in PR #14. The uploaded source tree was verified byte-for-byte against local commit `34c19907ebcc225e36e00c317d935719dee3ec49`. The additive publication-history migration was applied successfully on November 1, 2026. PR #14 was merged as `9605c0a2c4ad00e056413af1fbd86cb9a70fa174`; both Render services were deployed successfully. The GitHub connector remains read-only; uploads were completed through the user-authorized signed-in browser.
+
+## Staff workspace repair — November 1
+
+- Authorized, approved staff can open the complete dealer portal directly as themselves; a dealer organization is not required for staff. Published content and resources are available across dealer audiences. Suspended, unclaimed and revoked staff remain denied.
+- Selected-dealer inspection keeps the chosen dealer's exact restrictions, isolated caches, read-only behavior and audit records.
+- Staff View / Dealer View switches work on phone, tablet and desktop. The white staff workspace has an explicit Layout & Theme entry, an Editor mobile tab, a full tools menu, and prominent editor/dealer actions on the overview.
+- The public entry page links to the actual authenticated Staff Portal. The separate sample preview is not the staff workspace.
+- Page Studio opens with a mobile, tablet or desktop canvas appropriate to the screen, with the existing save/preview/publish workflow retained.
+- Sign-up explains the verified Clerk behavior: the 30-second timer is a resend cooldown and codes are valid for ten minutes. Email verification and server-side identity checks remain enabled.
+- Validation: 76 API tests and 29 frontend unit tests pass; TypeScript checks and both production builds pass. Browser verification covers staff navigation, the editor and dealer access at all three screen sizes, in addition to existing publish/restore and selected-dealer isolation checks. Browser accounts are test fixtures.
 
 ## Included
 
@@ -28,7 +38,7 @@ The tested changes are uploaded to `codex/finish-page-studio` in PR #14. The upl
 - Static server/proxy suite: 3 passed.
 - Browser suite: 6 Page Studio and 30 staff Dealer View tests across desktop, tablet and phone, passed. These use mocked browser API responses; database behavior is verified separately.
 - Browser checks verify true preview widths, explicit publish confirmation, content-manager denial, save-conflict recovery, account isolation and read-only behavior.
-- Existing API `https://kessick-portal-api.onrender.com/api/healthz`: HTTP 200, `{"status":"ok"}`. Its deployed commit remains the baseline commit. No new API error logs were returned after 05:52 UTC on November 1.
+- Existing API `https://kessick-portal-api.onrender.com/api/healthz`: HTTP 200, `{"status":"ok"}`. The same-origin frontend `/api/healthz` also returned `{"status":"ok"}`; protected data returned `Authentication required` when signed out.
 
 Build output retains existing source-map, CSS-selector and bundle-size warnings. They did not prevent compilation.
 
@@ -50,7 +60,7 @@ Build output retains existing source-map, CSS-selector and bundle-size warnings.
    node scripts/serve-secure-static.mjs artifacts/kessick-visualizer/dist/public
    ```
 
-   Set runtime `API_ORIGIN=https://kessick-portal-api.onrender.com` and Render-provided `PORT`. The frontend must be a Node web service; the current static demo services cannot run this proxy. Preserve the agreed client URL when its rollout is authorized. The existing `kessick-dealer-black` service is currently a sample-preview build and must not be described as authenticated until these changes are applied and verified.
+   Set runtime `API_ORIGIN=https://kessick-portal-api.onrender.com` and Render-provided `PORT`. The frontend must be a Node web service; the current static demo services cannot run this proxy. Preserve the agreed client URL when its rollout is authorized. The `kessick-dealer-black` service now builds the authenticated app and runs the static/API proxy server. The obsolete `VITE_CLERK_PROXY_URL` is cleared for the current Clerk development instance. The API start command trims surrounding whitespace from its existing Clerk keys before importing the server; no secret values are stored in source.
 
 5. Verify Clerk sign-in and real account bootstrap for approved dealer, pending dealer, content manager and staff admin. Verify staff role authorization is tied to the actual Clerk user. No automatic elevation of a new login is included.
 6. Confirm Page Studio save across two browsers, edit conflict, preview privacy, publish, dealer refresh within 30 seconds, version restore, and staff read-only Dealer View on the hosted deployment.
@@ -63,7 +73,7 @@ This delivers the structured editor and controlled publishing phase. It does not
 
 The editor appends authored sections to the existing dealer tools; it does not allow staff to delete protected business functionality. Preview shows the authored sections, while dynamic content grids explain that dealer-specific published records are resolved per account on the dealer route.
 
-Live Clerk login, actual production staff accounts, the deployed frontend-to-API connection, production persistence, and GCS/private-upload credentials still require hosted verification. Render's database query tool could not connect because the database's external IP allowlist is empty; that restriction was left intact.
+The frontend-to-API connection and signed-out protection are verified on Render. Owner-authorized staff placeholders are provisioned in the database and bind to the matching verified Clerk identity at first sign-in. Real-user authenticated editing/persistence and GCS/private-upload credentials still require hosted verification; shared-browser Google login inspection was blocked by automatic approval review. Render's database query tool could not connect because the database's external IP allowlist is empty; that restriction was left intact.
 
 ## Rollback
 
