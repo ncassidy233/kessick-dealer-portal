@@ -1,3 +1,4 @@
+import { studioPageDocumentSchema } from "@workspace/api-zod";
 import { z } from "zod";
 
 const text = z.string().nullish();
@@ -68,7 +69,9 @@ const responses: Record<string, z.ZodType> = {
 
 /** Strip unapproved fields even when the underlying dealer handler grows. */
 export function staffDealerResponse(path: string, value: unknown): unknown {
-  const schema = responses[path];
+  const schema = /^\/portal-v2\/pages\/(?:home|projects|collections|training|resources)$/.test(path)
+    ? z.object({ page: z.object({ document: z.unknown().transform(value => studioPageDocumentSchema.parse(value)), revision: z.number().int() }) })
+    : responses[path];
   if (!schema) throw new Error("Unapproved Dealer View response.");
   return schema.parse(value);
 }
