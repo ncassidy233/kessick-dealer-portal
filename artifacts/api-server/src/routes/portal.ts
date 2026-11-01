@@ -130,13 +130,14 @@ async function canView(req: Request, groupIds: string[], capability: string, def
   return await staffHasFullDealerAccess(req) || canViewLegacyPortalCapability(dealerReadAccount(req)!.id, groupIds, capability, defaultValue);
 }
 async function legacyTargetVisible(req: Request, groupIds: string[], kind: "price_book" | "resource" | "form", legacyId: string): Promise<boolean> {
-  if (await staffHasFullDealerAccess(req)) return true;
+  const staffAccess = await staffHasFullDealerAccess(req);
   const accountId = dealerReadAccount(req)!.id;
   const items = await db.select().from(portalContentTable).where(eq(portalContentTable.kind, kind));
   const mapped = items.filter((item) => {
     const payload = item.payload;
     return typeof payload === "object" && payload !== null && !Array.isArray(payload) && (payload as Record<string, unknown>).legacyId === legacyId;
   });
+  if (staffAccess) return mapped.length === 0 || mapped.some(item => item.published);
   const mappings = await Promise.all(mapped.map(async (item) => ({
     published: item.published,
     visibility: item.visibility,
