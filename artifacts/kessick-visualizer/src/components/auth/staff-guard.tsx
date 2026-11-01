@@ -21,7 +21,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
   // Render a denial instead of redirecting to /portal: AuthGuard sends accounts
   // it considers staff from /portal back to /admin, so a redirect here can
   // ping-pong forever when /api/account and portal bootstrap disagree on role.
-  if (!session.authorized || session.role === "dealer" || session.role === "customer") {
+  if (!session.authorized || session.account.status !== "approved" || !["super_admin", "staff_admin", "sales_rep", "content_manager"].includes(session.role)) {
     return <StaffAccessDenied />;
   }
 

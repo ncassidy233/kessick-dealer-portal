@@ -30,8 +30,8 @@ export function AccountDataGuard({ children }: { children: ReactNode }) {
     useGetAccount({
       query: {
         queryKey: getGetAccountQueryKey(),
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
       },
     });
   const [location] = useLocation();
@@ -52,6 +52,10 @@ export function AccountDataGuard({ children }: { children: ReactNode }) {
         <p className="text-muted-foreground">Unable to fetch account details. Please try refreshing.</p>
       </div>
     );
+  }
+
+  if (error && (location === "/admin" || location.startsWith("/admin/"))) {
+    return <div role="alert" className="flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center"><h1 className="text-xl font-medium">Staff access verification required</h1><p className="mt-2">Staff pages remain locked until your current account can be verified.</p><button className="mt-4 min-h-11 underline" disabled={isFetching} onClick={() => void refetch()}>Retry account check</button></div>;
   }
 
   const status = accountContext.account.status;
