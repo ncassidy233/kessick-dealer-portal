@@ -528,7 +528,7 @@ export default function AdminUsers() {
             <p className="border-l-2 border-[#B39862] bg-[#B39862]/10 px-3 py-2 text-xs text-[#121210]/65">
               {newRole === "dealer"
                 ? "Adding their email approves dealer access immediately. They only need to verify their email and finish signing in. Existing applicants are approved here too."
-                : "The staff member will receive an account setup link and verify their own email before signing in."}
+                : "Adding their email approves staff access immediately with the selected role. They only need to verify their email and finish signing in. No application review is required."}
             </p>
             <Field label="Email address"><Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} placeholder="name@dealer.com" /></Field>
             <Field label="Display name (optional)"><Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className={inputClass} placeholder="Jordan Lee" /></Field>
@@ -563,9 +563,9 @@ export default function AdminUsers() {
                   {createdUser.invitation?.deliveryStatus === "failed"
                     ? "Access is saved, but the invitation email could not be sent. Share the portal link below or use Resend invite in the account list."
                     : createdUser.invitation?.deliveryStatus === "not_required"
-                      ? "This email already has a sign-in account. Their dealer access is approved; they can sign in using their existing account."
+                      ? "This email already has a sign-in account. Their access is approved; they can sign in using their existing account."
                       : "An invitation was submitted for email delivery. They can follow the setup link, verify their email, and sign in."}
-                  {createdUser.role === "dealer" && createdUser.status === "approved" && " No application review is required."}
+                  {createdUser.status === "approved" && " No application review is required."}
                 </p>
                 {createdUser.invitation?.url ? (
                   <div className="mt-3 flex gap-2">

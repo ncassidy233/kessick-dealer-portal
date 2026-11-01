@@ -246,6 +246,38 @@ for (const deliveryStatus of ["submitted", "failed", "not_required"] as const) {
   });
 }
 
+for (const deliveryStatus of ["submitted", "failed"] as const) {
+  test(`super admins add approved staff without application review when delivery is ${deliveryStatus}`, async ({ page }, testInfo) => {
+    let requestBody: unknown;
+    await page.route("**/api/portal-v2/admin/groups", route => route.fulfill({ json: { groups: [] } }));
+    await page.route("**/api/portal-v2/admin/users**", async route => {
+      if (route.request().method() !== "POST") return route.fulfill({ json: { users: [] } });
+      requestBody = route.request().postDataJSON();
+      return route.fulfill({ status: 201, json: { user: {
+        id: resourceId, email: "new-staff@example.invalid", role: "staff", portalRole: "staff_admin",
+        status: "approved", groups: [], createdAt: new Date().toISOString(),
+        invitation: { deliveryStatus, url: "https://portal.example.invalid/sign-in?redirect_url=%2Fadmin" },
+      } } });
+    });
+    await page.goto("/admin/users");
+    await page.getByRole("button", { name: "Add staff", exact: true }).click();
+    await expect(page.getByText("Adding their email approves staff access immediately with the selected role.", { exact: false })).toBeVisible();
+    await expect(page.getByText("Initial status", { exact: true })).toHaveCount(0);
+    await page.getByPlaceholder("name@dealer.com").fill("new-staff@example.invalid");
+    await page.getByRole("button", { name: "Add staff account", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Account access ready", exact: true })).toBeVisible();
+    expect(requestBody).toEqual({ email: "new-staff@example.invalid", role: "staff_admin", status: "approved" });
+    await expect(page.getByText("Access approved", { exact: true })).toBeVisible();
+    await expect(page.getByText("No application review is required.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("textbox").filter({ visible: true })).toHaveValue("https://portal.example.invalid/sign-in?redirect_url=%2Fadmin");
+    await expect(page.getByText(deliveryStatus === "failed"
+      ? "Access is saved, but the invitation email could not be sent."
+      : "An invitation was submitted for email delivery.", { exact: false })).toBeVisible();
+    if (deliveryStatus === "submitted") await page.screenshot({ path: testInfo.outputPath(`staff-preapproval-${testInfo.project.name}.png`), animations: "disabled" });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
 test("adding a suspended dealer leaves the dialog open and reports the blocked access", async ({ page }) => {
   await page.route("**/api/portal-v2/admin/groups", route => route.fulfill({ json: { groups: [] } }));
   await page.route("**/api/portal-v2/admin/users**", route => route.request().method() === "POST"
