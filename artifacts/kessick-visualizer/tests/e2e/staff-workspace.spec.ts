@@ -241,6 +241,7 @@ test("permission refresh locks cached staff screens after failure and revocation
   denied = "dealer";
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(page.getByTestId("state-staff-access-denied")).toBeVisible();
+  await page.getByTestId("state-staff-access-denied").screenshot({ path: testInfo.outputPath(`staff-denied-proof-${testInfo.project.name}.png`), animations: "disabled" });
   await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath(`staff-access-locked-${testInfo.project.name}.png`), animations: "disabled" });
 });
