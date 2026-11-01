@@ -30,6 +30,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
     : location.startsWith("/admin/pricing") ? "pricing:read"
     : location.startsWith("/admin/users") ? "users:read"
     : location.startsWith("/admin/groups") ? "groups:read"
+    : location.startsWith("/admin/page-studio") ? "content:read"
     : location.startsWith("/admin/content") ? "content:read"
     : location.startsWith("/admin/notifications") ? "notifications:read"
     : null;
