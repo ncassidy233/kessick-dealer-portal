@@ -129,14 +129,41 @@ async function streamStoredResource(res: any, resource: typeof portalResourcesTa
 async function canView(req: Request, groupIds: string[], capability: string, defaultValue = true) {
   return await staffHasFullDealerAccess(req) || canViewLegacyPortalCapability(dealerReadAccount(req)!.id, groupIds, capability, defaultValue);
 }
+type LegacyContentKind = "price_book" | "resource" | "form";
+type LegacyMapping = { id: string; published: boolean; visibility: "everyone" | "groups" | "individuals" };
+const legacyMappingRequests = new WeakMap<Request, Map<LegacyContentKind, Promise<Map<string, LegacyMapping[]>>>>();
+
+function legacyMappingsForRequest(req: Request, kind: LegacyContentKind): Promise<Map<string, LegacyMapping[]>> {
+  let request = legacyMappingRequests.get(req);
+  if (!request) {
+    request = new Map();
+    legacyMappingRequests.set(req, request);
+  }
+  let pending = request.get(kind);
+  if (!pending) {
+    pending = db.select({
+      id: portalContentTable.id,
+      published: portalContentTable.published,
+      visibility: portalContentTable.visibility,
+      legacyId: sql<string | null>`${portalContentTable.payload}->>'legacyId'`,
+    }).from(portalContentTable).where(eq(portalContentTable.kind, kind)).then(rows => {
+      const index = new Map<string, LegacyMapping[]>();
+      for (const row of rows) {
+        if (!row.legacyId) continue;
+        const mappings = index.get(row.legacyId) ?? [];
+        mappings.push({ id: row.id, published: row.published, visibility: row.visibility });
+        index.set(row.legacyId, mappings);
+      }
+      return index;
+    });
+    request.set(kind, pending);
+  }
+  return pending;
+}
 async function legacyTargetVisible(req: Request, groupIds: string[], kind: "price_book" | "resource" | "form", legacyId: string): Promise<boolean> {
   const staffAccess = await staffHasFullDealerAccess(req);
   const accountId = dealerReadAccount(req)!.id;
-  const items = await db.select().from(portalContentTable).where(eq(portalContentTable.kind, kind));
-  const mapped = items.filter((item) => {
-    const payload = item.payload;
-    return typeof payload === "object" && payload !== null && !Array.isArray(payload) && (payload as Record<string, unknown>).legacyId === legacyId;
-  });
+  const mapped = (await legacyMappingsForRequest(req, kind)).get(legacyId) ?? [];
   if (staffAccess) return mapped.length === 0 || mapped.some(item => item.published);
   const mappings = await Promise.all(mapped.map(async (item) => ({
     published: item.published,
