@@ -34,6 +34,9 @@ test("production static service protects files, routes, methods and headers", as
       /unsafe-eval/,
     );
     assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin-allow-popups");
+    assert.equal(response.headers.get("cross-origin-resource-policy"), "same-origin");
+    assert.match(response.headers.get("content-security-policy"), /base-uri 'none'/);
     assert.match(response.headers.get("x-robots-tag"), /noindex/);
     assert.match(response.headers.get("permissions-policy"), /camera=\(self\)/);
     for (const route of [
