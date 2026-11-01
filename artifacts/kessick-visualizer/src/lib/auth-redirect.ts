@@ -1,7 +1,7 @@
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 export function getValidatedAuthRedirect(): string {
-  const fallback = `${basePath}/workspace`;
+  const fallback = `${basePath}/portal`;
   const raw = new URLSearchParams(window.location.search).get('redirect_url');
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return fallback;
 
