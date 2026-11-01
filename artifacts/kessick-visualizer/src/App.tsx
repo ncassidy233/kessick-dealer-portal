@@ -35,6 +35,8 @@ import PortalForms from '@/pages/portal/forms';
 import PortalResources from '@/pages/portal/resources';
 import PortalNotifications from '@/pages/portal/notifications';
 import PortalAccount from '@/pages/portal/account';
+import PageStudio from '@/pages/admin/page-studio';
+import { PublishedPortalPage } from '@/components/studio-page';
 import AdminUsers from '@/pages/admin/users';
 import AdminGroups from '@/pages/admin/groups';
 import AdminAccess from '@/pages/admin/access';
@@ -265,19 +267,19 @@ function Router() {
         <Route path="/portal">
           <AuthGuard>
             <PortalLayout>
-              <PortalDashboard />
+              <PublishedPortalPage pageKey="home"><PortalDashboard /></PublishedPortalPage>
             </PortalLayout>
           </AuthGuard>
         </Route>
 
         <Route path="/portal/projects">
-          <AuthGuard><PortalLayout><PortalProjects /></PortalLayout></AuthGuard>
+          <AuthGuard><PortalLayout><PublishedPortalPage pageKey="projects"><PortalProjects /></PublishedPortalPage></PortalLayout></AuthGuard>
         </Route>
         <Route path="/portal/collections">
-          <AuthGuard><PortalLayout><PortalCollections /></PortalLayout></AuthGuard>
+          <AuthGuard><PortalLayout><PublishedPortalPage pageKey="collections"><PortalCollections /></PublishedPortalPage></PortalLayout></AuthGuard>
         </Route>
         <Route path="/portal/training">
-          <AuthGuard><PortalLayout><PortalTraining /></PortalLayout></AuthGuard>
+          <AuthGuard><PortalLayout><PublishedPortalPage pageKey="training"><PortalTraining /></PublishedPortalPage></PortalLayout></AuthGuard>
         </Route>
         <Route path="/portal/pricing">
           <AuthGuard>
@@ -298,7 +300,7 @@ function Router() {
         <Route path="/portal/resources">
           <AuthGuard>
             <PortalLayout>
-              <PortalResources />
+              <PublishedPortalPage pageKey="resources"><PortalResources /></PublishedPortalPage>
             </PortalLayout>
           </AuthGuard>
         </Route>
@@ -369,6 +371,9 @@ function Router() {
           </AuthGuard>
         </Route>
 
+        <Route path="/admin/page-studio">
+          <AuthGuard><StaffGuard><PortalLayout><PageStudio /></PortalLayout></StaffGuard></AuthGuard>
+        </Route>
         <Route path="/admin/content">
           <AuthGuard>
             <StaffGuard>
@@ -448,7 +453,7 @@ function AppRoutes() {
       </StaffDealerViewContext.Provider>;
     }
   }
-  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/dealer-view"))) {
+  if (import.meta.env.DEV && import.meta.env.VITE_E2E_DEALER_VIEW === "1" && (location === "/admin" || location.startsWith("/admin/dealer-view") || location === "/admin/page-studio")) {
     return <LocalDealerView location={location} />;
   }
   if (import.meta.env.DEV && location === "/__e2e/canvas") {
@@ -466,7 +471,7 @@ function LocalDealerView({ location }: { location: string }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
   const dealerId = /^\/admin\/dealer-view\/([^/]+)\//.exec(location)?.[1];
   return <QueryClientProvider client={client}><StaffGuard>
-    {location === "/admin" ? <PortalLayout signOutControl={null}><h1 className="p-6">Administration</h1></PortalLayout> : <DealerView dealerId={dealerId} />}
+    {location === "/admin/page-studio" ? <PageStudio /> : location === "/admin" ? <PortalLayout signOutControl={null}><h1 className="p-6">Administration</h1></PortalLayout> : <DealerView dealerId={dealerId} />}
   </StaffGuard></QueryClientProvider>;
 }
 

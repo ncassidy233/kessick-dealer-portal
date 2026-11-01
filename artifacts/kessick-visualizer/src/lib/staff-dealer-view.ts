@@ -3,7 +3,7 @@ export interface StaffDealerView {
   readOnly: true;
 }
 
-const dealerReads = /^\/api\/(?:portal-v2\/(?:bootstrap|content|projects|notifications|notification-preferences)|dealer-portal\/(?:dashboard|access|pricing|resources|forms|push-config|resources\/[0-9a-f-]{36}\/file))$/;
+const dealerReads = /^\/api\/(?:portal-v2\/(?:bootstrap|content|projects|notifications|notification-preferences|pages\/(?:home|projects|collections|training|resources))|dealer-portal\/(?:dashboard|access|pricing|resources|forms|push-config|resources\/[0-9a-f-]{36}\/file))$/;
 const portalPage = /^\/portal(?:\/(?:projects|collections|training|pricing|resources|forms|notifications|account))?\/?$/;
 
 export function dealerReadUrl(path: string, view: StaffDealerView | null) {

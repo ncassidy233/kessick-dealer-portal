@@ -1,3 +1,5 @@
+import { PublishedPortalPage } from "@/components/studio-page";
+import type { PageKey } from "@/lib/page-studio";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
@@ -70,7 +72,8 @@ function DealerPages({ dealerId }: { dealerId: string }) {
   const prefix = `/admin/dealer-view/${dealerId}/portal`;
   const section = location === prefix || location === `${prefix}/` ? "" : location.startsWith(`${prefix}/`) ? location.slice(prefix.length + 1) : null;
   const Page = section !== null ? pages[section as keyof typeof pages] : undefined;
-  const content = Page ? <Page /> : <p className="p-6">This page is not available in Dealer View.</p>;
+  const editable = section === "" ? "home" : section;
+  const content = Page ? (["home", "projects", "collections", "training", "resources"].includes(editable ?? "") ? <PublishedPortalPage pageKey={editable as PageKey}><Page /></PublishedPortalPage> : <Page />) : <p className="p-6">This page is not available in Dealer View.</p>;
   return <><div className="px-4 pb-3 text-xs"><button className="min-h-8 underline" onClick={() => session.refetch()}>Refresh dealer permissions</button></div>
     <PortalLayout signOutControl={null}>{content}</PortalLayout>
   </>;

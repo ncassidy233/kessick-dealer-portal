@@ -53,6 +53,7 @@ export default function AdminOverview() {
           <div className="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-3">
             {canRead("users:read") && <QuickAction href="/admin/users" label="Approve builder accounts" description="Filter pending dealers, review their details, then approve or suspend access. Staff roles are managed here too." icon={Users} />}
             {canRead("groups:read") && <QuickAction href="/admin/groups" label="Set up audiences" description="Create groups and manage dealer membership for targeted content and notices." icon={FolderKanban} />}
+            {canRead("content:read") && <QuickAction href="/admin/page-studio" label="Design dealer pages" description="Edit sections, preview mobile/tablet/desktop, and publish or restore a saved version." icon={FileText} />}
             {canRead("content:read") && <QuickAction href="/admin/content" label="Publish content, forms & training" description="Use the content types to build forms, add resources and training, choose an audience, and publish." icon={FileText} />}
             {canRead("pricing:read") && <QuickAction href="/admin/pricing" label="Set pricing overrides" description="Review and maintain custom wholesale rates by SKU for a dealer or group." icon={DollarSign} />}
             {fullAdmin && <QuickAction href="/admin/access" label="Manage access rules" description="Review visibility rules for content and pricing by group or individual." icon={ShieldCheck} />}

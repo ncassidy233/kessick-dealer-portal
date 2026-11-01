@@ -1,3 +1,4 @@
+import { usePublishedLayout } from "@/components/studio-page";
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -45,6 +46,7 @@ export default function PortalDashboard() {
   const { data: resourcesData } = usePortalContent("resource");
   const { data: categoriesData } = usePortalContent("resource_category");
   const { data: legacyResourcesData } = useListDealerPortalResources();
+  const customHero = usePublishedLayout();
   const [search, setSearch] = useState("");
 
   const notifications = notificationsData?.notifications ?? [];
@@ -144,10 +146,10 @@ export default function PortalDashboard() {
 
   return (
     <div className="dealer-dashboard min-h-full bg-[#10100f] pb-5 text-[#f4f0e8]">
-      <section className="dealer-hero relative isolate min-h-[330px] overflow-hidden sm:min-h-[390px]">
+      {!customHero && <section className="dealer-hero relative isolate min-h-[330px] overflow-hidden sm:min-h-[390px]">
         <img
-          src={roomImage}
-          alt="Kessick wine cellar display"
+          src="/kessick-headquarters-hero.webp"
+          alt="Kessick Wine Cellars headquarters"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/75 via-black/45 to-[#10100f]" />
@@ -186,7 +188,7 @@ export default function PortalDashboard() {
             A considered workspace for your projects, product information, and dealer support.
           </p>
         </div>
-      </section>
+      </section>}
 
       <div className="mx-auto -mt-3 w-full max-w-7xl space-y-9 px-4 sm:space-y-12 sm:px-8">
         <section className="relative z-10" aria-label="Search your dealer portal">

@@ -343,6 +343,9 @@ importers:
 
   artifacts/kessick-visualizer:
     dependencies:
+      '@workspace/api-zod':
+        specifier: workspace:*
+        version: link:../../lib/api-zod
       '@clerk/react':
         specifier: ^6.15.1
         version: 6.15.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

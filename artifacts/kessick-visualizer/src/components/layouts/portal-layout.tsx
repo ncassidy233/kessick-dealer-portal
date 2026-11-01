@@ -89,6 +89,7 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
     { href: "/admin/groups", label: "Groups", icon: Users },
     { href: "/admin/access", label: "Access Rules", icon: Shield },
     { href: "/admin/pricing", label: "Pricing", icon: DollarSign },
+    { href: "/admin/page-studio", label: "Page Studio", icon: FileText },
     { href: "/admin/content", label: "Content", icon: FileText },
     { href: "/admin/notifications", label: "Notifications", icon: MessageSquare },
     { href: "/admin/knowledge", label: "Concierge Knowledge", icon: BookOpen },
@@ -105,6 +106,7 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
     const required = link.href === "/admin" ? "admin:overview"
       : link.href === "/admin/users" ? "users:read"
       : link.href === "/admin/groups" ? "groups:read"
+      : link.href === "/admin/page-studio" ? "content:read"
       : link.href === "/admin/content" ? "content:read"
       : link.href === "/admin/notifications" ? "notifications:read"
       : null;

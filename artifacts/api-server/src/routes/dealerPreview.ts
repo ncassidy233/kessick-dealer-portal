@@ -16,7 +16,7 @@ export function isDealerPreviewRead(method: string, path: string): boolean {
   return method === "GET" && (
     /^\/dealer-portal\/(?:dashboard|pricing|forms|resources|access|push-config)$/.test(path) ||
     /^\/dealer-portal\/resources\/[0-9a-f-]{36}\/file$/.test(path) ||
-    /^\/portal-v2\/(?:bootstrap|content|projects|notifications|notification-preferences)$/.test(path)
+    /^\/portal-v2\/(?:bootstrap|content|projects|notifications|notification-preferences|pages\/(?:home|projects|collections|training|resources))$/.test(path)
   );
 }
 

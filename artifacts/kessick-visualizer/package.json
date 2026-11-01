@@ -87,6 +87,7 @@
     "konva": "^10.3.0",
     "react-konva": "^19.2.5",
     "use-image": "^1.1.4",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.1",
+    "@workspace/api-zod": "workspace:*"
   }
 }
