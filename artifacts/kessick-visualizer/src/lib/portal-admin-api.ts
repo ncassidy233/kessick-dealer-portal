@@ -47,6 +47,7 @@ export interface PortalUser {
   assignedRep?: { id: string; email: string; displayName?: string | null } | null;
   organizationId?: string | null;
   invitation?: {
+    deliveryStatus?: "submitted" | "failed" | "not_required";
     status?: "pending" | "accepted" | "expired" | "revoked";
     token?: string;
     url?: string;
