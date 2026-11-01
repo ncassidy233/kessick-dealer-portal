@@ -25,7 +25,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   return <AccountDataGuard>{children}</AccountDataGuard>;
 }
 
-function AccountDataGuard({ children }: { children: ReactNode }) {
+export function AccountDataGuard({ children }: { children: ReactNode }) {
   const { data: accountContext, isLoading, isFetching, error, refetch } =
     useGetAccount({
       query: {
@@ -63,10 +63,6 @@ function AccountDataGuard({ children }: { children: ReactNode }) {
   
   if (status === 'suspended' && location !== '/forbidden') {
     return <Redirect to="/forbidden" />;
-  }
-
-  if (status === 'approved' && role === 'staff' && location.startsWith('/portal')) {
-    return <Redirect to="/admin" />;
   }
 
   if (status === 'approved' && role !== 'staff' && location.startsWith('/admin')) {
