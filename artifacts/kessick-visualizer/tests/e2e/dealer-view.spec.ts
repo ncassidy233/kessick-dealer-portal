@@ -315,3 +315,19 @@ test("delayed Dealer A responses never bleed into Dealer B on the shared client"
   expect(await page.evaluate(() => (window as Window & { samePreviewDocument?: boolean }).samePreviewDocument)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath(`dealer-b-isolation-${testInfo.project.name}.png`), animations: "disabled" });
 });
+
+
+test("quote offer navigation retains the selected dealer and offer reference", async ({ page }) => {
+  const offerId = "33333333-3333-4333-8333-333333333333";
+  await page.route(`**/api/staff/dealer-view/${dealerA}/portal-v2/content*`, route => {
+    const kind = new URL(route.request().url()).searchParams.get("kind");
+    return route.fulfill({ json: { content: kind === "announcement" ? [{ id: offerId, title: "Selected dealer offer", kind: "announcement", published: true, payload: { promotion: { percentOff: 10, startsAt: new Date(Date.now() - 60000).toISOString(), endsAt: new Date(Date.now() + 3600000).toISOString(), collections: ["Estate"], terms: "Quote approval required" } } }] : [] } });
+  });
+  await page.goto(`/admin/dealer-view/${dealerA}/portal`);
+  const link = page.getByRole("link", { name: "Request an eligible quote", exact: true });
+  await expect(link).toHaveAttribute("href", `/admin/dealer-view/${dealerA}/portal/forms?offer=${offerId}`);
+  await link.click();
+  await expect(page).toHaveURL(new RegExp(`/admin/dealer-view/${dealerA}/portal/forms\\?offer=${offerId}$`));
+  await expect(page.getByText("Staff View — Read Only", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Requested offer" })).toContainText(offerId);
+});
