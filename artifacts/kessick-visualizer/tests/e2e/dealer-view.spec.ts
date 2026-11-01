@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/**", async route => {
     const url = new URL(route.request().url());
     if (url.pathname === "/api/portal-v2/bootstrap") return route.fulfill({ json: { role: "staff_admin", authorized: true, capabilities, groups: [], account: { id: "staff", displayName: "Staff member", status: "approved" } } });
+    if (url.pathname === "/api/portal-v2/admin/overview") return route.fulfill({ json: { counts: { dealers: 2, approvedDealers: 2, staff: 1, groups: 0, content: 0, notifications: 0, unreadAcknowledgements: 0 }, recentAudit: [] } });
     if (url.pathname === "/api/staff/dealer-view") return route.fulfill({ json: { dealers: [{ id: dealerA, displayName: "Dealer A" }, { id: dealerB, displayName: "Dealer B" }] } });
     const match = /^\/api\/staff\/dealer-view\/([^/]+)(\/.*)$/.exec(url.pathname);
     if (!match) return route.fulfill({ status: 403, json: { error: "Unexpected or unauthorized request." } });
@@ -38,7 +39,8 @@ test.beforeEach(async ({ page }) => {
 
 test("staff switch into actual published dealer components and back without logout", async ({ page }, testInfo) => {
   await page.goto("/admin");
-  await page.getByRole("link", { name: "Switch to Dealer View", exact: true }).filter({ visible: true }).first().click();
+  if (testInfo.project.name === "phone") await page.getByRole("button", { name: "All staff tools", exact: true }).click();
+  await page.getByRole("link", { name: "View a specific dealer", exact: true }).filter({ visible: true }).first().click();
   await expect(page.getByRole("heading", { name: "Dealer View — published content" })).toBeVisible();
   await expect(page.getByText("Staff View — Read Only", { exact: true })).toBeVisible();
   await page.getByLabel("View as dealer").selectOption(dealerA);
@@ -57,7 +59,7 @@ test("staff switch into actual published dealer components and back without logo
   await expect(page.getByText("Published for Dealer B", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Published for Dealer A", { exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Back to Administration" }).click();
-  await expect(page.getByRole("heading", { name: "Administration", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back, Staff.", exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/admin$/);
 });
 
