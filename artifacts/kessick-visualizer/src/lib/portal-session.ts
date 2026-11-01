@@ -21,6 +21,9 @@ export function usePortalSession() {
     queryKey: dealerQueryKey(portalSessionKey, view),
     queryFn: ({ signal }) => customFetch<PortalSession>(dealerReadUrl("/api/portal-v2/bootstrap", view), { signal }),
     staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
     refetchOnWindowFocus: true,
     retry: false,
   });
