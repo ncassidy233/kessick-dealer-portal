@@ -1,4 +1,4 @@
-import { studioPageDocumentSchema } from "@workspace/api-zod";
+import { studioPageDocumentSchema, promotionSchema } from "@workspace/api-zod";
 import { z } from "zod";
 
 const text = z.string().nullish();
@@ -7,6 +7,7 @@ const group = z.object({ id: z.string(), name: z.string() });
 const organization = z.object({ id: z.string(), name: z.string(), status: z.string() });
 const payload = z.object({
   legacyId: text, contentType: text, imageUrl: text, url: text, category: text,
+  externalForm: z.boolean().optional(), promotion: z.unknown().transform(value => value === undefined ? undefined : promotionSchema.parse(value)).optional(),
   status: text, clientName: text, color: text,
   featuredOnDashboard: z.boolean().optional(), comingSoon: z.boolean().optional(),
 });

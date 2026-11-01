@@ -43,6 +43,17 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
       if (visibility !== "everyone") await connection.query("INSERT INTO portal_content_targets_v2(content_id,group_id,account_id) VALUES ($1,$2,$3)", [contentId, visibility === "groups" ? groupId : null, visibility === "individuals" ? dealerB.id : null]);
       if (title === "Published") await connection.query("INSERT INTO portal_content_targets_v2(content_id,account_id) VALUES ($1,$2)", [contentId, dealerB.id]);
     }
+    const offerNow = Date.now();
+    for (const [title, start, end, visibility] of [
+      ["Active offer", -60000, 3600000, "everyone"],
+      ["Future offer", 3600000, 7200000, "everyone"],
+      ["Expired offer", -7200000, -3600000, "everyone"],
+      ["Dealer B offer", -60000, 3600000, "individuals"],
+    ] as const) {
+      const id = randomUUID();
+      await connection.query("INSERT INTO portal_content_v2(id,kind,title,published,visibility,created_by_account_id,payload) VALUES ($1,'announcement',$2,true,$3,$4,$5)", [id, title, visibility, staff.id, JSON.stringify({ promotion: { percentOff: 10, startsAt: new Date(offerNow + start).toISOString(), endsAt: new Date(offerNow + end).toISOString(), collections: ["Estate"], terms: "Quote approval required", minimumOrder: 1000, maximumSavings: 500, combinable: false } })]);
+      if (visibility === "individuals") await connection.query("INSERT INTO portal_content_targets_v2(content_id,account_id) VALUES ($1,$2)", [id, dealerB.id]);
+    }
     const app = express();
     let authenticationCalls = 0;
     const observedActors: string[] = [];
@@ -79,6 +90,11 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     };
     assert.deepEqual(await titles(dealerA.id), ["Group only", "Published"]);
     assert.deepEqual(await titles(dealerB.id), ["Dealer B only", "Published"]);
+    const offersForA = await (await request(`/${dealerA.id}/portal-v2/content?kind=announcement`)).json() as { content: { title: string; payload: { promotion: { maximumSavings: number } } }[] };
+    assert.deepEqual(offersForA.content.map(x => x.title), ["Active offer"]);
+    assert.equal(offersForA.content[0].payload.promotion.maximumSavings, 500);
+    const offersForB = await (await request(`/${dealerB.id}/portal-v2/content?kind=announcement`)).json() as { content: { title: string }[] };
+    assert.deepEqual(offersForB.content.map(x => x.title).sort(), ["Active offer", "Dealer B offer"]);
     const privateContentResponse = await request(`/${dealerA.id}/portal-v2/content`);
     const privateContent = await privateContentResponse.text();
     for (const secret of ["createdByAccountId", "targets", dealerB.id, staff.id, "PRIVATE_STAFF_NOTE", "DENY_NEW_FIELD"]) assert.equal(privateContent.includes(secret), false);

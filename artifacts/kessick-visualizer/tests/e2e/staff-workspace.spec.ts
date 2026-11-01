@@ -87,3 +87,51 @@ test("sales staff have dealer access while navigation respects knowledge permiss
   await expect(page).toHaveURL(/\/portal$/);
   await expect(page.getByRole("heading", { name: "Your Kessick project desk.", exact: true })).toBeVisible();
 });
+
+test("staff authors a targeted quote offer and dealers see its terms and official forms", async ({ page }, testInfo) => {
+  const offerId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  let saved: any = null;
+  await page.route("**/api/**", async route => {
+    const { pathname, searchParams } = new URL(route.request().url());
+    if (pathname === "/api/portal-v2/admin/content") {
+      if (route.request().method() === "POST") saved = { ...route.request().postDataJSON(), id: offerId, updatedAt: new Date().toISOString(), targets: { groupIds: [], accountIds: [] } };
+      return route.fulfill({ json: route.request().method() === "POST" ? { content: saved } : { content: saved ? [saved] : [] } });
+    }
+    if (pathname === "/api/portal-v2/admin/groups") return route.fulfill({ json: { groups: [] } });
+    if (pathname === "/api/portal-v2/admin/users") return route.fulfill({ json: { users: [] } });
+    if (["/api/staff/portal/forms", "/api/staff/portal/resources", "/api/staff/portal/form-submissions"].includes(pathname)) return route.fulfill({ json: [] });
+    if (pathname === "/api/portal-v2/content" && searchParams.get("kind") === "announcement") return route.fulfill({ json: { content: saved ? [saved] : [] } });
+    if (pathname === "/api/portal-v2/content" && searchParams.get("kind") === "form") return route.fulfill({ json: { content: [{ id: resourceId, title: "Design Request", kind: "form", published: true, payload: { externalForm: true, url: "https://kessickwinecellars.com/design-request/" } }] } });
+    return route.fallback();
+  });
+  await page.goto("/admin/content");
+  await page.getByRole("button", { name: "New discount", exact: true }).click();
+  await page.getByLabel("Title", { exact: true }).fill("Estate trade offer — test data");
+  await page.getByLabel("Percent off", { exact: true }).fill("12");
+  await page.getByLabel("Starts (your local time)").fill(new Date(Date.now() - 86400000).toISOString().slice(0,16));
+  await page.getByLabel("Ends (your local time)").fill(new Date(Date.now() + 86400000).toISOString().slice(0,16));
+  await page.getByLabel("Eligible collections, separated by commas").fill("Estate");
+  await page.getByLabel("Minimum order (USD)").fill("1000");
+  await page.getByLabel("Maximum savings (USD, optional)").fill("500");
+  await page.getByLabel("Terms and exclusions").fill("New Estate quotes only. Excludes freight. Kessick approval required.");
+  await page.getByLabel("Publish immediately", { exact: true }).check();
+  await page.getByRole("button", { name: "Create content", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(saved.payload.promotion).toMatchObject({ percentOff: 12, minimumOrder: 1000, maximumSavings: 500, collections: ["Estate"], combinable: false });
+  expect(saved.visibility).toBe("everyone");
+  await expect(page.getByText("Active offer", { exact: true })).toBeVisible();
+  await page.goto("/portal");
+  const offer = page.getByRole("region", { name: "Dealer discount", exact: true });
+  await expect(offer).toContainText("12% off");
+  await expect(offer).toContainText("Maximum savings $500");
+  await offer.getByText("Offer terms & eligibility", { exact: true }).click();
+  await expect(offer).toContainText("Excludes freight");
+  expect(await page.locator('section[aria-labelledby="toolkit-heading"]').evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(244, 244, 250)");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath(`dealer-light-offer-${testInfo.project.name}.png`), fullPage: true });
+  await offer.getByRole("link", { name: "Request an eligible quote", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Requested offer" })).toContainText(offerId);
+  await expect(page.getByRole("link", { name: /Design Request/ })).toHaveAttribute("href", "https://kessickwinecellars.com/design-request/");
+  await expect(page.getByRole("link", { name: /Design Request/ })).toContainText("Your submission is handled there");
+});

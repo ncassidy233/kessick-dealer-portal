@@ -439,3 +439,9 @@
 @container (min-width: 700px) {
   .studio-content-grid { grid-template-columns: repeat(var(--studio-grid-columns, 3), minmax(0, 1fr)); }
 }
+
+/* The restored dealer cover combines a dark photo header with light toolkit panels. */
+.dealer-dashboard section[aria-labelledby="toolkit-heading"] { background:#f4f4fa; color:#242830; border-radius:18px; padding:24px 16px; }
+.dealer-dashboard section[aria-labelledby="toolkit-heading"] a { color:#414a58; }
+.dealer-dashboard section[aria-labelledby="toolkit-heading"] a > span:first-child { background:linear-gradient(145deg,#fff,#c9ccd1); color:#35465a; border-color:#a4a8af; box-shadow:0 4px 8px #0002; }
+.dealer-dashboard section[aria-labelledby="toolkit-heading"] a > span:last-child { color:#414a58; }

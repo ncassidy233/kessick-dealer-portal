@@ -1,3 +1,6 @@
+import { activePromotion } from "@workspace/api-zod";
+import { DealerContentLink } from "@/components/dealer-content-link";
+import { safeContentUrl } from "@/lib/content-links";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -127,6 +130,9 @@ export default function PortalForms() {
   // metadata, but must never replace the legacy form fetch.
   const legacyQuery = useListDealerPortalForms();
   const contentQuery = usePortalContent("form");
+  const offersQuery = usePortalContent("announcement");
+  const requestedOfferId = new URLSearchParams(window.location.search).get("offer");
+  const requestedOffer = offersQuery.data?.content.find(item => item.id === requestedOfferId && activePromotion(item.payload?.promotion));
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
 
   const forms = useMemo<DisplayForm[]>(() => {
@@ -196,6 +202,7 @@ export default function PortalForms() {
         </p>
       </header>
 
+      {requestedOfferId && <section aria-label="Requested offer" className="rounded-xl border border-[#8ea8bf] bg-[#b9cede] p-5 text-[#182c3c]">{requestedOffer ? <><h2 className="font-semibold">Quote offer: {requestedOffer.title}</h2><p className="mt-2 text-sm">Include this reference with your design request: <strong>{requestedOffer.id}</strong></p><p className="mt-2 text-sm">{activePromotion(requestedOffer.payload?.promotion)?.terms}</p><p className="mt-2 text-xs">Kessick will confirm eligibility, availability and final savings. Opening a form does not apply a discount.</p><Button variant="outline" className="mt-3" onClick={async () => { try { await navigator.clipboard.writeText(`${requestedOffer.title} — offer ${requestedOffer.id}`); toast.success("Offer reference copied"); } catch { toast.error("Select and copy the offer reference above."); } }}>Copy offer reference</Button></> : <p className="text-sm">{offersQuery.isLoading ? "Checking offer eligibility…" : "This offer is unavailable, expired, or outside your account’s audience. Request a current quote from Kessick."}</p>}</section>}
       {contentQuery.error && (
         <div className="flex items-start gap-3 border border-[#B39862]/40 bg-[#B39862]/10 p-4 text-sm text-[#121210]/75">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#8b382b]" />
@@ -213,6 +220,8 @@ export default function PortalForms() {
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {forms.map((form) => {
+            const externalUrl = form.content?.payload?.externalForm ? safeContentUrl(form.content.payload.url) : null;
+            if (externalUrl) return <DealerContentLink key={form.id} href={externalUrl} target="_blank" rel="noopener noreferrer" className="group flex flex-col rounded-xl border border-[#121210]/10 bg-white p-6 text-left hover:border-[#B39862] focus-visible:ring-2 focus-visible:ring-[#B39862]"><h2 className="text-lg font-medium text-[#121210]">{form.title}</h2><p className="mt-3 text-sm text-[#121210]/60">{form.description}</p><span className="mt-5 text-sm font-semibold text-[#806936]">Open official form ↗</span><span className="mt-2 text-xs text-[#121210]/50">Opens Kessick’s website. Your submission is handled there.</span></DealerContentLink>;
             const isUnavailable = !form.legacy;
             return (
               <button

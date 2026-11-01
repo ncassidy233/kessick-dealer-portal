@@ -1,3 +1,4 @@
+import { promotionSchema, activePromotion } from "@workspace/api-zod";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { createClerkClient } from "@clerk/backend";
 import {
@@ -796,6 +797,7 @@ router.get("/portal-v2/admin/content", requireCapability("content:read"), async 
 router.post("/portal-v2/admin/content", requireCapability("content:write"), async (req, res): Promise<void> => {
   const body = contentInput.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Invalid content." }); return; }
+  if (body.data.payload?.promotion !== undefined && (body.data.kind !== "announcement" || !promotionSchema.safeParse(body.data.payload.promotion).success)) { res.status(400).json({ error: "Discounts require valid dates, amount, collections and terms." }); return; }
   const targetError = validateContentTargets(body.data); if (targetError) { res.status(400).json({ error: targetError }); return; }
   try { await assertGroups(body.data.groupIds ?? []); await assertDealerAccounts(body.data.accountIds ?? []); } catch (error: any) { res.status(400).json({ error: error.message }); return; }
   const resourceId = linkedResourceId(body.data.kind, body.data.payload);
@@ -815,7 +817,7 @@ router.post("/portal-v2/admin/content", requireCapability("content:write"), asyn
     return row;
   });
   if (!content) { res.status(400).json({ error: "Linked resource not found." }); return; }
-  await audit(req, "portal_v2.content.created", "content", content.id, { kind: content.kind });
+  await audit(req, "portal_v2.content.created", "content", content.id, { kind: content.kind, ...(body.data.payload?.promotion ? { promotion: body.data.payload.promotion, published: content.published, visibility: content.visibility, groupIds: body.data.groupIds ?? [], accountIds: body.data.accountIds ?? [] } : {}) });
   res.status(201).json({ content: await contentDto(content) });
 });
 router.patch("/portal-v2/admin/content/:contentId", requireCapability("content:write"), async (req, res): Promise<void> => {
@@ -824,6 +826,7 @@ router.patch("/portal-v2/admin/content/:contentId", requireCapability("content:w
   const [existing] = await db.select().from(portalContentTable).where(eq(portalContentTable.id, id.data)).limit(1);
   if (!existing) { res.status(404).json({ error: "Content not found." }); return; }
   const merged = { ...existing, ...body.data, groupIds: body.data.groupIds ?? (await contentDto(existing)).targets.groupIds, accountIds: body.data.accountIds ?? (await contentDto(existing)).targets.accountIds };
+  if (merged.payload && typeof merged.payload === "object" && "promotion" in merged.payload && (merged.kind !== "announcement" || !promotionSchema.safeParse(merged.payload.promotion).success)) { res.status(400).json({ error: "Invalid discount configuration." }); return; }
   const targetError = validateContentTargets(merged); if (targetError) { res.status(400).json({ error: targetError }); return; }
   try { await assertGroups(merged.groupIds); await assertDealerAccounts(merged.accountIds); } catch (error: any) { res.status(400).json({ error: error.message }); return; }
   const previousResourceId = linkedResourceId(existing.kind, existing.payload);
@@ -851,7 +854,7 @@ router.patch("/portal-v2/admin/content/:contentId", requireCapability("content:w
     return row;
   });
   if (!content) { res.status(400).json({ error: "Linked resource not found." }); return; }
-  await audit(req, "portal_v2.content.updated", "content", content.id, { changed: Object.keys(body.data) });
+  await audit(req, "portal_v2.content.updated", "content", content.id, { changed: Object.keys(body.data), ...((existing.kind === "announcement" && (existing.payload as Record<string, unknown>)?.promotion) || body.data.payload?.promotion ? { before: existing.payload, after: content.payload, published: content.published, visibility: content.visibility, groupIds: merged.groupIds, accountIds: merged.accountIds } : {}) });
   res.json({ content: await contentDto(content) });
 });
 router.delete("/portal-v2/admin/content/:contentId", requireCapability("content:write"), async (req, res): Promise<void> => {
@@ -886,6 +889,7 @@ router.get("/portal-v2/content", async (req, res): Promise<void> => {
   const groupIds = (await groupsForAccount(accountId)).map((group) => group.id);
   const rows = await db.select().from(portalContentTable).where(eq(portalContentTable.published, true));
   const visible = await Promise.all(rows.filter((row) => !query.data.kind || row.kind === query.data.kind).map(async (row) => {
+    if (row.kind === "announcement" && row.payload && typeof row.payload === "object" && "promotion" in row.payload && !activePromotion(row.payload.promotion)) return null;
     if (staffAccess) return row;
     const pageCapability = legacyPageCapabilityForContent(row.kind);
     if (pageCapability && !await canViewLegacyPortalCapability(accountId, groupIds, pageCapability)) return null;

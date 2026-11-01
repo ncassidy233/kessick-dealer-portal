@@ -1,4 +1,5 @@
 import app from "./app";
+import { importOfficialKessickContent } from "./lib/importOfficialKessickContent";
 import { logger } from "./lib/logger";
 
 const rawPort = process.env["PORT"];
@@ -14,6 +15,9 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+const catalog = await importOfficialKessickContent();
+logger.info(catalog, "Official Kessick content catalog ready");
 
 app.listen(port, (err) => {
   if (err) {
