@@ -32,6 +32,7 @@ test("staff saves, previews at actual device widths, and explicitly publishes a 
   let publishes = 0;
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === "/api/account") return route.fulfill({ json: { account: { id: "staff", role: "staff", status: "approved", email: "staff@example.invalid", emailVerified: true }, organization: null, membership: null } });
     if (url.pathname.endsWith("/bootstrap"))
       return route.fulfill({
         json: {
@@ -164,6 +165,7 @@ test("content managers cannot publish and failed saves retain local edits", asyn
   let saves = 0;
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === "/api/account") return route.fulfill({ json: { account: { id: "staff", role: "staff", status: "approved", email: "staff@example.invalid", emailVerified: true }, organization: null, membership: null } });
     if (url.pathname.endsWith("/bootstrap"))
       return route.fulfill({
         json: {

@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import staffBoundary from "../middlewares/staffBoundary";
 import healthRouter from "./health";
 import catalogRouter from "./catalog";
 import accountsRouter from "./accounts";
@@ -12,6 +13,7 @@ import dealerPreviewRouter from "./dealerPreview";
 
 const router: IRouter = Router();
 
+router.use(staffBoundary);
 router.use(healthRouter);
 router.use(catalogRouter);
 router.use(conciergeRouter);

@@ -476,7 +476,7 @@ function LocalDealerView({ location }: { location: string }) {
   const AdminPage = adminPages[location as keyof typeof adminPages] ?? NotFound;
   return <QueryClientProvider client={client}>{DealerPage
     ? <AccountDataGuard><PortalLayout signOutControl={null}><DealerPage /></PortalLayout></AccountDataGuard>
-    : <StaffGuard>{location.startsWith("/admin/dealer-view") ? <DealerView dealerId={dealerId} /> : <PortalLayout signOutControl={null}><AdminPage /></PortalLayout>}</StaffGuard>}
+    : <AccountDataGuard><StaffGuard>{location.startsWith("/admin/dealer-view") ? <DealerView dealerId={dealerId} /> : <PortalLayout signOutControl={null}><AdminPage /></PortalLayout>}</StaffGuard></AccountDataGuard>}
   </QueryClientProvider>;
 }
 

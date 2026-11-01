@@ -210,3 +210,50 @@ test("staff sees edits before saving and is protected from accidental content lo
   await page.screenshot({ path: testInfo.outputPath(`staff-studio-live-preview-${testInfo.project.name}.png`), animations: "disabled" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("dealers cannot open any staff page or staff navigation", async ({ page }, testInfo) => {
+  await page.route("**/api/account", route => route.fulfill({ json: { account: { id: accountId, role: "dealer", status: "approved", email: "dealer@example.invalid", emailVerified: true }, organization: null, membership: null } }));
+  await page.route("**/api/portal-v2/bootstrap", route => route.fulfill({ json: { account: { id: accountId, role: "dealer", status: "approved", email: "dealer@example.invalid" }, role: "dealer", authorized: true, capabilities: ["content:read"], groups: [] } }));
+  for (const path of ["/admin", "/admin/users", "/admin/groups", "/admin/content", "/admin/page-studio", "/admin/pricing", "/admin/access", "/admin/audit", "/admin/notifications", "/admin/knowledge", "/admin/concierge-insights", "/admin/dealer-view"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/portal$/);
+    await expect(page.getByRole("navigation", { name: "Staff navigation", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Staff View", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "New content", exact: true })).toHaveCount(0);
+  }
+  await page.screenshot({ path: testInfo.outputPath(`dealer-no-staff-access-${testInfo.project.name}.png`), animations: "disabled" });
+});
+
+test("permission refresh locks cached staff screens after failure and revocation", async ({ page }, testInfo) => {
+  await page.clock.install();
+  let denied: "failure" | "dealer" = "failure";
+  let restricted = false;
+  await page.route("**/api/portal-v2/bootstrap", route => restricted
+    ? denied === "failure" ? route.fulfill({ status: 503, json: { error: "Verification unavailable" } }) : route.fulfill({ json: { role: "dealer", authorized: true, capabilities: ["content:read"], groups: [], account: { id: accountId, status: "approved", email: "dealer@example.invalid" } } })
+    : route.fulfill({ json: { role: "super_admin", authorized: true, capabilities, groups: [], account: { id: accountId, status: "approved", email: "staff@example.invalid" } } }));
+  await page.goto("/admin/page-studio");
+  await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toBeVisible();
+  restricted = true;
+  await page.clock.fastForward(31_000);
+  await expect(page.getByRole("heading", { name: "Unable to verify staff permissions", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save Draft", exact: true })).toHaveCount(0);
+  denied = "dealer";
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(page.getByTestId("state-staff-access-denied")).toBeVisible();
+  await page.getByTestId("state-staff-access-denied").screenshot({ path: testInfo.outputPath(`staff-denied-proof-${testInfo.project.name}.png`), animations: "disabled" });
+  await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath(`staff-access-locked-${testInfo.project.name}.png`), animations: "disabled" });
+});
+
+test("an account refresh failure cannot expose cached staff data", async ({ page }) => {
+  let failed = false;
+  await page.route("**/api/account", route => failed ? route.fulfill({ status: 503, json: { error: "Account verification unavailable" } }) : route.fulfill({ json: { account: { id: accountId, role: "staff", status: "approved", email: "staff@example.invalid", emailVerified: true }, organization: null, membership: null } }));
+  await page.goto("/admin/page-studio");
+  await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toBeVisible();
+  failed = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.getByRole("heading", { name: "Staff access verification required", exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Page Studio", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Save Draft", exact: true })).toHaveCount(0);
+});

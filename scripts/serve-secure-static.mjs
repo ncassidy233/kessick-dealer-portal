@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 // Production-only static delivery. Never serve the workspace or source files.
 export const browserPolicy = [
   "default-src 'self'",
-  "base-uri 'self'",
+  "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self' https://accounts.google.com https://*.clerk.accounts.dev https://*.clerk.com",
@@ -31,6 +31,8 @@ export function staticHeaders() {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    "Cross-Origin-Resource-Policy": "same-origin",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy":
       "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), xr-spatial-tracking=(self)",
