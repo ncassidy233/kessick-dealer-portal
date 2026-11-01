@@ -115,6 +115,7 @@ test("staff authors a targeted quote offer and dealers see its terms and officia
   await page.getByLabel("Maximum savings (USD, optional)").fill("500");
   await page.getByLabel("Terms and exclusions").fill("New Estate quotes only. Excludes freight. Kessick approval required.");
   await page.getByLabel("Publish immediately", { exact: true }).check();
+  if (testInfo.project.name === "desktop") { await page.getByLabel("Title", { exact: true }).scrollIntoViewIfNeeded(); await page.screenshot({ path: testInfo.outputPath("staff-editor-valid-offer-desktop.png"), animations: "disabled" }); }
   await page.getByRole("button", { name: "Create content", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(saved.payload.promotion).toMatchObject({ percentOff: 12, minimumOrder: 1000, maximumSavings: 500, collections: ["Estate"], combinable: false });
@@ -134,6 +135,7 @@ test("staff authors a targeted quote offer and dealers see its terms and officia
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath(`dealer-light-offer-${testInfo.project.name}.png`), fullPage: true });
+  await toolkit.screenshot({ path: testInfo.outputPath(`compact-toolkit-${testInfo.project.name}.png`), animations: "disabled" });
   await offer.getByRole("link", { name: "Request an eligible quote", exact: true }).click();
   await expect(page.getByRole("region", { name: "Requested offer" })).toContainText(offerId);
   await expect(page.getByRole("link", { name: /Design Request/ })).toHaveAttribute("href", "https://kessickwinecellars.com/design-request/");
@@ -152,7 +154,9 @@ test("staff sees edits before saving and is protected from accidental content lo
     if (["/api/staff/portal/forms", "/api/staff/portal/resources", "/api/staff/portal/form-submissions"].includes(pathname)) return route.fulfill({ json: [] });
     return route.fallback();
   });
-  await page.goto("/admin/content");
+  await page.goto("/admin");
+  if (testInfo.project.name === "phone") await page.getByRole("button", { name: "More staff tools", exact: true }).click();
+  await page.getByRole("link", { name: "Content & resources", exact: true }).filter({ visible: true }).click();
   await expect(page.getByRole("button", { name: "Edit Estate catalog", exact: true }).filter({ visible: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Edit Previous offer", exact: true }).filter({ visible: true }).click();
@@ -182,6 +186,12 @@ test("staff sees edits before saving and is protected from accidental content lo
   await page.screenshot({ path: testInfo.outputPath(`staff-content-live-preview-${testInfo.project.name}.png`), animations: "disabled" });
   if (testInfo.project.name !== "desktop") await page.getByRole("button", { name: "Back to fields", exact: true }).click();
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Preview offer — test data");
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Welcome back, Nicholas." })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Preview offer — test data");
+  await expect(page.getByLabel("Percent off", { exact: true })).toHaveValue("18");
   page.once("dialog", async dialog => { expect(dialog.message()).toContain("unsaved content changes"); await dialog.dismiss(); });
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
