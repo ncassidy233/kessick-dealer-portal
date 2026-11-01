@@ -1,6 +1,7 @@
 import app from "./app";
 import { importOfficialKessickContent } from "./lib/importOfficialKessickContent";
 import { logger } from "./lib/logger";
+import { repairStaffAddedDealerInvitations } from "./lib/staffDealerProvisioning";
 
 const rawPort = process.env["PORT"];
 
@@ -18,6 +19,8 @@ if (Number.isNaN(port) || port <= 0) {
 
 const catalog = await importOfficialKessickContent();
 logger.info(catalog, "Official Kessick content catalog ready");
+const invitations = await repairStaffAddedDealerInvitations();
+logger.info(invitations, "Staff-added dealer preapproval repair complete");
 
 app.listen(port, (err) => {
   if (err) {
