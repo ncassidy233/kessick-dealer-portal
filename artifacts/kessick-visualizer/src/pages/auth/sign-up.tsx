@@ -26,6 +26,9 @@ export default function SignUpPage() {
               forceRedirectUrl={redirectUrl}
             />
           </div>
+          <p className="mt-5 text-center text-xs leading-relaxed text-[#F3F0E8]/65">
+            Check your email address before continuing. Email codes remain valid for 10 minutes; the 30-second timer controls when you can resend.
+          </p>
         </div>
       </div>
       <div className="hidden lg:block flex-1 relative border-l border-white/10">
