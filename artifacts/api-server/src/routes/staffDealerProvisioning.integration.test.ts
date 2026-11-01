@@ -7,7 +7,7 @@ const disposableDatabase = process.env.KNOWLEDGE_DB_INTEGRATION_TEST === "1"
   && process.env.NODE_ENV === "test" && Boolean(process.env.DATABASE_URL)
   && ["127.0.0.1", "localhost"].includes(new URL(process.env.DATABASE_URL!).hostname);
 
-test("staff-added dealer access is approved independently of invitation delivery", { skip: !disposableDatabase }, async t => {
+test("staff-added account access is approved independently of invitation delivery", { skip: !disposableDatabase }, async t => {
   process.env.CLERK_SECRET_KEY = "sk_test_kessick_disposable_fixture";
   const { db, pool, accountsTable, portalStaffProfilesTable } = await import("@workspace/db");
   const { eq } = await import("drizzle-orm");
@@ -29,7 +29,8 @@ test("staff-added dealer access is approved independently of invitation delivery
   const staff = await fixture("staff");
   const dealer = await fixture("dealer");
   const manager = await fixture("staff");
-  for (const [account, role] of [[staff, "staff_admin"], [manager, "content_manager"]] as const) {
+  const owner = await fixture("staff");
+  for (const [account, role] of [[staff, "staff_admin"], [manager, "content_manager"], [owner, "super_admin"]] as const) {
     await db.insert(portalStaffProfilesTable).values({ accountId: account.id, role, authorizedAt: new Date(), authorizedClerkUserId: account.clerkUserId });
   }
   let invitationCalls = 0;
@@ -43,10 +44,11 @@ test("staff-added dealer access is approved independently of invitation delivery
     assert.equal(url.pathname, "/v1/invitations");
     if (request.method === "GET") return Response.json({ data: [], total_count: 0 });
     assert.equal(request.method, "POST"); invitationCalls++;
-    const body = await request.json() as { email_address: string; notify: boolean };
+    const body = await request.json() as { email_address: string; notify: boolean; redirect_url: string };
     const [saved] = await db.select().from(accountsTable).where(eq(accountsTable.email, body.email_address));
     assert.equal(saved?.status, "approved", "Access must be committed before notification");
     assert.equal(body.notify, true);
+    if (saved?.role === "staff") assert.equal(body.redirect_url, "https://portal.example.invalid/sign-up?redirect_url=%2Fadmin");
     if (failDelivery) return Response.json({ errors: [{ code: "email_delivery_failed", message: "Synthetic mail failure" }] }, { status: 400 });
     return Response.json({ object: "invitation", id: `inv_${randomUUID()}`, email_address: body.email_address, status: "pending", url: "https://setup.example.invalid/invitation", created_at: Date.now(), updated_at: Date.now() }, { status: 201 });
   });
@@ -76,6 +78,39 @@ test("staff-added dealer access is approved independently of invitation delivery
     FROM accounts a JOIN organization_memberships m ON m.account_id=a.id
     JOIN dealer_organizations o ON o.id=m.organization_id WHERE a.id=$1`, [id])).rows[0];
   try {
+    await t.test("super admins add approved staff with the selected role even when an old client sends pending", async () => {
+      for (const role of ["staff_admin", "sales_rep", "content_manager", "super_admin"]) {
+        const result = await add({ email: email(), role, status: "pending" }, owner.id);
+        assert.equal(result.response.status, 201, result.error);
+        assert.equal(result.user.status, "approved"); assert.equal(result.user.portalRole, role);
+        assert.equal(result.user.invitation.deliveryStatus, "submitted");
+        const [account] = await db.select().from(accountsTable).where(eq(accountsTable.id, result.user.id));
+        const [profile] = await db.select().from(portalStaffProfilesTable).where(eq(portalStaffProfilesTable.accountId, result.user.id));
+        assert.equal(account.emailVerified, false); assert.ok(account.clerkUserId.startsWith("staff:"));
+        assert.equal(profile.role, role); assert.equal(profile.assignedByAccountId, owner.id);
+        assert.equal(profile.authorizedAt, null); assert.equal(profile.authorizedClerkUserId, null);
+        const unclaimedAccess = await fetch(`http://127.0.0.1:${address.port}/api/portal-v2/admin/users`, { headers: { "x-test-account": account.id } });
+        assert.equal(unclaimedAccess.status, 403, "Approved invitations cannot authorize an unverified staff identity");
+      }
+    });
+    await t.test("failed staff invitation delivery preserves approval and the staff sign-in destination", async () => {
+      failDelivery = true;
+      const result = await add({ email: email(), role: "sales_rep" }, owner.id); failDelivery = false;
+      assert.equal(result.response.status, 201, result.error); assert.equal(result.user.status, "approved");
+      assert.equal(result.user.portalRole, "sales_rep"); assert.equal(result.user.invitation.deliveryStatus, "failed");
+      assert.equal(result.user.invitation.url, "https://portal.example.invalid/sign-in?redirect_url=%2Fadmin");
+      const [profile] = await db.select().from(portalStaffProfilesTable).where(eq(portalStaffProfilesTable.accountId, result.user.id));
+      assert.equal(profile.authorizedAt, null);
+    });
+    await t.test("initial suspension is rejected and only super admins may add staff", async () => {
+      const before = invitationCalls;
+      for (const role of ["dealer", "staff_admin"]) assert.equal((await add({ email: email(), role, status: "suspended" }, owner.id)).response.status, 400);
+      for (const actor of [staff.id, dealer.id, manager.id]) {
+        for (const role of ["staff_admin", "sales_rep", "content_manager", "super_admin"]) assert.equal((await add({ email: email(), role }, actor)).response.status, 403);
+      }
+      assert.equal((await add({ email: dealer.email, role: "staff_admin" }, owner.id)).response.status, 409, "Adding staff cannot silently promote an existing dealer");
+      assert.equal(invitationCalls, before);
+    });
     await t.test("new staff-added dealer is approved even when an old client sends pending", async () => {
       const result = await add({ email: email(), role: "dealer", status: "pending" });
       assert.equal(result.response.status, 201, result.error);

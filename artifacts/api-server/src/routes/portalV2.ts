@@ -502,7 +502,7 @@ router.post("/portal-v2/admin/users", requireCapability("users:write"), async (r
   const actorRole = staffRole(req);
   if (actorRole !== "super_admin" && body.data.role !== "dealer") { res.status(403).json({ error: "Only super admins may provision staff." }); return; }
   if (body.data.organizationId && body.data.role !== "dealer") { res.status(400).json({ error: "Only dealer accounts can join an organization." }); return; }
-  if (body.data.role === "dealer" && body.data.status === "suspended") { res.status(400).json({ error: "Add approved dealer access first. Suspension is a separate action." }); return; }
+  if (body.data.status === "suspended") { res.status(400).json({ error: "Add approved access first. Suspension is a separate action." }); return; }
   const origin = requestSourceOrigin(req);
   if (!origin) { res.status(403).json({ error: "Request origin could not be verified." }); return; }
   let account: typeof accountsTable.$inferSelect;
@@ -518,7 +518,7 @@ router.post("/portal-v2/admin/users", requireCapability("users:write"), async (r
         const [staffAccount] = await tx.insert(accountsTable).values({
           clerkUserId: `staff:${body.data.email}`, email: body.data.email,
           displayName: body.data.displayName ?? null, role: "staff",
-          status: body.data.status ?? "approved", emailVerified: false,
+          status: "approved", emailVerified: false,
         }).returning();
         await tx.insert(portalStaffProfilesTable).values({ accountId: staffAccount.id, role, assignedByAccountId: req.account!.id });
         return staffAccount;
