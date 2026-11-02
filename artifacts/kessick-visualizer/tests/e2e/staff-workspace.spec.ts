@@ -9,6 +9,10 @@ test.beforeEach(async ({ page }) => {
     const { pathname, searchParams } = new URL(route.request().url());
     if (pathname === "/api/account") return route.fulfill({ json: { account: { id: accountId, role: "staff", status: "approved", email: "staff@example.invalid", displayName: "Nicholas Cassidy", emailVerified: true }, organization: null, membership: null } });
     if (pathname === "/api/portal-v2/bootstrap") return route.fulfill({ json: { role: "super_admin", authorized: true, capabilities, account: { id: accountId, status: "approved", email: "staff@example.invalid", displayName: "Nicholas Cassidy" }, groups: [] } });
+    if (pathname === "/api/portal-v2/admin/content") return route.fulfill({ json: { content: [] } });
+    if (pathname === "/api/portal-v2/admin/groups") return route.fulfill({ json: { groups: [] } });
+    if (pathname === "/api/portal-v2/admin/users") return route.fulfill({ json: { users: [] } });
+    if (pathname.startsWith("/api/staff/portal/")) return route.fulfill({ json: [] });
     if (pathname === "/api/portal-v2/admin/overview") return route.fulfill({ json: { counts: { dealers: 12, approvedDealers: 10, staff: 2, groups: 3, content: 24, notifications: 4, unreadAcknowledgements: 0 }, recentAudit: [] } });
     if (pathname.endsWith("/draft")) {
       if (route.request().method() === "PUT") draft = { document: route.request().postDataJSON().document, revision: 1, updatedAt: new Date().toISOString(), updatedByAccountId: accountId };
@@ -63,7 +67,7 @@ test("staff can find the editor on every screen and switch into the full dealer 
   await expect(page).toHaveURL(/\/portal\/resources$/);
   await expect(page.getByText("Staff installation guide").first()).toBeVisible();
   await page.getByRole("navigation", { name: "Portal switch", exact: true }).filter({ visible: true }).getByRole("link", { name: "Staff View", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Welcome back, Nicholas." })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/content\?section=resources$/);
   if (testInfo.project.name === "phone") {
     await page.getByRole("button", { name: "More staff tools", exact: true }).click();
     for (const name of ["Layout & Theme", "Access rules", "Activity log"]) await expect(page.getByRole("navigation", { name: "All portal tools", exact: true }).getByRole("link", { name, exact: true })).toBeVisible();
