@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { portalSwitchDestinations, staffRouteSection, sectionEditorHref, sectionPage, dealerContextId } from "@/lib/portal-section";
 import { PortalLink as Link } from "@/components/portal-link";
 import { BrandLogo } from "@/components/brand-logo";
-import { usePortalSession } from "@/lib/portal-session";
+import { staffHome, usePortalSession } from "@/lib/portal-session";
 import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
 import { dealerAccessState } from "@/lib/dealer-access";
 import { useGetDealerPortalAccess } from "@/hooks/use-dealer-api";
@@ -11,7 +11,7 @@ import { usePortalNotifications } from "@/hooks/use-portal-v2";
 import {
   LogOut, User, Home, DollarSign, FileText, FolderOpen, Bell, Users,
   Shield, MessageSquare, Briefcase, Layers, GraduationCap, BookOpen,
-  BarChart3, Headphones, Menu, Paintbrush, ArrowUpRight,
+  BarChart3, Headphones, Menu, Paintbrush, ArrowUpRight, ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useClerk } from "@clerk/react";
@@ -33,6 +33,8 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
 
   const isStaff = Boolean(session?.authorized && session.role !== "dealer" && session.role !== "customer");
   const staffWorkspace = isStaff && !location.startsWith("/portal");
+  const dashboardHref = staffWorkspace ? staffHome(session?.role) : "/portal";
+  const showDashboardReturn = location.replace(/\/$/, "") !== dashboardHref;
   const dealerAuthorized = dealerAccessState(sessionQuery) === "allowed";
   const canDesign = isStaff && session?.capabilities.includes("content:write");
   const unreadCount = notices?.notifications.filter(n => !n.readAt).length || 0;
@@ -110,7 +112,14 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
           <div className="flex items-center gap-2">{switcher}{staffWorkspace && canDesign && <Link href={layoutHref} className="hidden min-h-11 items-center gap-2 rounded-lg bg-[#b39862] px-4 text-xs font-semibold text-[#171715] lg:inline-flex"><Paintbrush className="h-4 w-4" />Edit dealer portal</Link>}<button aria-label={staffWorkspace ? "All staff tools" : "All dealer pages"} onClick={() => setMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border md:hidden"><Menu className="h-5 w-5" /></button></div>
         </div>
       </header>
-      <main id="portal-content" className="min-w-0 pb-24 md:pb-0">{children}</main>
+      <main id="portal-content" className="min-w-0 pb-24 md:pb-0">
+        {showDashboardReturn && <nav aria-label="Page navigation" className="px-4 pt-4 md:px-8 md:pt-5">
+          <Link href={dashboardHref} className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <ArrowLeft aria-hidden="true" className="h-4 w-4 shrink-0" />Back to dashboard
+          </Link>
+        </nav>}
+        {children}
+      </main>
     </div>
     <nav aria-label={staffWorkspace ? "Mobile staff navigation" : "Mobile dealer navigation"} className="fixed inset-x-0 bottom-0 z-40 flex items-center border-t border-border bg-card/95 px-2 pb-safe backdrop-blur md:hidden">
       {(staffWorkspace ? mobileStaffLinks : mobileDealerLinks).map(link => <NavItem key={link.href} link={link} compact />)}
