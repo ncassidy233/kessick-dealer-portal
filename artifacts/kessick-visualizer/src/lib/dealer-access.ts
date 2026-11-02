@@ -12,8 +12,12 @@ export function dealerAccessState(query: {
   data?: DealerSession | null;
   isLoading: boolean;
   isError: boolean;
+  failureCount?: number;
+  isFetching?: boolean;
 }): "loading" | "error" | "allowed" | "account" {
   if (query.isLoading) return "loading";
+  if (query.failureCount) return query.isFetching ? "loading" : "error";
+  if (query.isError && query.isFetching) return "loading";
   if (query.isError || !query.data) return "error";
   return canAccessDealerPortal(query.data) ? "allowed" : "account";
 }
