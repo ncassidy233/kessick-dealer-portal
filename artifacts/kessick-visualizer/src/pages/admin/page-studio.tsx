@@ -1,3 +1,6 @@
+import { useLocation, useSearch } from "wouter";
+import { SectionEditorNav } from "@/components/section-editor-nav";
+import { asPortalSection, sectionPage, sectionEditorHref, dealerContextId } from "@/lib/portal-section";
 import {
   useCallback,
   useEffect,
@@ -37,7 +40,10 @@ const errors = (error: unknown) =>
   error instanceof Error ? error.message : "Unable to complete this action.";
 
 export default function PageStudio() {
-  const [page, setPage] = useState<PageKey>("home");
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const requested = asPortalSection(new URLSearchParams(search).get("page"));
+  const page: PageKey = requested && sectionPage(requested) || "home";
   const dirty = useRef(false);
   const session = usePortalSession();
   const query = useQuery({
@@ -69,6 +75,8 @@ export default function PageStudio() {
       </div>
     );
   return (
+    <>
+    <SectionEditorNav section={page} mode="layout" />
     <Editor
       key={page}
       page={page}
@@ -86,7 +94,7 @@ export default function PageStudio() {
           )
         ) {
           dirty.current = false;
-          setPage(next);
+          navigate(sectionEditorHref(next, "layout", dealerContextId(search)));
         }
       }}
       reload={() => {
@@ -101,6 +109,7 @@ export default function PageStudio() {
         }
       }}
     />
+    </>
   );
 }
 
