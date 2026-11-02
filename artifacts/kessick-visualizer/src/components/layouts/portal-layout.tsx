@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
+import { portalSwitchDestinations, staffRouteSection, sectionEditorHref, sectionPage, dealerContextId } from "@/lib/portal-section";
 import { PortalLink as Link } from "@/components/portal-link";
 import { BrandLogo } from "@/components/brand-logo";
 import { usePortalSession } from "@/lib/portal-session";
@@ -20,6 +21,7 @@ type NavLink = { href: string; label: string; icon: typeof Home; exact?: boolean
 
 export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: { children: ReactNode; signOutControl?: ReactNode }) {
   const [routeLocation] = useLocation();
+  const search = useSearch();
   const selectedDealer = useStaffDealerView();
   const location = selectedDealer ? routeLocation.replace(`/admin/dealer-view/${selectedDealer.selectedDealerAccountId}`, "") : routeLocation;
   const sessionQuery = usePortalSession();
@@ -85,9 +87,12 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
       {Boolean(link.badge) && <span className={compact ? "absolute right-3 top-1 h-2 w-2 rounded-full bg-[#b39862]" : "ml-auto rounded-full bg-[#b39862]/15 px-2 py-0.5 text-[10px]"}>{compact ? null : link.badge}</span>}
     </Link>;
   }
+  const { staffHref, dealerHref } = portalSwitchDestinations(location, search, session?.capabilities ?? [], selectedDealer?.selectedDealerAccountId);
+  const editingSection = staffRouteSection(location, search);
+  const layoutHref = editingSection && sectionPage(editingSection) ? sectionEditorHref(editingSection, "layout", dealerContextId(search)) : "/admin/page-studio";
   const switcher = isStaff && <nav aria-label="Portal switch" className="inline-flex shrink-0 items-center rounded-full border border-current/15 p-1 text-xs font-semibold">
-    <Link href="/admin" aria-current={staffWorkspace ? "page" : undefined} className={`inline-flex min-h-9 items-center rounded-full px-3 ${staffWorkspace ? "bg-[#171715] text-white" : "text-current/70"}`}>Staff View</Link>
-    <Link href="/portal" aria-current={!staffWorkspace ? "page" : undefined} className={`inline-flex min-h-9 items-center rounded-full px-3 ${!staffWorkspace ? "bg-[#b39862] text-[#121210]" : "text-[#5e5e59]"}`}>Dealer View</Link>
+    <Link href={staffHref} aria-current={staffWorkspace ? "page" : undefined} className={`inline-flex min-h-9 items-center rounded-full px-3 ${staffWorkspace ? "bg-[#171715] text-white" : "text-current/70"}`}>Staff View</Link>
+    <Link href={dealerHref} aria-current={!staffWorkspace ? "page" : undefined} className={`inline-flex min-h-9 items-center rounded-full px-3 ${!staffWorkspace ? "bg-[#b39862] text-[#121210]" : "text-[#5e5e59]"}`}>Dealer View</Link>
   </nav>;
 
   return <div className={`min-h-[100dvh] min-w-0 flex flex-col md:flex-row ${staffWorkspace ? "staff-portal bg-white text-[#171715]" : "dealer-portal bg-background text-foreground"}`}>
@@ -102,7 +107,7 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
       <header className={`sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur ${staffWorkspace ? "text-[#171715]" : "text-foreground"}`}>
         <div className="flex min-h-[76px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
           <div className="flex min-w-0 items-center gap-3"><BrandLogo tone="dark" className="h-5 w-auto md:hidden" /><div className="hidden md:block"><p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{staffWorkspace ? "Kessick staff workspace" : isStaff ? "Kessick staff · dealer access" : "Kessick dealer network"}</p><p className="mt-1 text-sm font-semibold">{current?.label || (staffWorkspace ? "Staff Portal" : "Dealer Portal")}</p></div></div>
-          <div className="flex items-center gap-2">{switcher}{staffWorkspace && canDesign && <Link href="/admin/page-studio" className="hidden min-h-11 items-center gap-2 rounded-lg bg-[#b39862] px-4 text-xs font-semibold text-[#171715] lg:inline-flex"><Paintbrush className="h-4 w-4" />Edit dealer portal</Link>}<button aria-label={staffWorkspace ? "All staff tools" : "All dealer pages"} onClick={() => setMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border md:hidden"><Menu className="h-5 w-5" /></button></div>
+          <div className="flex items-center gap-2">{switcher}{staffWorkspace && canDesign && <Link href={layoutHref} className="hidden min-h-11 items-center gap-2 rounded-lg bg-[#b39862] px-4 text-xs font-semibold text-[#171715] lg:inline-flex"><Paintbrush className="h-4 w-4" />Edit dealer portal</Link>}<button aria-label={staffWorkspace ? "All staff tools" : "All dealer pages"} onClick={() => setMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border md:hidden"><Menu className="h-5 w-5" /></button></div>
         </div>
       </header>
       <main id="portal-content" className="min-w-0 pb-24 md:pb-0">{children}</main>
