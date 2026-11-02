@@ -1,3 +1,6 @@
+import { useSearch } from "wouter";
+import { SectionEditorNav } from "@/components/section-editor-nav";
+import { asPortalSection, sectionKinds, portalSections } from "@/lib/portal-section";
 import { DealerQuoteOffer } from "@/components/dealer-quote-offer";
 import { promotionSchema } from "@workspace/api-zod";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -86,6 +89,9 @@ function csvCell(value: unknown): string {
 }
 
 export default function AdminContent() {
+  const section = asPortalSection(new URLSearchParams(useSearch()).get("section"));
+  const scopedKinds = sectionKinds(section);
+  const availableKinds = kindOptions.filter(item => !scopedKinds.length || scopedKinds.includes(item.value));
   const queryClient = useQueryClient();
   const bootstrap = usePortalBootstrap();
   const role = bootstrap.data?.role;
@@ -105,7 +111,7 @@ export default function AdminContent() {
   const submissionsQuery = useQuery({
     queryKey: ["portal-v2", "legacy", "form-submissions"],
     queryFn: () => customFetch<FormSubmission[]>("/api/staff/portal/form-submissions", { responseType: "json" }),
-    enabled: Boolean(bootstrap.data?.authorized) && canReviewResponses,
+    enabled: Boolean(bootstrap.data?.authorized) && canReviewResponses && (!section || section === "forms"),
     staleTime: 20_000,
   });
   const submissions = submissionsQuery.data ?? [];
@@ -138,25 +144,26 @@ export default function AdminContent() {
   const legacyFormsQuery = useQuery({
     queryKey: ["portal-v2", "legacy", "forms"],
     queryFn: () => customFetch<LegacyFormRecord[]>("/api/staff/portal/forms", { responseType: "json" }),
-    enabled: Boolean(bootstrap.data?.authorized) && canEdit,
+    enabled: Boolean(bootstrap.data?.authorized) && canEdit && (!section || scopedKinds.includes("form")),
     staleTime: 30_000,
   });
   const legacyResourcesQuery = useQuery({
     queryKey: ["portal-v2", "legacy", "resources"],
     queryFn: () => customFetch<LegacyResourceRecord[]>("/api/staff/portal/resources", { responseType: "json" }),
-    enabled: Boolean(bootstrap.data?.authorized) && canEdit,
+    enabled: Boolean(bootstrap.data?.authorized) && canEdit && (!section || scopedKinds.includes("resource")),
     staleTime: 30_000,
   });
   const [syncingLegacyId, setSyncingLegacyId] = useState<string | null>(null);
   const legacyForms = legacyFormsQuery.data ?? [];
   const legacyResources = legacyResourcesQuery.data ?? [];
   const linkedLegacyIds = useMemo(() => new Set(content.flatMap((item) => typeof item.payload?.legacyId === "string" ? [item.payload.legacyId] : [])), [content]);
-  const unsyncedForms = legacyForms.filter((item) => !linkedLegacyIds.has(item.id));
-  const unsyncedResources = legacyResources.filter((item) => !linkedLegacyIds.has(item.id));
+  const unsyncedForms = legacyForms.filter((item) => !linkedLegacyIds.has(item.id) && (!section || scopedKinds.includes("form")));
+  const unsyncedResources = legacyResources.filter((item) => !linkedLegacyIds.has(item.id) && (!section || scopedKinds.includes("resource")));
   const groups = groupsQuery.data?.groups ?? [];
   const users = usersQuery.data?.users ?? [];
   const [activeKind, setActiveKind] = useState<UiKind | "all">("all");
   const [search, setSearch] = useState("");
+  useEffect(() => { setActiveKind("all"); setSearch(""); }, [section]);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PortalContent | null>(null);
   const [title, setTitle] = useState("");
@@ -238,14 +245,15 @@ export default function AdminContent() {
     ? "Published training, launch kits and external forms need a destination URL. Check the link yourself before publishing."
     : "";
 
+  const scopedContent = content.filter(item => !scopedKinds.length || scopedKinds.includes(contentUiKind(item)));
   const visibleContent = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return content.filter((item) => {
       const matchesKind = activeKind === "all" || contentUiKind(item) === activeKind;
       const matchesSearch = !needle || `${item.title} ${item.description || ""}`.toLowerCase().includes(needle);
-      return matchesKind && matchesSearch;
+      return (!scopedKinds.length || scopedKinds.includes(contentUiKind(item))) && matchesKind && matchesSearch;
     });
-  }, [activeKind, content, search]);
+  }, [activeKind, content, search, section]);
   const createMutation = useMutation({ mutationFn: createPortalContent });
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: Partial<PortalContentInput> }) => updatePortalContent(id, data) });
   const deleteMutation = useMutation({ mutationFn: deletePortalContent });
@@ -276,7 +284,7 @@ export default function AdminContent() {
     setEditing(null);
     setTitle("");
     setDescription("");
-    setKind("project");
+    setKind(activeKind === "all" ? availableKinds[0]?.value ?? "project" : activeKind);
     setPublished(false);
     setTarget("everyone");
     setTargetGroupIds([]);
@@ -477,11 +485,13 @@ export default function AdminContent() {
   if (bootstrap.error || contentQuery.error || !bootstrap.data) return <ErrorState message={getErrorMessage(bootstrap.error ?? contentQuery.error)} />;
 
   return (
+    <>
+    {section && <SectionEditorNav section={section} mode="content" />}
     <div className={`min-h-full ${ivory} px-4 py-6 md:px-8 md:py-8`}>
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 border-b border-[#121210]/15 pb-6 lg:flex-row lg:items-end lg:justify-between"><div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#806936]">Publishing studio</p><h1 className="text-3xl font-medium tracking-[-0.03em] md:text-4xl">Content</h1><p className="mt-2 text-sm text-[#121210]/60">Create once, target precisely, and publish dealer-facing content without editing payloads by hand.</p></div>{canEdit && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { openEditor(); setKind("announcement"); setDiscountEnabled(true); }}>New discount</Button><Button className="rounded-none bg-[#121210] text-[#F3F0E8]" onClick={() => openEditor()}><Plus className="mr-2 h-4 w-4" /> New content</Button></div>}</header>
-         <section className="grid gap-3 sm:grid-cols-3"><Stat label="Published" value={content.filter((item) => item.published).length} detail="visible records" /><Stat label="Drafts" value={content.filter((item) => !item.published).length} detail="not yet published" /><Stat label="Results" value={visibleContent.length} detail="matching this view" /></section>
-          {canReviewResponses && <section className={`${card} overflow-hidden`}>
+        <header className="flex flex-col gap-4 border-b border-[#121210]/15 pb-6 lg:flex-row lg:items-end lg:justify-between"><div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#806936]">Publishing studio</p><h1 className="text-3xl font-medium tracking-[-0.03em] md:text-4xl">{section ? `${portalSections[section].label} content` : "Content"}</h1><p className="mt-2 text-sm text-[#121210]/60">{section ? "Update this dealer page’s cards, images, links, and visibility." : "Create once, target precisely, and publish dealer-facing content without editing payloads by hand."}</p></div>{canEdit && <div className="flex flex-wrap gap-2">{(!section || scopedKinds.includes("announcement")) && <Button variant="outline" onClick={() => { openEditor(); setKind("announcement"); setDiscountEnabled(true); }}>New discount</Button>}<Button className="rounded-none bg-[#121210] text-[#F3F0E8]" onClick={() => openEditor()}><Plus className="mr-2 h-4 w-4" /> New content</Button></div>}</header>
+         {!section && <section className="grid gap-3 sm:grid-cols-3"><Stat label="Published" value={scopedContent.filter((item) => item.published).length} detail="visible records" /><Stat label="Drafts" value={scopedContent.filter((item) => !item.published).length} detail="not yet published" /><Stat label="Results" value={visibleContent.length} detail="matching this view" /></section>}
+          {canReviewResponses && (!section || section === "forms") && <section className={`${card} overflow-hidden`}>
             <div className="flex items-center justify-between border-b border-[#121210]/10 px-4 py-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#806936]">Response review</p><h2 className="mt-1 text-lg font-medium">Form submissions</h2></div><span className="text-xs text-[#121210]/50">{submissions.length} response{submissions.length === 1 ? "" : "s"}</span></div>
             {submissionsQuery.error ? <p className="p-4 text-sm text-[#8b382b]">Responses are temporarily unavailable: {getErrorMessage(submissionsQuery.error)}</p> : submissions.length === 0 ? <p className="p-4 text-sm text-[#121210]/55">No dealer responses have been submitted yet.</p> : <>
               <div className="flex flex-wrap items-center gap-2 border-b border-[#121210]/10 p-4"><Input aria-label="Search responses" value={submissionSearch} onChange={(event) => setSubmissionSearch(event.target.value)} placeholder="Search form, dealer, or response" className={`${inputClass} min-w-48 flex-1`} /><select aria-label="Filter by form" value={submissionFormId} onChange={(event) => setSubmissionFormId(event.target.value)} className="h-10 border border-[#121210]/15 bg-white/80 px-3 text-sm"><option value="">All forms</option>{Array.from(new Map(submissions.map((item) => [item.form.id, item.form.title])).entries()).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><Button type="button" variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" disabled={!filteredSubmissions.length} onClick={exportSubmissions}>Export filtered CSV</Button></div>
@@ -492,12 +502,12 @@ export default function AdminContent() {
          {canEdit && (unsyncedForms.length > 0 || unsyncedResources.length > 0) && <section className={`${card} overflow-hidden`}><div className="border-b border-[#121210]/10 px-4 py-4"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#806936]">Visibility migration</p><h2 className="mt-1 text-lg font-medium">Link existing forms and resources</h2><p className="mt-1 text-xs text-[#121210]/55">Linking creates a v2 record with the legacy ID so private targets remain authoritative without deleting the existing file or submissions.</p></div><div className="divide-y divide-[#121210]/10">{[...unsyncedForms.map((item) => ({ ...item, legacyKind: "form" as const })), ...unsyncedResources.map((item) => ({ ...item, legacyKind: "resource" as const }))].map((item) => <div key={`${item.legacyKind}-${item.id}`} className="flex items-center justify-between gap-4 px-4 py-3"><div><p className="text-sm font-medium">{item.title}</p><p className="text-xs text-[#121210]/50">{item.legacyKind === "form" ? "Existing form and submissions" : "Existing stored resource"} · {item.enabled ? "enabled" : "disabled"}</p></div><Button variant="outline" size="sm" className="shrink-0 rounded-none border-[#121210]/20 bg-transparent" disabled={syncingLegacyId === item.id} onClick={() => syncLegacyRecord(item, item.legacyKind)}>{syncingLegacyId === item.id ? "Linking…" : "Link for targeting"}</Button></div>)}</div></section>}
         <section className={`${card} space-y-4 p-4`}>
           <div className="relative max-w-lg"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#121210]/45" /><Input aria-label="Search content" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search content" className={`${inputClass} pl-9`} /></div>
-          <div className="flex flex-wrap gap-2">{[{ value: "all" as const, label: "All content" }, ...kindOptions].map((item) => <button key={item.value} type="button" aria-pressed={activeKind === item.value} onClick={() => setActiveKind(item.value)} className={`border px-3 py-2 text-xs font-semibold transition ${activeKind === item.value ? "border-[#121210] bg-[#121210] text-[#F3F0E8]" : "border-[#121210]/15 bg-white/50 text-[#121210]/60 hover:border-[#B39862]"}`}>{item.label}</button>)}</div>
+          <div className="flex flex-wrap gap-2">{[{ value: "all" as const, label: section ? "All in this page" : "All content" }, ...availableKinds].map((item) => <button key={item.value} type="button" aria-pressed={activeKind === item.value} onClick={() => setActiveKind(item.value)} className={`border px-3 py-2 text-xs font-semibold transition ${activeKind === item.value ? "border-[#121210] bg-[#121210] text-[#F3F0E8]" : "border-[#121210]/15 bg-white/50 text-[#121210]/60 hover:border-[#B39862]"}`}>{item.label}</button>)}</div>
         </section>
         {visibleContent.length === 0 ? <div className={`${card} px-6 py-16 text-center`}><FileText className="mx-auto h-8 w-8 text-[#806936]" /><h2 className="mt-3 font-medium">No content in this view</h2><p className="mt-1 text-sm text-[#121210]/55">Create a record or adjust your filters.</p></div> : <section className={`${card} overflow-hidden`}><div className="grid gap-3 p-3 lg:hidden">{visibleContent.map(item => <article key={item.id} className="space-y-3 rounded-lg border border-[#121210]/15 bg-white p-4"><h2 className="break-words font-medium">{item.title}</h2><p className="text-xs text-[#121210]/65">{kindOptions.find(option => option.value === contentUiKind(item))?.label} · <span>{promotionStatus(item)}</span> · {item.visibility === "everyone" ? "Everyone" : item.visibility === "groups" ? `${item.targets.groupIds.length} groups` : `${item.targets.accountIds.length} selected dealers`}</p>{item.description && <p className="line-clamp-2 text-sm text-[#121210]/65">{item.description}</p>}{canEdit && <div className="flex gap-2"><Button variant="outline" className="min-h-11 flex-1" aria-label={`Edit ${item.title}`} onClick={() => openEditor(item)}>Edit content</Button><Button variant="outline" className="min-h-11" aria-label={`Delete ${item.title}`} onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button></div>}</article>)}</div><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[800px] text-left text-sm"><thead className="border-b border-[#121210]/10 bg-[#121210]/[0.035] text-[10px] uppercase tracking-[0.18em] text-[#121210]/55"><tr><th className="px-4 py-4 font-semibold">Content</th><th className="px-4 py-4 font-semibold">Audience</th><th className="px-4 py-4 font-semibold">Status</th><th className="px-4 py-4 font-semibold">Updated</th><th className="px-4 py-4 text-right font-semibold">Actions</th></tr></thead><tbody className="divide-y divide-[#121210]/10">{visibleContent.map((item) => <tr key={item.id} className="transition hover:bg-[#B39862]/[0.06]"><td className="px-4 py-4"><div className="flex items-start gap-3"><div className="mt-0.5 border border-[#B39862]/40 bg-[#B39862]/10 p-2 text-[#806936]"><FileText className="h-4 w-4" /></div><div><div className="font-medium">{item.title}</div><div className="mt-1 text-xs text-[#806936]">{kindOptions.find((kindItem) => kindItem.value === contentUiKind(item))?.label || item.kind}</div>{item.description && <div className="mt-1 max-w-sm truncate text-xs text-[#121210]/50">{item.description}</div>}</div></div></td><td className="px-4 py-4 text-xs text-[#121210]/60">{item.visibility === "everyone" ? "Everyone" : item.visibility === "groups" ? `${item.targets.groupIds.length} group${item.targets.groupIds.length === 1 ? "" : "s"}` : `${item.targets.accountIds.length} dealer${item.targets.accountIds.length === 1 ? "" : "s"}`}</td><td className="px-4 py-4"><span className={`border px-2 py-1 text-[10px] uppercase tracking-[0.14em] ${item.published ? "border-[#55704b]/35 bg-[#55704b]/10 text-[#3d5a35]" : "border-[#121210]/15 text-[#121210]/55"}`}>{promotionStatus(item)}</span></td><td className="px-4 py-4 text-xs text-[#121210]/50">{new Date(item.updatedAt).toLocaleDateString()}</td><td className="px-4 py-4"><div className="flex justify-end gap-1">{canEdit && <><Button variant="ghost" size="icon" className="h-11 w-11 rounded-none hover:bg-[#B39862]/15" aria-label={`Edit ${item.title}`} onClick={() => openEditor(item)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-11 w-11 rounded-none text-[#8b382b] hover:bg-[#a64c3b]/10" aria-label={`Delete ${item.title}`} onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button></>}</div></td></tr>)}</tbody></table></div></section>}
       </div>
 
-      <Dialog open={isEditorOpen} onOpenChange={changeEditorOpen}><DialogContent aria-describedby="content-editor-help" className="max-h-[92dvh] w-[calc(100%-2rem)] max-w-5xl overflow-y-auto rounded-xl border-[#121210]/15 bg-[#F3F0E8] p-4 text-[#121210] sm:p-6 sm:max-w-5xl"><DialogHeader className="sticky top-0 z-20 bg-[#F3F0E8] pb-3 pr-6"><DialogTitle className="text-2xl font-medium">{editing ? "Edit content" : "Create content"}</DialogTitle><p id="content-editor-help" className="text-xs text-[#121210]/65">Choose the content and audience, preview your changes, then save. Drafts stay private until published.</p><p role="status" className="text-xs font-semibold text-[#806936]">{contentDirty ? "Unsaved changes" : "Ready to edit"} · {published ? "Will publish when saved" : "Will save as draft"}</p>{editorError && <p role="alert" className="rounded-lg border border-red-700/30 bg-red-50 p-3 text-sm text-red-900">{editorError}</p>}<Button type="button" variant="outline" className="mt-2 min-h-11 lg:hidden" onClick={() => setShowContentPreview(!showContentPreview)}>{showContentPreview ? "Back to fields" : "Preview changes"}</Button></DialogHeader><div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,.8fr)]"><div className={`${showContentPreview ? "hidden lg:block" : "block"} space-y-5 py-3`}><div className="grid gap-4 sm:grid-cols-2"><Field label="Content type"><select value={kind} onChange={(event) => { const nextKind = event.target.value as UiKind; setKind(nextKind); setFeaturedOnDashboard(false); setComingSoon(false); if (!imageKinds.includes(nextKind)) setImageUrl(""); if (nextKind !== "project") { setProjectStatus(""); setClientName(""); setDemoData(false); } if (nextKind !== "finish") setFinishColor(""); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">{kindOptions.map((item) => <option key={item.value} value={item.value} disabled={Boolean(editing) && ((contentUiKind(editing!) === "form") !== (item.value === "form"))}>{item.label}</option>)}</select></Field><Field label="Title"><Input required aria-required="true" value={title} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder="A clear dealer-facing title" /></Field></div><Field label="Description (optional)"><Textarea value={description} onChange={(event) => setDescription(event.target.value)} className={`${inputClass} resize-none`} rows={3} placeholder="Give dealers enough context to act." /></Field>
+      <Dialog open={isEditorOpen} onOpenChange={changeEditorOpen}><DialogContent aria-describedby="content-editor-help" className="max-h-[92dvh] w-[calc(100%-2rem)] max-w-5xl overflow-y-auto rounded-xl border-[#121210]/15 bg-[#F3F0E8] p-4 text-[#121210] sm:p-6 sm:max-w-5xl"><DialogHeader className="sticky top-0 z-20 bg-[#F3F0E8] pb-3 pr-6"><DialogTitle className="text-2xl font-medium">{editing ? "Edit content" : "Create content"}</DialogTitle><p id="content-editor-help" className="text-xs text-[#121210]/65">Choose the content and audience, preview your changes, then save. Drafts stay private until published.</p><p role="status" className="text-xs font-semibold text-[#806936]">{contentDirty ? "Unsaved changes" : "Ready to edit"} · {published ? "Will publish when saved" : "Will save as draft"}</p>{editorError && <p role="alert" className="rounded-lg border border-red-700/30 bg-red-50 p-3 text-sm text-red-900">{editorError}</p>}<Button type="button" variant="outline" className="mt-2 min-h-11 lg:hidden" onClick={() => setShowContentPreview(!showContentPreview)}>{showContentPreview ? "Back to fields" : "Preview changes"}</Button></DialogHeader><div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,.8fr)]"><div className={`${showContentPreview ? "hidden lg:block" : "block"} space-y-5 py-3`}><div className="grid gap-4 sm:grid-cols-2"><Field label="Content type"><select value={kind} onChange={(event) => { const nextKind = event.target.value as UiKind; setKind(nextKind); setFeaturedOnDashboard(false); setComingSoon(false); if (!imageKinds.includes(nextKind)) setImageUrl(""); if (nextKind !== "project") { setProjectStatus(""); setClientName(""); setDemoData(false); } if (nextKind !== "finish") setFinishColor(""); }} className="h-10 w-full border border-[#121210]/15 bg-white/80 px-3 text-sm outline-none">{(editing ? kindOptions : availableKinds).map((item) => <option key={item.value} value={item.value} disabled={Boolean(editing) && ((contentUiKind(editing!) === "form") !== (item.value === "form"))}>{item.label}</option>)}</select></Field><Field label="Title"><Input required aria-required="true" value={title} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder="A clear dealer-facing title" /></Field></div><Field label="Description (optional)"><Textarea value={description} onChange={(event) => setDescription(event.target.value)} className={`${inputClass} resize-none`} rows={3} placeholder="Give dealers enough context to act." /></Field>
             {supportsImage && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#806936]">Dealer gallery card</p><p className="mt-1 text-xs text-[#121210]/55">Optional image for dealer cards. Leave blank to remove the saved image URL.</p></div><Field label="Image URL"><Input type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} className={inputClass} placeholder="https://images.example.com/card.jpg" /></Field>{imageError && <p role="alert" className="text-xs text-[#8b382b]">{imageError}</p>}{kind === "project" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Project status"><Input value={projectStatus} onChange={(event) => setProjectStatus(event.target.value)} className={inputClass} placeholder="Featured, planning, installed" /></Field><Field label="Client display name"><Input value={clientName} onChange={(event) => setClientName(event.target.value)} className={inputClass} placeholder="Smith Residence" /></Field></div>}{kind === "project" && <label className="flex items-center gap-2 text-xs text-[#121210]/65"><input type="checkbox" checked={demoData} onChange={(event) => setDemoData(event.target.checked)} className="h-4 w-4 accent-[#B39862]" /> Demo data (show a DEMO badge in dealer galleries)</label>}{kind === "finish" && <Field label="Finish color"><div className="flex gap-2"><Input aria-label="Finish color picker" type="color" value={finishColor || "#B39862"} onChange={(event) => setFinishColor(event.target.value)} className="h-10 w-14 cursor-pointer rounded-none border-[#121210]/15 bg-white/80 p-1" /><Input aria-label="Finish color hex value" value={finishColor} onChange={(event) => setFinishColor(event.target.value)} className={inputClass} placeholder="#B39862" /></div></Field>}</div>}
           {kind === "form" && !externalForm && <div className="space-y-3 border border-[#121210]/10 bg-white/45 p-4">
             <div className="flex items-center justify-between">
@@ -544,6 +554,7 @@ export default function AdminContent() {
            </section>
         </aside></div><DialogFooter className="sticky bottom-0 z-20 gap-2 border-t border-[#121210]/15 bg-[#F3F0E8] pt-3"><Button variant="outline" className="rounded-none border-[#121210]/20 bg-transparent" onClick={() => changeEditorOpen(false)}>Cancel</Button><Button className="rounded-none bg-[#121210] text-[#F3F0E8]" disabled={!title.trim() || isUploading || isSavingForm || createMutation.isPending || updateMutation.isPending} onClick={save}>{isUploading ? "Uploading…" : isSavingForm || createMutation.isPending || updateMutation.isPending ? "Saving…" : editing ? "Save content" : "Create content"}</Button></DialogFooter></DialogContent></Dialog>
     </div>
+    </>
   );
 }
 

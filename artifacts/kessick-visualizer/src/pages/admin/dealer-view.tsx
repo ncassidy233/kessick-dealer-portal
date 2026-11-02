@@ -1,6 +1,7 @@
 import { PublishedPortalPage } from "@/components/studio-page";
 import type { PageKey } from "@/lib/page-studio";
 import { useState } from "react";
+import { portalSwitchDestinations } from "@/lib/portal-section";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
@@ -21,7 +22,9 @@ import PortalAccount from "@/pages/portal/account";
 
 export default function DealerView({ dealerId }: { dealerId?: string }) {
   const { data: staff } = usePortalSession();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const dealerPath = dealerId ? location.replace(`/admin/dealer-view/${dealerId}`, "") : "/portal";
+  const { staffHref } = portalSwitchDestinations(dealerPath, "", staff?.capabilities ?? [], dealerId);
   const [search, setSearch] = useState("");
   const dealers = useQuery({
     queryKey: ["staff-dealer-preview-accounts"],
@@ -32,6 +35,7 @@ export default function DealerView({ dealerId }: { dealerId?: string }) {
   return <div className="min-h-screen bg-[#111110] text-white">
     <header className="sticky top-0 z-[60] flex flex-wrap items-center justify-between gap-3 border-b border-[#B39862]/40 bg-[#111110] p-4">
       <div><h1 className="font-semibold">Dealer View — published content</h1><p className="text-sm font-semibold text-[#d8c18d]">Staff View — Read Only</p><p className="text-xs text-white/70">You remain signed in as staff. Dealer actions are disabled.</p></div>
+      {dealerId && staffHref !== "/admin" && <Link href={staffHref} className="inline-flex min-h-11 items-center bg-[#B39862] px-4 text-sm font-semibold text-[#111110]">Edit this page</Link>}
       <Link href={staffHome(staff?.role)} className="inline-flex min-h-11 items-center border border-[#B39862] px-4 text-sm font-semibold">Back to Administration</Link>
       <div className="flex w-full flex-wrap items-center gap-3">
         <label className="flex flex-wrap items-center gap-2 text-sm">Search dealers
