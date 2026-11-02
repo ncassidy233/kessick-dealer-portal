@@ -4,10 +4,10 @@ import { Loader2 } from "lucide-react";
 import { staffHome, usePortalSession } from "@/lib/portal-session";
 
 export function StaffGuard({ children }: { children: ReactNode }) {
-  const { data: session, isLoading, isError, refetch } = usePortalSession();
+  const { data: session, isLoading, isError, isFetching, failureCount, refetch } = usePortalSession();
   const [location] = useLocation();
 
-  if (isLoading) {
+  if (isLoading || (isFetching && (isError || failureCount > 0))) {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

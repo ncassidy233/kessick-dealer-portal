@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { useStaffDealerView } from "./staff-dealer-view-context";
 import { dealerQueryKey, dealerReadUrl } from "./staff-dealer-view";
+import { accessRetryDelay, retryAccessRead } from "./access-recovery";
 
 export type PortalRole = "super_admin" | "staff_admin" | "sales_rep" | "content_manager" | "dealer" | "customer";
 
@@ -25,7 +26,8 @@ export function usePortalSession() {
     refetchOnMount: "always",
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
-    retry: false,
+    retry: retryAccessRead,
+    retryDelay: accessRetryDelay,
   });
 }
 

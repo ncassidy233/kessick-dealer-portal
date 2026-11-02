@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
+import { accessRetryDelay, installSessionFocusRecovery, retryAccessRead } from '@/lib/access-recovery';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
@@ -20,7 +21,7 @@ import { ProjectsModal } from '@/components/projects-modal';
 import { AuthGuard, AccountDataGuard } from '@/components/auth/auth-guard';
 import { StaffGuard } from '@/components/auth/staff-guard';
 import { WorkspaceLayout } from '@/components/layouts/workspace-layout';
-import { ClerkProvider, useUser } from "@clerk/react";
+import { ClerkProvider, useAuth, useUser } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { resolveOAuthAuthorizationDestination } from "@/lib/oauth-navigation";
@@ -185,17 +186,36 @@ function ClerkProviderWithRouter({ children }: { children: ReactNode }) {
 
 function AuthScopedQueryProvider({ children }: { children: ReactNode }) {
   const { isLoaded, user } = useUser();
+  const { getToken } = useAuth();
   const userId = user?.id ?? null;
+  const createClient = () => new QueryClient({ defaultOptions: { queries: {
+    retry: retryAccessRead, retryDelay: accessRetryDelay,
+  } } });
   const [scope, setScope] = useState(() => ({
     userId,
-    client: new QueryClient(),
+    client: createClient(),
   }));
 
   useEffect(() => {
     if (isLoaded && scope.userId !== userId) {
-      setScope({ userId, client: new QueryClient() });
+      setScope({ userId, client: createClient() });
     }
   }, [isLoaded, scope.userId, userId]);
+
+  useEffect(() => {
+    let cleanup = () => {};
+    focusManager.setEventListener(onFocus => {
+      cleanup = installSessionFocusRecovery({
+        windowTarget: window,
+        documentTarget: document,
+        isVisible: () => document.visibilityState !== "hidden",
+        refreshSession: () => getToken({ skipCache: true }),
+        onFocus,
+      });
+      return cleanup;
+    });
+    return () => cleanup();
+  }, [getToken, userId]);
 
   if (!isLoaded || scope.userId !== userId) return null;
   return (
