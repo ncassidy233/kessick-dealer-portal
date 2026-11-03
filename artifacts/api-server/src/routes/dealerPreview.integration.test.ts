@@ -76,6 +76,7 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     const request = (path = "", accountId: string | null = staff.id, method = "GET") => fetch(`http://127.0.0.1:${address.port}/api/staff/dealer-view${path}`, {
       method, headers: accountId ? { "x-test-account": accountId } : {},
     });
+    const own = (path: string, accountId: string, method = "GET", body?: unknown) => fetch(`http://127.0.0.1:${address.port}/api/own-portal${path}`, { method, headers: { "x-test-account": accountId, "content-type": "application/json", "x-role": "super_admin", "x-staff": "true", "x-dealer-account-id": dealerB.id }, body: body ? JSON.stringify(body) : undefined });
     assert.equal((await request("", null)).status, 401);
     for (const account of [dealerA, manager, unclaimed]) assert.equal((await request("", account.id)).status, 403);
     const listing = await request();
@@ -162,6 +163,25 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
     assert.equal(isDealerPreviewRead("GET", "/portal-v2/admin/content"), false);
     assert.equal((await request("/not-a-uuid/portal-v2/content")).status, 403);
     assert.equal((await request(`/${dealerA.id}/portal-v2/content?accountId=${dealerB.id}`)).status, 400);
+    await t.test("direct dealer APIs omit private metadata and isolate audiences, pricing and files", async () => {
+      for (const [dealer, expected] of [[dealerA, ["Group only", "Published"]], [dealerB, ["Dealer B document", "Dealer B only", "Published"]]] as const) {
+        const response = await own(`/portal-v2/content?kind=resource&accountId=${dealerB.id}&role=super_admin`, dealer.id);
+        assert.equal(response.status, 200);
+        const text = await response.text();
+        const content = JSON.parse(text) as { content: { title: string }[] };
+        assert.deepEqual(content.content.map(x => x.title).sort(), [...expected].sort());
+        for (const field of ["PRIVATE_STAFF_NOTE", "DENY_NEW_FIELD", "createdByAccountId", "targets", "staffNotes", "Draft secret"]) assert.equal(text.includes(field), false, field);
+      }
+      const bootstrap = await (await own("/portal-v2/bootstrap", dealerA.id)).text();
+      for (const field of ["authorizedClerkUserId", "clerkUserId", "assignedRepId", "approvedByAccountId", "push", "assignedByAccountId"]) assert.equal(bootstrap.includes(field), false, field);
+      assert.equal((await own(`/dealer-portal/resources/${resourceId}/file`, dealerA.id)).status, 404);
+      const ownPricing = await (await own(`/dealer-portal/pricing?accountId=${dealerB.id}`, dealerA.id)).text();
+      assert.equal((JSON.parse(ownPricing) as { wholesaleAmount: string }[])[0].wholesaleAmount, "75.00");
+      for (const field of ["sourceRecord", "optionAdjustments", "provenance"]) assert.equal(ownPricing.includes(field), false, field);
+      const notices = await (await own("/portal-v2/notifications", dealerA.id)).text();
+      assert.ok(notices.includes("Sent A"));
+      for (const field of ["Sent B", "Draft notice", "Scheduled notice", "createdByAccountId", "pushError", "pushStatus"]) assert.equal(notices.includes(field), false, field);
+    });
     await connection.query("INSERT INTO portal_access_rules(subject_type,account_id,capability,enabled) VALUES ('account',$1,'page:resources',false)", [dealerA.id]);
     assert.deepEqual(await titles(dealerA.id), []);
     assert.equal((await request(`/${dealerA.id}/dealer-portal/resources`)).status, 403);
@@ -170,7 +190,6 @@ test("staff Dealer View reuses real dealer visibility without drafts, writes, or
       assert.equal((await request(`/${dealerA.id}/portal-v2/content`)).status, 403);
       await connection.query(`UPDATE ${table} SET status='approved' WHERE ${column}=$1`, [value]);
     }
-    const own = (path: string, accountId: string, method = "GET", body?: unknown) => fetch(`http://127.0.0.1:${address.port}/api/own-portal${path}`, { method, headers: { "x-test-account": accountId, "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
     // Staff access is their own authenticated context, without fake dealer memberships.
     for (const actor of [staff, manager, sales, owner]) {
       await connection.query("INSERT INTO portal_access_rules(subject_type,account_id,capability,enabled) VALUES ('account',$1,'page:resources',false)", [actor.id]);
