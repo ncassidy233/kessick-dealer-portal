@@ -48,8 +48,10 @@ export function AccountDataGuard({ children }: { children: ReactNode }) {
     // If unauthorized response, clerk might be out of sync or server error.
     return (
       <div className="flex h-[100dvh] w-full flex-col items-center justify-center bg-background p-4 text-center">
-        <h2 className="text-xl font-bold mb-2">Authentication Error</h2>
-        <p className="text-muted-foreground">Unable to fetch account details. Please try refreshing.</p>
+        <h1 className="text-xl font-bold mb-2">Unable to verify your account</h1>
+        <p className="text-muted-foreground">Your account details could not be loaded. Retry the connection to continue.</p>
+        <button className="mt-4 min-h-11 underline disabled:opacity-50" disabled={isFetching} onClick={() => void refetch()}>Retry account check</button>
+        <Link href="/sign-in" className="mt-3 inline-flex min-h-11 items-center underline">Return to sign in</Link>
       </div>
     );
   }
