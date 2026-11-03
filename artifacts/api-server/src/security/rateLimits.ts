@@ -1,3 +1,4 @@
+import { safeRequestPath } from "../lib/safeLogging";
 import { getAuth } from "@clerk/express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { logger } from "../lib/logger";
@@ -12,7 +13,7 @@ const common = {
     logger.warn({
       event: "security.rate_limit_exceeded",
       method: req.method,
-      path: req.path,
+      path: safeRequestPath(req),
       limitClass: classifyRateLimit(req.method, req.path),
     }, "Request rate limit exceeded");
     res.status(429).json({ error: "Request limit reached. Try again later." });
