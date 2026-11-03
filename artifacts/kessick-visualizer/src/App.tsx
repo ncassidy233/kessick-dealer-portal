@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, lazy, Suspense, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { accessRetryDelay, installSessionFocusRecovery, retryAccessRead } from '@/lib/access-recovery';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -10,15 +10,7 @@ import NotFound from '@/pages/not-found';
 import PublicLanding from '@/pages/public-landing';
 import SignInPage from '@/pages/auth/sign-in';
 import SignUpPage from '@/pages/auth/sign-up';
-import PendingApprovalPage from '@/pages/pending-approval';
-import ForbiddenPage from '@/pages/forbidden';
-import ProjectsPage from '@/pages/workspace/projects';
-import ProjectEditorPage from '@/pages/workspace/project-editor';
-import InvitationPage from '@/pages/invitation';
-import AccountPage from '@/pages/account';
 import { CanvasStateProvider } from '@/store';
-import { HomeInner } from '@/pages/home';
-import { ProjectsModal } from '@/components/projects-modal';
 import { AuthGuard, AccountDataGuard } from '@/components/auth/auth-guard';
 import { StaffGuard } from '@/components/auth/staff-guard';
 import { WorkspaceLayout } from '@/components/layouts/workspace-layout';
@@ -28,32 +20,8 @@ import { dark } from "@clerk/themes";
 import { resolveOAuthAuthorizationDestination } from "@/lib/oauth-navigation";
 import { StaffDealerViewContext } from "@/lib/staff-dealer-view-context";
 
-import DemoPresentationPage from '@/pages/demo/index';
 import { PortalLayout } from '@/components/layouts/portal-layout';
-import PortalDashboard from '@/pages/portal/dashboard';
-import DealerPortalPreview from '@/pages/portal/preview';
-import PortalPricing from '@/pages/portal/pricing';
-import PortalForms from '@/pages/portal/forms';
-import PortalResources from '@/pages/portal/resources';
-import PortalNotifications from '@/pages/portal/notifications';
-import PortalAccount from '@/pages/portal/account';
-import PageStudio from '@/pages/admin/page-studio';
 import { PublishedPortalPage } from '@/components/studio-page';
-import AdminUsers from '@/pages/admin/users';
-import AdminGroups from '@/pages/admin/groups';
-import AdminAccess from '@/pages/admin/access';
-import AdminPricing from '@/pages/admin/pricing';
-import AdminContent from '@/pages/admin/content';
-import AdminNotifications from '@/pages/admin/notifications';
-import AdminAudit from '@/pages/admin/audit';
-import AdminOverview from '@/pages/admin/overview';
-import DealerView from '@/pages/admin/dealer-view';
-import AdminPreviewPage from '@/pages/admin/preview';
-import AdminKnowledge from '@/pages/admin/knowledge';
-import AdminConciergeInsights from '@/pages/admin/concierge-insights';
-import PortalProjects from '@/pages/portal/projects';
-import PortalCollections from '@/pages/portal/collections';
-import PortalTraining from '@/pages/portal/training';
 
 import {
   Route,
@@ -61,6 +29,39 @@ import {
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+
+const HomeInner = lazy(() => import('@/pages/home').then(m => ({ default: m.HomeInner })));
+const ProjectsModal = lazy(() => import('@/components/projects-modal').then(m => ({ default: m.ProjectsModal })));
+const PendingApprovalPage = lazy(() => import('@/pages/pending-approval'));
+const ForbiddenPage = lazy(() => import('@/pages/forbidden'));
+const ProjectsPage = lazy(() => import('@/pages/workspace/projects'));
+const ProjectEditorPage = lazy(() => import('@/pages/workspace/project-editor'));
+const InvitationPage = lazy(() => import('@/pages/invitation'));
+const AccountPage = lazy(() => import('@/pages/account'));
+const DemoPresentationPage = lazy(() => import('@/pages/demo/index'));
+const PortalDashboard = lazy(() => import('@/pages/portal/dashboard'));
+const DealerPortalPreview = lazy(() => import('@/pages/portal/preview'));
+const PortalPricing = lazy(() => import('@/pages/portal/pricing'));
+const PortalForms = lazy(() => import('@/pages/portal/forms'));
+const PortalResources = lazy(() => import('@/pages/portal/resources'));
+const PortalNotifications = lazy(() => import('@/pages/portal/notifications'));
+const PortalAccount = lazy(() => import('@/pages/portal/account'));
+const PageStudio = lazy(() => import('@/pages/admin/page-studio'));
+const AdminUsers = lazy(() => import('@/pages/admin/users'));
+const AdminGroups = lazy(() => import('@/pages/admin/groups'));
+const AdminAccess = lazy(() => import('@/pages/admin/access'));
+const AdminPricing = lazy(() => import('@/pages/admin/pricing'));
+const AdminContent = lazy(() => import('@/pages/admin/content'));
+const AdminNotifications = lazy(() => import('@/pages/admin/notifications'));
+const AdminAudit = lazy(() => import('@/pages/admin/audit'));
+const AdminOverview = lazy(() => import('@/pages/admin/overview'));
+const DealerView = lazy(() => import('@/pages/admin/dealer-view'));
+const AdminPreviewPage = lazy(() => import('@/pages/admin/preview'));
+const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
+const AdminConciergeInsights = lazy(() => import('@/pages/admin/concierge-insights'));
+const PortalProjects = lazy(() => import('@/pages/portal/projects'));
+const PortalCollections = lazy(() => import('@/pages/portal/collections'));
+const PortalTraining = lazy(() => import('@/pages/portal/training'));
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -81,8 +82,8 @@ function AuthConfigurationError() {
       <section className="max-w-lg border border-border bg-card p-8" role="alert">
         <h1 className="text-xl font-semibold">Sign-in is unavailable</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          This deployment is missing its Clerk publishable key. Access remains
-          locked until an administrator completes authentication configuration.
+          Sign-in is temporarily unavailable. Please contact Kessick support
+          and try again shortly.
         </p>
       </section>
     </main>
@@ -236,7 +237,7 @@ function Router() {
           <DemoPresentationPage />
         </Route>
         <Route path="/admin/preview">
-          <AdminPreviewPage />
+          <AuthGuard><StaffGuard><AdminPreviewPage /></StaffGuard></AuthGuard>
         </Route>
         <Route path="/portal/preview">
           <DealerPortalPreview />
@@ -505,7 +506,9 @@ function App() {
   return (
     <TooltipProvider>
       <WouterRouter base={basePath}>
-        <AppRoutes />
+        <Suspense fallback={<div role="status" className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">Loading Kessick…</div>}>
+          <AppRoutes />
+        </Suspense>
       </WouterRouter>
       <Toaster />
       <SonnerToaster richColors position="top-right" />

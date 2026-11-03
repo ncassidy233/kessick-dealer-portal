@@ -129,7 +129,7 @@ router.get("/catalog/releases/current", async (req, res): Promise<void> => {
   } catch (error) {
     catalogPromise = null;
     req.log.error(
-      { error: error instanceof Error ? error.message : String(error) },
+      { err: error },
       "Approved public catalog is unavailable",
     );
     res.status(503).json({

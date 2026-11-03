@@ -1,4 +1,5 @@
 import { StateSnapshot } from '@/store';
+import { reportClientError } from './client-logging';
 
 const PROJECTS_KEY = 'kessick_projects';
 const ACTIVE_PROJECT_KEY = 'kessick_active_project_id';
@@ -58,7 +59,7 @@ export const saveProjectLocal = (snapshot: StateSnapshot) => {
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
     localStorage.setItem(ACTIVE_PROJECT_KEY, snapshot.project.id);
   } catch (e) {
-    console.error("Failed to save project locally", e);
+    reportClientError("Failed to save project locally", e);
   }
 };
 
@@ -70,7 +71,7 @@ export const deleteProjectLocal = (id: string) => {
       localStorage.removeItem(ACTIVE_PROJECT_KEY);
     }
   } catch (e) {
-    console.error("Failed to delete project", e);
+    reportClientError("Failed to delete project", e);
   }
 };
 

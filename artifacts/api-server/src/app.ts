@@ -5,6 +5,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { protectedHttpSerializers, safeErrorForLog, safeRequestPath } from "./lib/safeLogging";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -37,20 +38,8 @@ app.use((req, res, next) => {
 app.use(
   pinoHttp({
     logger,
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
-    },
+    serializers: protectedHttpSerializers,
+    customProps: (req) => ({ route: safeRequestPath(req) }),
   }),
 );
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
@@ -106,12 +95,9 @@ app.use(
       typeof error === "object" && error && "status" in error
         ? Number(error.status)
         : 500;
-    const code =
-      typeof error === "object" && error && "code" in error
-        ? String(error.code)
-        : "UNHANDLED";
+    const code = safeErrorForLog(error).errorCode ?? "UNHANDLED";
     if (status >= 500) req.log.error({ err: error, code }, "Unhandled API error");
-    else req.log.warn({ code, status, method: req.method, path: req.path }, "Request rejected");
+    else req.log.warn({ code, status, method: req.method, path: safeRequestPath(req) }, "Request rejected");
     if (!res.headersSent) {
       res.status(status >= 400 && status < 600 ? status : 500).json({
         error: status === 403 ? "Request origin is not allowed." : "The request could not be completed.",

@@ -98,6 +98,7 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
   </nav>;
 
   return <div className={`min-h-[100dvh] min-w-0 flex flex-col md:flex-row ${staffWorkspace ? "staff-portal bg-white text-[#171715]" : "dealer-portal bg-background text-foreground"}`}>
+    <a href="#portal-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[150] focus:rounded-md focus:bg-foreground focus:px-4 focus:py-3 focus:text-background">Skip to content</a>
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex sticky top-0 h-[100dvh] overflow-y-auto">
       <div className="border-b border-border px-6 py-6"><BrandLogo tone="dark" className="h-6 w-auto" /><p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{staffWorkspace ? "Staff Portal" : "Dealer Portal"}</p></div>
       <nav aria-label={staffWorkspace ? "Staff navigation" : "Dealer navigation"} className="flex-1 space-y-1 px-3 py-5">{links.map(link => <NavItem key={link.href} link={link} />)}
@@ -112,7 +113,7 @@ export function PortalLayout({ children, signOutControl = <PortalSignOut /> }: {
           <div className="flex items-center gap-2">{switcher}{staffWorkspace && canDesign && <Link href={layoutHref} className="hidden min-h-11 items-center gap-2 rounded-lg bg-[#b39862] px-4 text-xs font-semibold text-[#171715] lg:inline-flex"><Paintbrush className="h-4 w-4" />Edit dealer portal</Link>}<button aria-label={staffWorkspace ? "All staff tools" : "All dealer pages"} onClick={() => setMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border md:hidden"><Menu className="h-5 w-5" /></button></div>
         </div>
       </header>
-      <main id="portal-content" className="min-w-0 pb-24 md:pb-0">
+      <main id="portal-content" tabIndex={-1} className="min-w-0 pb-24 md:pb-0">
         {showDashboardReturn && <nav aria-label="Page navigation" className="px-4 pt-4 md:px-8 md:pt-5">
           <Link href={dashboardHref} className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             <ArrowLeft aria-hidden="true" className="h-4 w-4 shrink-0" />Back to dashboard
