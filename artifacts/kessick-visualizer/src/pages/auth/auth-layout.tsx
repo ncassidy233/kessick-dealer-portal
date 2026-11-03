@@ -29,8 +29,8 @@ export const portalAuthAppearance: ComponentProps<typeof SignIn>["appearance"] =
   },
 };
 
-export function AuthLayout({ title, description, children }: {
-  title: string; description: string; children: ReactNode;
+export function AuthLayout({ title, description, logoSrc, children }: {
+  title: string; description: string; logoSrc?: string; children: ReactNode;
 }) {
   return (
     <div className="kessick-brand grid min-h-[100dvh] bg-[#121210] font-sans text-[#f3f0e8] lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] [&_.cl-header:has([data-localization-key='signIn.start.title'])]:hidden [&_.cl-header:has([data-localization-key='signUp.start.title'])]:hidden">
@@ -44,9 +44,22 @@ export function AuthLayout({ title, description, children }: {
           </a>
         </header>
         <main id="main-content" className="mx-auto flex w-full max-w-[512px] flex-1 flex-col justify-center px-6 pb-10 pt-6 sm:px-8 lg:pb-16">
-          <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-[#d2b77d]">Kessick partner portal</p>
-          <h1 className="font-serif text-4xl leading-tight sm:text-[42px]">{title}</h1>
-          <p className="mb-7 mt-3 max-w-sm text-sm leading-6 text-[#b9b7af]">{description}</p>
+          {logoSrc ? (
+            <div className="mb-7 flex items-center gap-4 sm:gap-5">
+              <img src={logoSrc} alt="Kessick gold K logo" width={112} height={112} fetchPriority="high" decoding="async" className="h-20 w-20 shrink-0 rounded-xl border border-[#c9af76]/25 object-contain shadow-xl sm:h-28 sm:w-28" />
+              <div className="min-w-0">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-[#d2b77d] sm:text-xs">Kessick partner portal</p>
+                <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{title}</h1>
+                <p className="mt-2 text-sm leading-6 text-[#b9b7af]">{description}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-[#d2b77d]">Kessick partner portal</p>
+              <h1 className="font-serif text-4xl leading-tight sm:text-[42px]">{title}</h1>
+              <p className="mb-7 mt-3 max-w-sm text-sm leading-6 text-[#b9b7af]">{description}</p>
+            </>
+          )}
           <div className="w-full border border-white/15 bg-[#1b1b18]">{children}</div>
           <div className="mt-6 flex items-start gap-3 text-sm leading-6 text-[#c4c1b8]">
             <LockKeyhole className="mt-1 h-4 w-4 shrink-0 text-[#d2b77d]" aria-hidden="true" />
