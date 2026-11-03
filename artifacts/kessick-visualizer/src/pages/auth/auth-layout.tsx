@@ -16,7 +16,7 @@ export const portalAuthAppearance: ComponentProps<typeof SignIn>["appearance"] =
     rootBox: "!w-full !max-w-none",
     cardBox: "!w-full !max-w-none !bg-transparent !shadow-none",
     card: "!bg-transparent !px-6 !py-7 sm:!px-8 !shadow-none",
-    header: "!hidden", logoBox: "!hidden",
+    logoBox: "!hidden",
     formFieldInput: "!min-h-11 !text-base !border-white/25 focus:!ring-2 focus:!ring-[#c9af76]",
     formFieldLabel: "!text-[#e3e0d8]",
     formButtonPrimary: "!min-h-11 !bg-[#c9af76] !text-[#17150f] !font-semibold hover:!bg-[#ddc58e]",
@@ -33,7 +33,7 @@ export function AuthLayout({ title, description, children }: {
   title: string; description: string; children: ReactNode;
 }) {
   return (
-    <div className="kessick-brand grid min-h-[100dvh] bg-[#121210] font-sans text-[#f3f0e8] lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+    <div className="kessick-brand grid min-h-[100dvh] bg-[#121210] font-sans text-[#f3f0e8] lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] [&_.cl-header:has([data-localization-key='signIn.start.title'])]:hidden [&_.cl-header:has([data-localization-key='signUp.start.title'])]:hidden">
       <div className="flex min-w-0 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-10 lg:px-12">
           <Link href="/" aria-label="Kessick home" className="inline-flex min-h-11 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#c9af76]">
