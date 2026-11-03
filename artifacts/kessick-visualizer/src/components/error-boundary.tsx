@@ -4,6 +4,7 @@ import {
   type ErrorInfo,
   type ReactNode,
 } from 'react';
+import { reportClientError } from '@/lib/client-logging';
 
 export interface ErrorFallbackProps {
   error: Error;
@@ -75,8 +76,8 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
-    console.error(
-      'ErrorBoundary caught an error:',
+    reportClientError(
+      'Kessick could not display this section.',
       toError(error),
       info.componentStack,
     );
