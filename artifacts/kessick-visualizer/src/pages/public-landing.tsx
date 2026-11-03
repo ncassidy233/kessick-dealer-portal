@@ -64,7 +64,7 @@ export default function PublicLanding() {
               <Link href="/sign-in">Partner Sign In</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-none h-14 px-10 text-xs uppercase tracking-widest font-semibold border-[#B39862]/50 text-[#F3F0E8] hover:bg-[#B39862]/10 hover:border-[#B39862] transition-colors w-full sm:w-auto">
-              <Link href="/sign-up">Request Access</Link>
+              <a href="https://kessickwinecellars.com/become-a-dealer/">Become a Dealer</a>
             </Button>
           </div>
         </div>
@@ -74,8 +74,7 @@ export default function PublicLanding() {
       <footer className="py-8 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 bg-[#121210] border-t border-white/5 relative z-10">
         <p className="text-xs uppercase tracking-widest text-[#F3F0E8]/40">© {new Date().getFullYear()} Kessick Wine Cellars.</p>
         <div className="flex items-center gap-6 text-xs uppercase tracking-widest text-[#F3F0E8]/40">
-          <span className="hover:text-[#B39862] cursor-pointer transition-colors">Privacy</span>
-          <span className="hover:text-[#B39862] cursor-pointer transition-colors">Terms</span>
+          <a href="https://kessickwinecellars.com/" className="inline-flex min-h-11 items-center text-white/70 hover:text-[#B39862] transition-colors">Kessick website</a>
         </div>
       </footer>
     </div>
