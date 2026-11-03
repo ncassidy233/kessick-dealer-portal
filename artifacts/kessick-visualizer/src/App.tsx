@@ -48,6 +48,7 @@ const PortalNotifications = lazy(() => import('@/pages/portal/notifications'));
 const PortalAccount = lazy(() => import('@/pages/portal/account'));
 const PageStudio = lazy(() => import('@/pages/admin/page-studio'));
 const AdminUsers = lazy(() => import('@/pages/admin/users'));
+const ContinuePage = lazy(() => import('@/pages/auth/continue'));
 const AdminGroups = lazy(() => import('@/pages/admin/groups'));
 const AdminAccess = lazy(() => import('@/pages/admin/access'));
 const AdminPricing = lazy(() => import('@/pages/admin/pricing'));
@@ -234,7 +235,7 @@ function Router() {
         <Route path="/" component={PublicLanding} />
         <Route path="/app" component={PublicLanding} />
         <Route path="/demo">
-          <DemoPresentationPage />
+          <AuthGuard><StaffGuard><DemoPresentationPage /></StaffGuard></AuthGuard>
         </Route>
         <Route path="/admin/preview">
           <AuthGuard><StaffGuard><AdminPreviewPage /></StaffGuard></AuthGuard>
@@ -247,6 +248,9 @@ function Router() {
         </Route>
         <Route path="/sign-up/*?">
           <SignUpPage />
+        </Route>
+        <Route path="/continue">
+          <AuthGuard><ContinuePage /></AuthGuard>
         </Route>
 
         {/* Auth Required Routes */}
@@ -493,11 +497,11 @@ function LocalDealerView({ location }: { location: string }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
   const dealerId = /^\/admin\/dealer-view\/([^/]+)\//.exec(location)?.[1];
   const dealerPages = { "/portal": PortalDashboard, "/portal/projects": PortalProjects, "/portal/collections": PortalCollections, "/portal/training": PortalTraining, "/portal/pricing": PortalPricing, "/portal/resources": PortalResources, "/portal/forms": PortalForms, "/portal/notifications": PortalNotifications, "/portal/account": PortalAccount };
-  const adminPages = { "/admin": AdminOverview, "/admin/page-studio": PageStudio, "/admin/content": AdminContent, "/admin/users": AdminUsers, "/admin/groups": AdminGroups, "/admin/pricing": AdminPricing, "/admin/notifications": AdminNotifications, "/admin/access": AdminAccess, "/admin/audit": AdminAudit };
+  const adminPages = { "/admin": AdminOverview, "/admin/page-studio": PageStudio, "/admin/content": AdminContent, "/admin/users": AdminUsers, "/admin/groups": AdminGroups, "/admin/pricing": AdminPricing, "/admin/notifications": AdminNotifications, "/admin/access": AdminAccess, "/admin/audit": AdminAudit, "/admin/knowledge": AdminKnowledge, "/admin/concierge-insights": AdminConciergeInsights };
   const DealerPage = dealerPages[location as keyof typeof dealerPages];
   const AdminPage = adminPages[location as keyof typeof adminPages] ?? NotFound;
   return <QueryClientProvider client={client}>{DealerPage
-    ? <AccountDataGuard><PortalLayout signOutControl={null}><DealerPage /></PortalLayout></AccountDataGuard>
+    ? <AccountDataGuard><PortalLayout signOutControl={null}>{DealerPage === PortalAccount ? <PortalAccount signOutControl={null} /> : <DealerPage />}</PortalLayout></AccountDataGuard>
     : <AccountDataGuard><StaffGuard>{location.startsWith("/admin/dealer-view") ? <DealerView dealerId={dealerId} /> : <PortalLayout signOutControl={null}><AdminPage /></PortalLayout>}</StaffGuard></AccountDataGuard>}
   </QueryClientProvider>;
 }
