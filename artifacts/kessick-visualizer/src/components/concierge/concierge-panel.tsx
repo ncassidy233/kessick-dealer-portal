@@ -3,10 +3,10 @@ import {
   AlertCircle,
   ArrowUp,
   BookOpen,
-  Bot,
+  MessageCircle,
   CheckCircle2,
   Clock3,
-  Coins,
+  Info,
   History,
   Loader2,
   Plus,
@@ -129,7 +129,7 @@ function Message({
     <article className={`flex gap-3 ${assistant ? "" : "justify-end"}`} data-testid={`message-concierge-${message.id}`}>
       {assistant && (
         <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-primary/40 bg-primary/10">
-          <Bot className="h-4 w-4 text-primary" />
+          <MessageCircle className="h-4 w-4 text-primary" />
         </div>
       )}
       <div className={`max-w-[88%] border p-3 ${assistant ? "border-border bg-card" : "border-primary/30 bg-primary/10"}`}>
@@ -323,7 +323,7 @@ export function ConciergePanel({
 
                   {concierge.isSending && (
                     <div className="flex gap-3" data-testid="status-concierge-thinking">
-                      <div className="flex h-7 w-7 items-center justify-center border border-primary/40 bg-primary/10"><Bot className="h-4 w-4 text-primary" /></div>
+                      <div className="flex h-7 w-7 items-center justify-center border border-primary/40 bg-primary/10"><MessageCircle className="h-4 w-4 text-primary" /></div>
                       <div className="flex items-center gap-2 border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Checking authorized sources…
                       </div>
@@ -341,8 +341,8 @@ export function ConciergePanel({
                   </div>
                 )}
                 <div className="mb-2 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
-                  <Coins className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                  <span>Sending uses Replit AI credits and may take a moment. AI can be wrong; verify dimensions, pricing, and approvals against cited Kessick records.</span>
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span>Concierge responses may be inaccurate. Verify dimensions, pricing, and approvals against the cited Kessick records.</span>
                 </div>
                 <div className="flex items-end gap-2 border border-border bg-background p-2 focus-within:border-primary/60">
                   <Textarea
@@ -364,7 +364,7 @@ export function ConciergePanel({
                   <Button
                     data-testid="button-send-concierge-message"
                     size="icon"
-                    aria-label="Send message using AI credits"
+                    aria-label="Send message to Kessick Concierge"
                     disabled={!draft.trim() || concierge.isSending}
                     onClick={() => void submit()}
                   >
