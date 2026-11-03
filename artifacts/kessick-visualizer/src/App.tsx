@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { AppUpdateNotice } from '@/components/app-update-notice';
 import NotFound from '@/pages/not-found';
 import PublicLanding from '@/pages/public-landing';
 import SignInPage from '@/pages/auth/sign-in';
@@ -508,6 +509,7 @@ function App() {
       </WouterRouter>
       <Toaster />
       <SonnerToaster richColors position="top-right" />
+      <AppUpdateNotice />
     </TooltipProvider>
   );
 }
