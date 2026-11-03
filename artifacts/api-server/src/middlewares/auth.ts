@@ -23,23 +23,32 @@ function canonicalEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export async function requireAccount(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+type AccountIdentitySource = {
+  userId: (req: Request) => string | null;
+  user: (userId: string) => Promise<{
+    primaryEmailAddressId: string | null;
+    emailAddresses: { id: string; emailAddress: string; verification: { status: string } | null }[];
+    firstName: string | null;
+    lastName: string | null;
+  }>;
+};
+
+export function createRequireAccount(identity: AccountIdentitySource = {
+  userId: (req) => getAuth(req).userId,
+  user: (userId) => clerk.users.getUser(userId),
+}) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const auth = getAuth(req);
-    const clerkUserId = auth.userId;
+    const clerkUserId = identity.userId(req);
     if (!clerkUserId) {
       res.status(401).json({ error: "Authentication required." });
       return;
     }
-    const user = await clerk.users.getUser(clerkUserId);
+    const user = await identity.user(clerkUserId);
     const primary =
       user.emailAddresses.find(
         (candidate) => candidate.id === user.primaryEmailAddressId,
-      ) ?? user.emailAddresses[0];
+      );
     if (!primary?.emailAddress) {
       res.status(403).json({ error: "A verified email address is required." });
       return;
@@ -130,6 +139,11 @@ export async function requireAccount(
         res.status(403).json({ error: "Account identity could not be reconciled." });
         return;
       }
+    } else if (account.role === "staff" && canonicalEmail(account.email) !== email) {
+      // Staff grants belong to the exact email approved by an administrator.
+      // Changing a Clerk primary email must never transfer an existing grant.
+      res.status(403).json({ error: "Sign in with your approved staff email address. Contact a Kessick administrator if your email has changed." });
+      return;
     } else if (account.email !== email || !account.emailVerified) {
       const [emailOwner] = await db
         .select({ id: accountsTable.id })
@@ -183,7 +197,10 @@ export async function requireAccount(
     req.log.error({ err: error }, "Account bridge failed");
     res.status(503).json({ error: "Account service is temporarily unavailable." });
   }
+  };
 }
+
+export const requireAccount = createRequireAccount();
 
 export function requireActiveAccount(
   req: Request,

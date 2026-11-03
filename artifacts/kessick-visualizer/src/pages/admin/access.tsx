@@ -135,7 +135,7 @@ export default function AdminAccess() {
                     ) : (
                       <Badge variant="outline" className="text-[10px] rounded-none border-destructive/50 text-destructive">DENIED</Badge>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r.id)}>
+                    <Button variant="ghost" size="icon" aria-label={`Delete access rule for ${r.capability}`} className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>

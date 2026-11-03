@@ -44,6 +44,7 @@ import pageStudioRouter from "./pageStudio";
 import { DealerProvisioningConflict, provisionStaffAddedDealer } from "../lib/staffDealerProvisioning";
 import { portalInvitationRedirectUrl } from "../lib/portalInvitation";
 import { requestSourceOrigin } from "../security/origin";
+import { dealerReadResponse } from "../lib/staffDealerResponse";
 import {
   configurePushFromEnvironment,
   isAllowedPushEndpoint,
@@ -451,7 +452,8 @@ router.get("/portal-v2/bootstrap", async (req, res): Promise<void> => {
   const [membership] = await db.select({ organization: dealerOrganizationsTable })
     .from(organizationMembershipsTable).innerJoin(dealerOrganizationsTable, eq(organizationMembershipsTable.organizationId, dealerOrganizationsTable.id))
     .where(and(eq(organizationMembershipsTable.accountId, account.id), eq(organizationMembershipsTable.status, "approved"), eq(dealerOrganizationsTable.status, "approved"))).limit(1);
-  res.json({ account: await userDto(account), role: access.role, authorized: access.authorized, organization: membership?.organization ?? null, groups: await groupsForAccount(account.id), capabilities: portalCapabilities[access.role], push: { configured: pushConfigured, message: pushConfiguration.error } });
+  const response = { account: await userDto(account), role: access.role, authorized: access.authorized, organization: membership?.organization ?? null, groups: await groupsForAccount(account.id), capabilities: portalCapabilities[access.role], push: { configured: pushConfigured, message: pushConfiguration.error } };
+  res.json(access.role === "dealer" && access.authorized ? dealerReadResponse("/portal-v2/bootstrap", response) : response);
 });
 router.post("/portal-v2/bootstrap", async (req, res): Promise<void> => {
   const body = z.object({ displayName: z.string().trim().min(1).max(200).optional() }).safeParse(req.body);
@@ -876,7 +878,7 @@ router.get("/portal-v2/content", async (req, res): Promise<void> => {
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
     return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));
-  res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
+  res.json(dealerReadResponse("/portal-v2/content", { content: visible.filter(Boolean) }));
 });
 router.get("/portal-v2/projects", async (req, res): Promise<void> => {
   if (!await requireApprovedDealer(req, res)) return;
@@ -889,7 +891,7 @@ router.get("/portal-v2/projects", async (req, res): Promise<void> => {
     const targets = await db.select().from(portalContentTargetsTable).where(eq(portalContentTargetsTable.contentId, row.id));
     return isPortalTargetVisible(row.visibility, targets, accountId, groupIds) ? row : null;
   }));
-  res.json({ content: await Promise.all(visible.filter((row): row is typeof portalContentTable.$inferSelect => Boolean(row)).map(contentDto)) });
+  res.json(dealerReadResponse("/portal-v2/projects", { content: visible.filter(Boolean) }));
 });
 
 router.get("/portal-v2/admin/notifications", requireCapability("notifications:read"), async (req, res): Promise<void> => {
@@ -963,7 +965,7 @@ router.get("/portal-v2/notifications", async (req, res): Promise<void> => {
   const rows = await db.select({ notification: portalNotificationsV2Table, recipient: portalNotificationRecipientsV2Table }).from(portalNotificationRecipientsV2Table)
     .innerJoin(portalNotificationsV2Table, eq(portalNotificationRecipientsV2Table.notificationId, portalNotificationsV2Table.id))
     .where(and(eq(portalNotificationRecipientsV2Table.accountId, accountId), eq(portalNotificationsV2Table.status, "sent"))).orderBy(desc(portalNotificationsV2Table.sentAt));
-  res.json({
+  res.json(dealerReadResponse("/portal-v2/notifications", {
     notifications: rows.filter(({ notification }) =>
       shouldListDealerNotification(
         isDealerNotificationVisible(notification.status, notification.expiresAt, new Date()),
@@ -971,7 +973,7 @@ router.get("/portal-v2/notifications", async (req, res): Promise<void> => {
         notification.acknowledgementRequired,
       ),
     ),
-  });
+  }));
 });
 async function recipientAction(req: Request, res: Response, field: "readAt" | "acknowledgedAt") {
   if (!await requireApprovedDealer(req, res)) return;

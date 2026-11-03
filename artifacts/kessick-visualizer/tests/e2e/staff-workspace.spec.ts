@@ -30,6 +30,42 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test("desktop visual review covers every staff and dealer page at two desktop sizes", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Desktop presentation review");
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  const createdAt = "2026-11-03T00:00:00.000Z";
+  const group = { id: resourceId, name: "Showroom partners", description: "Desktop review fixture", memberCount: 1, createdAt };
+  const dealer = { id: resourceId, email: "showroom@example.invalid", displayName: "Showroom Partner — Commercial Design Group", role: "dealer", portalRole: null, status: "approved", groups: [group], createdAt };
+  await page.route("**/api/**", route => {
+    const { pathname, searchParams } = new URL(route.request().url());
+    if (pathname === "/api/portal-v2/bootstrap") return route.fulfill({ json: { role: "super_admin", authorized: true, capabilities: [...capabilities, "groups:write", "notifications:write", "access:write", "audit:read"], account: { id: accountId, status: "approved", email: "staff@example.invalid", displayName: "Nicholas Cassidy" }, groups: [] } });
+    if (pathname === "/api/portal-v2/admin/groups") return route.fulfill({ json: { groups: [group] } });
+    if (pathname === "/api/portal-v2/admin/users") return route.fulfill({ json: { users: searchParams.get("role") === "staff" ? [] : [dealer] } });
+    if (pathname === "/api/portal-v2/admin/notifications") return route.fulfill({ json: { notifications: [] } });
+    if (pathname === "/api/staff/dealer-view") return route.fulfill({ json: { dealers: [dealer] } });
+    if (pathname === "/api/staff/concierge/knowledge") return route.fulfill({ json: { items: [] } });
+    if (pathname === "/api/staff/concierge/insights") return route.fulfill({ json: { from: "2026-10-05", to: "2026-11-03", totals: { conversations: 0, answered: 0, unanswered: 0, failed: 0 }, sourceUsage: [], knowledgeGaps: [] } });
+    if (pathname === "/api/portal-v2/notification-preferences") return route.fulfill({ json: { preferences: { inAppEnabled: true, pushEnabled: false, priorityThreshold: "normal" } } });
+    if (pathname === "/api/dealer-portal/push-config") return route.fulfill({ json: { configured: false } });
+    return route.fallback();
+  });
+  const routes = ["/admin", "/admin/users", "/admin/groups", "/admin/access", "/admin/pricing", "/admin/content", "/admin/notifications", "/admin/audit", "/admin/page-studio", "/admin/knowledge", "/admin/concierge-insights", "/admin/dealer-view", "/portal", "/portal/projects", "/portal/collections", "/portal/training", "/portal/pricing", "/portal/resources", "/portal/forms", "/portal/notifications", "/portal/account"];
+  for (const width of [1280, 1440]) {
+    await page.setViewportSize({ width, height: width === 1280 ? 800 : 900 });
+    for (const path of routes) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+      await expect(page.getByText("Something went wrong", { exact: true })).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${width} ${path} horizontal overflow`).toBe(true);
+      await expect(page.getByRole("button", { name: "", exact: true }).filter({ visible: true }), `${path} buttons need accessible names`).toHaveCount(0);
+      await page.screenshot({ path: testInfo.outputPath(`desktop-${width}-${path.replaceAll("/", "-")}.png`), animations: "disabled" });
+    }
+  }
+  expect(errors).toEqual([]);
+});
+
 test("staff can find the editor on every screen and switch into the full dealer portal", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

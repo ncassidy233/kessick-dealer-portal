@@ -71,6 +71,7 @@ app.use(express.urlencoded({ extended: false, limit: "32kb", inflate: false }));
 app.use(payloadBudget);
 app.use(
   clerkMiddleware((req) => ({
+    authorizedParties: [...allowedOrigins],
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",
       process.env.CLERK_PUBLISHABLE_KEY,

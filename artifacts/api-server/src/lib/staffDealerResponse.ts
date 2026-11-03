@@ -62,10 +62,14 @@ const responses: Record<string, z.ZodType> = {
     wholesaleAmount: z.union([z.string(), z.number()]).nullable(), status: z.string(),
   })),
   "/dealer-portal/dashboard": z.object({
-    organization, groupId: z.string().nullable(),
+    organization: organization.nullable(), groupId: z.string().nullable(),
     counts: z.object({ forms: z.number(), resources: z.number(), unreadNotifications: z.number() }),
   }),
   "/dealer-portal/push-config": z.object({ configured: z.boolean(), publicKey: text }),
+  "/dealer-portal/notifications": z.array(z.object({
+    notification: z.object({ id: z.string(), title: z.string(), body: z.string(), channel: z.string(), sentAt: timestamp }),
+    recipient: z.object({ id: z.string(), notificationId: z.string(), accountId: z.string(), readAt: timestamp }),
+  })),
 };
 
 /** Strip unapproved fields even when the underlying dealer handler grows. */
@@ -76,3 +80,6 @@ export function staffDealerResponse(path: string, value: unknown): unknown {
   if (!schema) throw new Error("Unapproved Dealer View response.");
   return schema.parse(value);
 }
+
+// Published dealer endpoints and staff read-only views share one field allowlist.
+export const dealerReadResponse = staffDealerResponse;

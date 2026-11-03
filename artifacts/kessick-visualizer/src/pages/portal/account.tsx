@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { getGetAccountQueryKey } from "@workspace/api-client-react";
 import { useUpdateAccount } from "@/hooks/use-dealer-api";
 import { useStaffDealerView } from "@/lib/staff-dealer-view-context";
@@ -31,7 +31,7 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
 
-export default function PortalAccount() {
+export default function PortalAccount({ signOutControl = <AccountSignOut /> }: { signOutControl?: ReactNode }) {
   const sessionQuery = usePortalSession();
   const updateAccount = useUpdateAccount();
   const queryClient = useQueryClient();
@@ -234,7 +234,7 @@ export default function PortalAccount() {
             </div>
           </section>
 
-          {!previewDealerId && <AccountSignOut />}
+          {!previewDealerId && signOutControl}
         </div>
       </div>
     </div>
