@@ -24,21 +24,6 @@ export function publishedManifestVersion(value: unknown, baseUrl: string): strin
     ? appEntryVersion(release.entry, baseUrl) : null;
 }
 
-// Only idle, read-only screens can refresh themselves. Editors, authentication,
-// uploads, forms, dialogs and any screen with input always keep an explicit button.
-export function canAutomaticallyRefresh({ pathname, hasInput, hasDialog, hasFocusedField,
-  idleMs, visible, online }: {
-  pathname: string; hasInput: boolean; hasDialog: boolean; hasFocusedField: boolean;
-  idleMs: number; visible: boolean; online: boolean;
-}): boolean {
-  const readOnlyScreens = new Set([
-    "/", "/portal", "/portal/resources", "/portal/collections", "/portal/training",
-    "/portal/notifications", "/admin",
-  ]);
-  return visible && online && idleMs >= 10_000 && !hasInput && !hasDialog && !hasFocusedField
-    && readOnlyScreens.has(pathname.replace(/\/$/, "") || "/");
-}
-
 // Read only public release metadata/the entry document; never cache private data.
 export function createAppUpdateCheck({ currentVersion, baseUrl, isVisible, onUpdate,
   fetcher = fetch, now = Date.now,
