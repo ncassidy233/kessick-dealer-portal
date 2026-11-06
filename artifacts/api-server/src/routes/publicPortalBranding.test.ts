@@ -7,8 +7,8 @@ test("anonymous branding reads only the publication and never expose drafts or d
   // No database connection is opened: every select is replaced with an isolated fixture.
   process.env.DATABASE_URL ??= "postgresql://unused:unused@127.0.0.1:1/unused";
   const { db, pool, portalPagePublicationsTable, portalPageDraftsTable } = await import("@workspace/db");
-  let published: unknown = { ...defaultPortalPublicBranding, signInTitle: "Published sign-in" };
-  const draft = { ...defaultPortalPublicBranding, signInTitle: "Private unsaved title" };
+  let published: unknown = { ...defaultPortalPublicBranding, signInTitle: "Published sign-in", faviconUrl: "https://kessickwinecellars.com/favicon.png" };
+  const draft = { ...defaultPortalPublicBranding, signInTitle: "Private unsaved title", faviconUrl: "https://kessickwinecellars.com/draft.png" };
   const tables: unknown[] = [];
   const select = t.mock.method(db, "select", (() => ({
     from: (table: unknown) => {
