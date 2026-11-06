@@ -273,7 +273,7 @@ export async function createStaticServer(
       const contentType = mime[path.extname(file).toLowerCase()];
       if (!contentType) return fail(404, "Not found.");
       if (relative === "sw.js") res.setHeader("Service-Worker-Allowed", base);
-      if (relative === "sw.js" || relative === "manifest.json" || relative === "app-version.json" || contentType.startsWith("text/html")) {
+      if (relative === "sw.js" || relative === "manifest.json" || relative === "app-version.json" || relative === "app-start.js" || contentType.startsWith("text/html")) {
         res.setHeader("Cache-Control", "private, no-store, max-age=0");
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");

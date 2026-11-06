@@ -82,6 +82,8 @@ export function AppUpdateNotice() {
     document.addEventListener("change", input, true);
     document.addEventListener("pointerdown", interaction, true);
     document.addEventListener("keydown", interaction, true);
+    // A resumed tab may request a lazy chunk removed by the new deploy.
+    window.addEventListener("vite:preloadError", check);
     window.addEventListener("pageshow", check);
     window.addEventListener("focus", check);
     window.addEventListener("online", check);
@@ -96,6 +98,7 @@ export function AppUpdateNotice() {
       document.removeEventListener("change", input, true);
       document.removeEventListener("pointerdown", interaction, true);
       document.removeEventListener("keydown", interaction, true);
+      window.removeEventListener("vite:preloadError", check);
       window.removeEventListener("pageshow", check);
       window.removeEventListener("focus", check);
       window.removeEventListener("online", check);
