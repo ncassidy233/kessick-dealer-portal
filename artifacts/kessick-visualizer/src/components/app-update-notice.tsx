@@ -42,7 +42,11 @@ export function AppUpdateNotice() {
       try {
         if (sessionStorage.getItem("kessick-applied-release") === nextVersion) return;
         sessionStorage.setItem("kessick-applied-release", nextVersion);
-      } catch { /* Storage can be unavailable in restricted browsers. */ }
+      } catch {
+        // Without a persistent reload guard, a stale CDN response could loop.
+        // Keep the visible refresh button for browsers that block storage.
+        return;
+      }
       reloading = true;
       window.location.reload();
     };

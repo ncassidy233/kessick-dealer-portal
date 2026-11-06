@@ -6,8 +6,12 @@ self.addEventListener('install', function(event) {
 
 self.addEventListener('activate', function(event) {
   event.waitUntil((async function() {
-    const names = await caches.keys();
-    await Promise.all(names.filter(name => name.startsWith('kessick-portal-')).map(name => caches.delete(name)));
+    try {
+      const names = await caches.keys();
+      await Promise.allSettled(names.filter(name => name.startsWith('kessick-portal-')).map(name => caches.delete(name)));
+    } catch {
+      // Cache storage can be unavailable. It must not block the new worker.
+    }
     await self.clients.claim();
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of windows) client.postMessage({ type: 'KESSICK_RELEASE_READY' });
