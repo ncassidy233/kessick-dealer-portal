@@ -19,11 +19,12 @@ export function AppUpdateNotice() {
     const src = document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src;
     const currentVersion = src && appEntryVersion(src, baseUrl);
     if (!currentVersion) return;
+    const currentReleaseId = document.querySelector<HTMLMetaElement>('meta[name="kessick-release"]')?.content;
     let registration: ServiceWorkerRegistration | undefined;
     let stopped = false;
     let lastWorkerCheck = -Infinity;
     const canCheck = () => document.visibilityState !== "hidden" && navigator.onLine !== false;
-    const checker = createAppUpdateCheck({ currentVersion, baseUrl,
+    const checker = createAppUpdateCheck({ currentVersion, currentReleaseId, baseUrl,
       isVisible: canCheck,
       onUpdate: () => setAvailable(true),
     });
