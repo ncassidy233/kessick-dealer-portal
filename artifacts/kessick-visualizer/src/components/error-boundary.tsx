@@ -4,6 +4,7 @@ import {
   type ErrorInfo,
   type ReactNode,
 } from 'react';
+import { reportClientError } from '@/lib/client-logging';
 
 export interface ErrorFallbackProps {
   error: Error;
@@ -59,6 +60,13 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
         >
           Try again
         </button>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="ml-3 mt-4 border border-gray-300 px-4 py-2 text-sm text-gray-900"
+        >
+          Refresh app
+        </button>
       </div>
     </div>
   );
@@ -75,8 +83,8 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
-    console.error(
-      'ErrorBoundary caught an error:',
+    reportClientError(
+      'Kessick could not display this section.',
       toError(error),
       info.componentStack,
     );

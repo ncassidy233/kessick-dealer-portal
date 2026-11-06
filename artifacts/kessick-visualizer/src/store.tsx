@@ -205,10 +205,15 @@ export function updateActiveInstances(s: StateSnapshot, updater: (insts: Product
   };
 }
 
-export function AppProvider({ children, initialSnapshot, initialProjectVersion, persistLocal = true, persistImages = persistLocal }: { children: React.ReactNode, initialSnapshot?: StateSnapshot, initialProjectVersion?: number, persistLocal?: boolean, persistImages?: boolean }) {
+type AppProviderProps = { children: React.ReactNode, initialSnapshot?: StateSnapshot, initialProjectVersion?: number, persistLocal?: boolean, persistImages?: boolean };
+
+export function AppProvider(props: AppProviderProps) {
   const { user } = useUser();
   const userName = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'Unknown User';
+  return <CanvasStateProvider {...props} userName={userName} />;
+}
 
+export function CanvasStateProvider({ children, initialSnapshot, initialProjectVersion, persistLocal = true, persistImages = persistLocal, userName }: AppProviderProps & { userName: string }) {
   const [historyState, setHistoryState] = useState(() => {
     const activeProject = initialSnapshot ?? getActiveProjectLocal();
     return {
@@ -233,6 +238,7 @@ export function AppProvider({ children, initialSnapshot, initialProjectVersion, 
   const [roomImageDataUrl, setRoomImageDataUrl] = useState<string | null>(null);
   const [roomImageDataId, setRoomImageDataId] = useState<string | null>(null);
   const [roomImageError, setRoomImageError] = useState<string | null>(null);
+  const [imageLoadRevision, setImageLoadRevision] = useState(0);
   const sessionImageDataRef = useRef<Map<string, string>>(new Map());
 
   const current = history[historyIndex];
@@ -361,7 +367,7 @@ export function AppProvider({ children, initialSnapshot, initialProjectVersion, 
     return () => {
       cancelled = true;
     };
-  }, [current.roomImageId, persistImages, roomImageDataId]);
+  }, [current.roomImageId, persistImages, roomImageDataId, imageLoadRevision]);
 
   const commit = useCallback((updater: (draft: StateSnapshot) => StateSnapshot) => {
     const previous = historyStateRef.current;
@@ -541,6 +547,7 @@ export function AppProvider({ children, initialSnapshot, initialProjectVersion, 
 
   const loadProject = async (snap: StateSnapshot) => {
     sessionImageDataRef.current.clear();
+    setImageLoadRevision(revision => revision + 1);
     const migrated = migrateSnap(snap);
     const updated = { history: [migrated], historyIndex: 0 };
     historyStateRef.current = updated;

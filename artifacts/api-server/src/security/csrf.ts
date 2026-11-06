@@ -1,3 +1,4 @@
+import { safeRequestPath } from "../lib/safeLogging";
 import type { RequestHandler } from "express";
 import { logger } from "../lib/logger";
 import { isAllowedRequestOrigin } from "./origin";
@@ -40,7 +41,7 @@ export function csrfGuard(allowedOrigins: ReadonlySet<string>): RequestHandler {
       (rawUpload && req.get("x-kessick-csrf") === "1");
 
     if (!contentTypeValid) {
-      logger.warn({ event: "security.csrf_rejected", reason: "content_type", method: req.method, path: req.path }, "Rejected unsafe request");
+      logger.warn({ event: "security.csrf_rejected", reason: "content_type", method: req.method, path: safeRequestPath(req) }, "Rejected unsafe request");
       res.status(415).json({ error: oauthForm ? "Unsupported content type." : "JSON content type required." });
       return;
     }
@@ -50,7 +51,7 @@ export function csrfGuard(allowedOrigins: ReadonlySet<string>): RequestHandler {
     if (oauthProtocolEndpoint && !req.get("cookie")) return next();
 
     if (fetchSite === "cross-site" || fetchSite === "none") {
-      logger.warn({ event: "security.csrf_rejected", reason: "fetch_metadata", method: req.method, path: req.path }, "Rejected unsafe request");
+      logger.warn({ event: "security.csrf_rejected", reason: "fetch_metadata", method: req.method, path: safeRequestPath(req) }, "Rejected unsafe request");
       res.status(403).json({ error: "Cross-site request rejected." });
       return;
     }
@@ -58,7 +59,7 @@ export function csrfGuard(allowedOrigins: ReadonlySet<string>): RequestHandler {
     if (hasBearerAuth && !req.get("cookie")) return next();
 
     if (!isAllowedRequestOrigin(req, allowedOrigins)) {
-      logger.warn({ event: "security.csrf_rejected", reason: "origin", method: req.method, path: req.path }, "Rejected unsafe request");
+      logger.warn({ event: "security.csrf_rejected", reason: "origin", method: req.method, path: safeRequestPath(req) }, "Rejected unsafe request");
       res.status(403).json({ error: "Request origin could not be verified." });
       return;
     }

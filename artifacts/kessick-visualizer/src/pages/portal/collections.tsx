@@ -1,6 +1,7 @@
 import { usePortalContent } from "@/hooks/use-portal-v2";
 import { Loader2, Layers, AlertTriangle, Image as ImageIcon } from "lucide-react";
-import demoRoomImg from '@assets/kessick-room-demo.jpg';
+import { DealerContentLink } from "@/components/dealer-content-link";
+import { safeContentUrl } from "@/lib/content-links";
 
 export default function PortalCollections() {
   const { data: seriesData, isLoading: seriesLoading, error: seriesError } = usePortalContent("product_series");
@@ -39,45 +40,20 @@ export default function PortalCollections() {
           <Layers className="w-8 h-8 text-sidebar-primary" />
           Collections & Finishes
         </h1>
-        <p className="text-muted-foreground">Explore Kessick's Estate, Reserve, Elevation, and Parallel series alongside premium finishes.</p>
+        <p className="text-muted-foreground">Explore Kessick’s wine storage collections, materials and current product information.</p>
       </div>
 
       <div className="space-y-6">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">Product Series</h2>
         {series.length === 0 ? (
-          <div className="space-y-6">
-            <div className="border border-dashed border-border p-6 text-center text-muted-foreground text-sm">
-              No custom series content published for your account. Displaying Kessick standard gallery.
-            </div>
-            {/* DEMO SHOWCASE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { title: "Estate Series", desc: "The standard for professional wine storage. Fully assembled, frameless box construction." },
-                { title: "Reserve Series", desc: "Premium bespoke enclosures featuring solid wood fronts and custom millwork." },
-                { title: "Elevation Series", desc: "Contemporary metal and glass displays for a minimalist presentation." },
-                { title: "Parallel Series", desc: "Floating, wall-mounted display racks maximizing label visibility." },
-                { title: "Wine As Art", desc: "Showcase wine as a masterpiece with these illuminated, specialized enclosures." }
-              ].map((item, idx) => (
-                <div key={idx} className="border border-border bg-card overflow-hidden group">
-                  <div className="w-full h-48 bg-muted relative overflow-hidden">
-                    <img src={demoRoomImg} alt="Kessick Demo Room" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-[9px] uppercase tracking-widest px-2 py-1 text-foreground font-semibold">DEMO</div>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-light text-foreground">{item.title}</h3>
-                    <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-muted-foreground">No collections are currently published for your account.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {series.map(item => (
               <div key={item.id} className="border border-border bg-card overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="w-full h-48 bg-muted flex items-center justify-center relative">
-                  {item.payload?.imageUrl ? (
-                    <img src={item.payload.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  {safeContentUrl(item.payload?.imageUrl) ? (
+                    <img src={safeContentUrl(item.payload?.imageUrl)!} alt={item.title} className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
                   )}
@@ -85,6 +61,7 @@ export default function PortalCollections() {
                 <div className="p-6">
                   <h3 className="text-xl font-light text-foreground">{item.title}</h3>
                   {item.description && <p className="text-foreground/70 mt-3 text-sm leading-relaxed">{item.description}</p>}
+                  {safeContentUrl(item.payload?.url) && <DealerContentLink href={safeContentUrl(item.payload?.url)!} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-sidebar-primary">Explore collection ↗</DealerContentLink>}
                 </div>
               </div>
             ))}
@@ -95,34 +72,21 @@ export default function PortalCollections() {
       <div className="space-y-6">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">Premium Finishes</h2>
         {finishes.length === 0 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground italic">No custom finishes published. Displaying standard finishes.</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {['White Oak', 'Walnut', 'Sapele', 'Alder'].map((finish, idx) => (
-                <div key={idx} className="border border-border bg-card p-4">
-                  <div className="w-full aspect-square bg-muted mb-4 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-sidebar-primary/20 mix-blend-multiply" />
-                    <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-[9px] uppercase tracking-widest px-2 py-1 text-foreground font-semibold">DEMO</div>
-                  </div>
-                  <h4 className="font-medium text-sm text-foreground truncate">{finish}</h4>
-                  <p className="text-xs text-muted-foreground mt-1 truncate">Standard Finish Option</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-muted-foreground">No finishes are currently published for your account.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {finishes.map(item => (
               <div key={item.id} className="border border-border bg-card p-4">
                 <div className="w-full aspect-square bg-muted mb-4 flex items-center justify-center overflow-hidden">
-                  {item.payload?.imageUrl ? (
-                    <img src={item.payload.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  {safeContentUrl(item.payload?.imageUrl) ? (
+                    <img src={safeContentUrl(item.payload?.imageUrl)!} alt={item.title} className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
                   )}
                 </div>
                 <h4 className="font-medium text-sm text-foreground truncate">{item.title}</h4>
-                {item.description && <p className="text-xs text-muted-foreground mt-1 truncate">{item.description}</p>}
+                {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
+                {safeContentUrl(item.payload?.url) && <DealerContentLink href={safeContentUrl(item.payload?.url)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center text-xs text-sidebar-primary">View materials ↗</DealerContentLink>}
               </div>
             ))}
           </div>

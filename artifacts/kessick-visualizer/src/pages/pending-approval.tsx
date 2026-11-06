@@ -1,4 +1,4 @@
-import { useGetAccount } from "@workspace/api-client-react";
+import { getGetAccountQueryKey, useGetAccount } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand-logo";
@@ -6,7 +6,9 @@ import { Redirect } from "wouter";
 import { Loader2, Clock } from "lucide-react";
 
 export default function PendingApprovalPage() {
-  const { data: accountContext, isLoading } = useGetAccount();
+  const { data: accountContext, isLoading, isFetching, error, refetch } = useGetAccount({
+    query: { queryKey: getGetAccountQueryKey(), refetchInterval: 5_000, refetchOnWindowFocus: true, refetchOnReconnect: true },
+  });
   const { signOut } = useClerk();
 
   if (isLoading) {
@@ -37,11 +39,15 @@ export default function PendingApprovalPage() {
         </h1>
         
         <p className="text-muted-foreground leading-relaxed">
-          Your account request has been received. Our team is currently reviewing your details. 
-          You will receive an email once your account has been approved and activated.
+          Your dealer application is awaiting staff approval. This page checks automatically
+          and opens the portal when your access is approved.
         </p>
+        {error && <p role="alert" className="text-sm text-destructive">We could not refresh your access. Please try again.</p>}
 
-        <div className="pt-6 w-full border-t border-border">
+        <div className="pt-6 w-full border-t border-border space-y-3">
+          <Button variant="outline" className="w-full rounded-none" disabled={isFetching} onClick={() => void refetch()}>
+            {isFetching ? "Checking access…" : "Check access"}
+          </Button>
           <Button variant="outline" className="w-full rounded-none" onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })}>
             Sign Out
           </Button>

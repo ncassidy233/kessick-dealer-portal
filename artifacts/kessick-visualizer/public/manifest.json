@@ -1,6 +1,7 @@
 {
   "name": "Kessick Dealer Portal",
   "short_name": "Kessick",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -8,9 +9,15 @@
   "theme_color": "#B39862",
   "icons": [
     {
-      "src": "assets/kessick-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "kessick-icon-192.png?v=kessick-architecture-1",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "kessick-icon-512.png?v=kessick-architecture-1",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

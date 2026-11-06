@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -2889,7 +2889,12 @@ function buildSearchIndex(): SearchHit[] {
   ];
 }
 
-export default function DealerPortalPreview({
+export default function DealerPortalPreview({ staffInline, staffViewMode = false }: { staffInline?: ReactNode; staffViewMode?: boolean }) {
+  if (staffInline !== undefined) return <>{staffInline}</>;
+  return <SampleDealerPortalPreview staffViewMode={staffViewMode} />;
+}
+
+function SampleDealerPortalPreview({
   staffViewMode = false,
 }: {
   staffViewMode?: boolean;

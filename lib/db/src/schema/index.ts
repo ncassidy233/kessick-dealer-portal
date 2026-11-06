@@ -23,3 +23,4 @@ export * from "./concierge";
 export * from "./conciergeKnowledge";
 export * from "./portal";
 export * from "./portalV2";
+export * from "./pageStudio";

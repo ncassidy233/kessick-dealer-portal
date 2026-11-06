@@ -1,9 +1,10 @@
-import pino from "pino";
+import pino, { type LoggerOptions } from "pino";
+import { safeErrorForLog } from "./safeLogging";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-export const logger = pino({
-  level: process.env.LOG_LEVEL ?? "info",
+export const protectedLoggerOptions: LoggerOptions = {
+  serializers: { err: safeErrorForLog, error: safeErrorForLog },
   redact: [
     "req.headers.authorization",
     "req.headers.cookie",
@@ -15,7 +16,26 @@ export const logger = pino({
     "*.token",
     "*.client_secret",
     "*.code",
+    "password",
+    "secret",
+    "token",
+    "client_secret",
+    "authorization",
+    "cookie",
+    "apiKey",
+    "access_token",
+    "refresh_token",
+    "*.apiKey",
+    "*.access_token",
+    "*.refresh_token",
+    "*.connectionString",
+    "*.DATABASE_URL",
   ],
+};
+
+export const logger = pino({
+  ...protectedLoggerOptions,
+  level: process.env.LOG_LEVEL ?? "info",
   ...(isProduction
     ? {}
     : {

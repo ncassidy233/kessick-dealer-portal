@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import { DealerQuoteOffer } from "@/components/dealer-quote-offer";
+import { activePromotion } from "@workspace/api-zod";
+import { usePublishedLayout } from "@/components/studio-page";
+import { useMemo, useState, useEffect } from "react";
 import {
   ArrowRight,
   Bell,
@@ -12,14 +15,15 @@ import {
   UserRound,
   Wine,
 } from "lucide-react";
-import { Link } from "wouter";
-import { useListDealerPortalResources } from "@workspace/api-client-react";
-import { formatDistanceToNow } from "date-fns";
+import { PortalLink as Link } from "@/components/portal-link";
+import { useListDealerPortalResources } from "@/hooks/use-dealer-api";
+import { portalRelativeTime } from "@/lib/portal-dates";
 import roomImage from "@assets/kessick-room-demo.jpg";
 import { usePortalContent, usePortalNotifications, usePortalProjects } from "@/hooks/use-portal-v2";
 import type { PortalContent } from "@/hooks/use-portal-v2";
 import { usePortalSession } from "@/lib/portal-session";
-import { safeWebUrl } from "@/lib/content-links";
+import { safeContentUrl } from "@/lib/content-links";
+import { DealerContentLink } from "@/components/dealer-content-link";
 
 type SearchResult = {
   id: string;
@@ -44,11 +48,15 @@ export default function PortalDashboard() {
   const { data: resourcesData } = usePortalContent("resource");
   const { data: categoriesData } = usePortalContent("resource_category");
   const { data: legacyResourcesData } = useListDealerPortalResources();
+  const customHero = usePublishedLayout();
   const [search, setSearch] = useState("");
 
   const notifications = notificationsData?.notifications ?? [];
   const unreadNotifications = notifications.filter((item) => !item.readAt);
+  const [offerClock, setOfferClock] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setOfferClock(Date.now()), 30000); return () => clearInterval(timer); }, []);
   const announcements = announcementsData?.content ?? [];
+  const promotions = announcements.flatMap(item => { const offer = activePromotion((item.payload as Record<string, unknown> | null)?.promotion, new Date(offerClock)); return offer ? [{ item, offer }] : []; });
   const projects = projectsData?.content ?? [];
   const productSeries = seriesData?.content ?? [];
   const resources = resourcesData?.content ?? [];
@@ -60,8 +68,8 @@ export default function PortalDashboard() {
     description?: string | null;
   }[];
   const featuredAnnouncement =
-    announcements.find((item) => item.payload?.featuredOnDashboard === true) ?? announcements[0];
-  const featuredAnnouncementUrl = safeWebUrl(featuredAnnouncement?.payload?.url);
+    announcements.find((item) => item.payload?.featuredOnDashboard === true && !(item.payload as Record<string, unknown>)?.promotion) ?? announcements.find(item => !(item.payload as Record<string, unknown>)?.promotion);
+  const featuredAnnouncementUrl = safeContentUrl(featuredAnnouncement?.payload?.url);
   const featuredSeries = productSeries.find(
     (item) => item.payload?.featuredOnDashboard === true || item.payload?.comingSoon === true,
   );
@@ -72,7 +80,7 @@ export default function PortalDashboard() {
     const linkedResources = new Map(
       resources
         .filter((item) => typeof item.payload?.legacyId === "string")
-        .map((item) => [item.payload.legacyId as string, item]),
+        .map((item) => [item.payload?.legacyId as string, item]),
     );
     const records: SearchResult[] = [
       ...projects.map((item) => ({
@@ -117,7 +125,7 @@ export default function PortalDashboard() {
         id: `announcement-${item.id}`,
         title: item.title,
         detail: item.description || "Dealer announcement",
-        href: safeWebUrl(item.payload?.url) ?? "/portal/notifications",
+        href: safeContentUrl(item.payload?.url) ?? "/portal/notifications",
         type: "Announcement",
       })),
       ...notifications.map(({ notification }) => ({
@@ -143,10 +151,10 @@ export default function PortalDashboard() {
 
   return (
     <div className="dealer-dashboard min-h-full bg-[#10100f] pb-5 text-[#f4f0e8]">
-      <section className="dealer-hero relative isolate min-h-[330px] overflow-hidden sm:min-h-[390px]">
+      {!customHero && <section className="dealer-hero relative isolate min-h-[220px] overflow-hidden sm:min-h-[270px]">
         <img
-          src={roomImage}
-          alt="Kessick wine cellar display"
+          src="/kessick-headquarters-hero.webp"
+          alt="Kessick Wine Cellars headquarters"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/75 via-black/45 to-[#10100f]" />
@@ -185,7 +193,7 @@ export default function PortalDashboard() {
             A considered workspace for your projects, product information, and dealer support.
           </p>
         </div>
-      </section>
+      </section>}
 
       <div className="mx-auto -mt-3 w-full max-w-7xl space-y-9 px-4 sm:space-y-12 sm:px-8">
         <section className="relative z-10" aria-label="Search your dealer portal">
@@ -209,9 +217,11 @@ export default function PortalDashboard() {
           )}
         </section>
 
-        <section aria-labelledby="toolkit-heading">
+        <section aria-labelledby="toolkit-heading" className="relative isolate overflow-hidden">
+          <img src={roomImage} alt="" aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 -z-20 h-full w-2/3 object-cover" />
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#f4f4fa] via-[#f4f4fa]/95 to-[#f4f4fa]/80" />
           <div className="mb-5 flex items-end justify-between gap-3">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#B39862]">At your service</p><h2 id="toolkit-heading" className="mt-1 text-xl font-medium sm:text-2xl">Your Dealer Toolkit</h2></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#806731]">At your service</p><h2 id="toolkit-heading" className="mt-1 text-xl font-medium sm:text-2xl">Your Dealer Toolkit</h2></div>
             <Link href="/portal/forms" className="hidden items-center gap-1 text-xs text-white/55 hover:text-white sm:flex">All dealer forms <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
           <div className="grid grid-cols-4 gap-2 sm:gap-4">
@@ -222,10 +232,11 @@ export default function PortalDashboard() {
           </div>
         </section>
 
+        {promotions.map(({ item, offer }) => <DealerQuoteOffer key={item.id} title={item.title} offer={offer} href={`/portal/forms?offer=${encodeURIComponent(item.id)}`} />)}
         {featuredAnnouncement && (
           <section aria-label="Dealer announcement" className="relative isolate overflow-hidden rounded-2xl border border-[#d1b35f]/40 bg-[#d1b35f] text-[#191711]">
             <img
-              src={safeWebUrl(featuredAnnouncement.payload?.imageUrl) ?? roomImage}
+              src={safeContentUrl(featuredAnnouncement.payload?.imageUrl) ?? roomImage}
               alt=""
               className="absolute inset-0 -z-20 h-full w-full object-cover opacity-35"
             />
@@ -237,9 +248,9 @@ export default function PortalDashboard() {
                 {featuredAnnouncement.description && <p className="mt-2 text-sm leading-relaxed text-black/70">{featuredAnnouncement.description}</p>}
               </div>
               {featuredAnnouncementUrl ? (
-                <a href={featuredAnnouncementUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
+                <DealerContentLink href={featuredAnnouncementUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
                   View announcement <ArrowRight className="h-4 w-4" />
-                </a>
+                </DealerContentLink>
               ) : (
                 <Link href="/portal/notifications" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#171715] px-5 text-xs font-semibold text-white transition hover:bg-black sm:self-center">
                   View announcement <ArrowRight className="h-4 w-4" />
@@ -279,7 +290,7 @@ export default function PortalDashboard() {
               {notifications.slice(0, 2).map(({ id, notification, readAt }) => (
                 <Link key={id} href="/portal/notifications" className="block border-l-2 border-[#B39862] pl-3">
                   <p className="line-clamp-2 text-sm font-medium">{notification.title}</p>
-                  <p className="mt-1 text-xs text-white/45">{readAt ? "Read" : "New"}{notification.sentAt ? ` · ${formatDistanceToNow(new Date(notification.sentAt), { addSuffix: true })}` : ""}</p>
+                  <p className="mt-1 text-xs text-white/45">{readAt ? "Read" : "New"}{portalRelativeTime(notification.sentAt) ? ` · ${portalRelativeTime(notification.sentAt)}` : ""}</p>
                 </Link>
               ))}
               {notifications.length === 0 && <p className="text-sm text-white/55">You’re all caught up. New notices from Kessick will appear here.</p>}
@@ -291,7 +302,7 @@ export default function PortalDashboard() {
         <section aria-labelledby="collection-heading" className="overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a18]">
           <div className="grid md:grid-cols-[1.05fr_.95fr]">
             <div className="relative min-h-52 overflow-hidden md:min-h-64">
-              <img src={featuredSeries ? safeWebUrl(featuredSeries.payload?.imageUrl) ?? roomImage : roomImage} alt="Kessick wine storage in an architectural interior" className="absolute inset-0 h-full w-full object-cover" />
+              <img src={featuredSeries ? safeContentUrl(featuredSeries.payload?.imageUrl) ?? roomImage : roomImage} alt="Kessick wine storage in an architectural interior" className="absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#1a1a18]/90" />
               {!featuredSeries && <span className="absolute bottom-4 left-4 rounded-full border border-white/25 bg-black/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">Kessick Wine Cellars</span>}
             </div>
@@ -348,8 +359,8 @@ function SearchResultLink({ result }: { result: SearchResult }) {
     </>
   );
   const className = "flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5";
-  return result.href.startsWith("https://") || result.href.startsWith("http://") ? (
-    <a href={result.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</a>
+  return result.type === "Announcement" || result.href.startsWith("https://") || result.href.startsWith("http://") ? (
+    <DealerContentLink href={result.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</DealerContentLink>
   ) : (
     <Link href={result.href} className={className}>{content}</Link>
   );
