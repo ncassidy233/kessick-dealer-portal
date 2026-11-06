@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppUpdateNotice } from '@/components/app-update-notice';
+import { PublicBrandingContext, usePublishedPortalBranding } from '@/lib/public-branding';
 import NotFound from '@/pages/not-found';
 import PublicLanding from '@/pages/public-landing';
 import SignInPage from '@/pages/auth/sign-in';
@@ -518,13 +519,39 @@ function LocalDealerView({ location }: { location: string }) {
 }
 
 function App() {
+  const branding = usePublishedPortalBranding();
+  const faviconUrl = branding.faviconUrl;
+  useEffect(() => {
+    if (!faviconUrl) return;
+    const defaultIcons = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="icon"]'));
+    const icon = document.createElement("link");
+    const image = new Image();
+
+    image.onload = () => {
+      // Keep the built-in Kessick icon if the published image is unavailable.
+      for (const defaultIcon of defaultIcons) defaultIcon.removeAttribute("rel");
+      icon.rel = "icon";
+      icon.href = faviconUrl;
+      document.head.append(icon);
+    };
+    image.src = faviconUrl;
+
+    return () => {
+      image.onload = null;
+      icon.remove();
+      for (const defaultIcon of defaultIcons) defaultIcon.rel = "icon";
+    };
+  }, [faviconUrl]);
+
   return (
     <TooltipProvider>
-      <WouterRouter base={basePath}>
-        <Suspense fallback={<div role="status" className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">Loading Kessick…</div>}>
-          <AppRoutes />
-        </Suspense>
-      </WouterRouter>
+      <PublicBrandingContext.Provider value={branding}>
+        <WouterRouter base={basePath}>
+          <Suspense fallback={<div role="status" className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">Loading Kessick…</div>}>
+            <AppRoutes />
+          </Suspense>
+        </WouterRouter>
+      </PublicBrandingContext.Provider>
       <Toaster />
       <SonnerToaster richColors position="top-right" />
       <AppUpdateNotice />
