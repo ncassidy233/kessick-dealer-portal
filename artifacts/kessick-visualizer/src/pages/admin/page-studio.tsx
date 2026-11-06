@@ -87,7 +87,9 @@ export default function PageStudio() {
       initial={query.data.draft}
       publishedDocument={query.data.publishedDocument}
       canEdit={Boolean(session.data?.capabilities.includes("content:write"))}
-      canPublish={Boolean(session.data?.capabilities.includes("pages:publish"))}
+      canPublish={Boolean(session.data?.capabilities.includes("pages:publish") ||
+        (page === "home" && session.data?.capabilities.includes("pages:publish-home")))}
+      canRestore={Boolean(session.data?.capabilities.includes("pages:publish"))}
       onDirty={(value) => {
         dirty.current = value;
       }}
@@ -124,6 +126,7 @@ function Editor({
   publishedDocument,
   canEdit,
   canPublish,
+  canRestore,
   changePage,
   onDirty,
 }: {
@@ -132,6 +135,7 @@ function Editor({
   publishedDocument?: StudioPageDocument | null;
   canEdit: boolean;
   canPublish: boolean;
+  canRestore: boolean;
   changePage: (page: PageKey) => void;
   onDirty: (dirty: boolean) => void;
   reload: () => void;
@@ -286,7 +290,7 @@ function Editor({
   const publish = async () => {
     if (
       busy.current ||
-      !canPublish ||
+      (typeof confirmation === "number" ? !canRestore : !canPublish) ||
       !history.data ||
       confirmation === null ||
       (confirmation === "publish" && (dirty || !validation.success))
@@ -484,8 +488,7 @@ function Editor({
         )}
         {!canPublish && (
           <p className="mt-3 text-xs">
-            Publishing and restoring require a staff administrator. You can save
-            drafts for review.
+            A staff administrator can publish or restore this page.
           </p>
         )}
       </header>
@@ -659,7 +662,7 @@ function Editor({
                     <button
                       className={button}
                       disabled={
-                        !canPublish ||
+                        !canRestore ||
                         saving ||
                         dirty ||
                         item.revision === history.data.publishedRevision

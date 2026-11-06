@@ -297,10 +297,12 @@ export default function AdminUsers() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {hasCapability(bootstrap.data.capabilities, "content:write") && (
+            {(hasCapability(bootstrap.data.capabilities, "content:write") ||
+              hasCapability(bootstrap.data.capabilities, "pages:publish-home")) && (
               <Button asChild variant="outline" className="rounded-none border-[#121210]/20 bg-transparent">
                 <Link href="/admin/page-studio?page=home&mode=login">
-                  <Paintbrush className="mr-2 h-4 w-4" /> Edit login page
+                  <Paintbrush className="mr-2 h-4 w-4" />
+                  {hasCapability(bootstrap.data.capabilities, "content:write") ? "Edit login page" : "Review login page"}
                 </Link>
               </Button>
             )}
