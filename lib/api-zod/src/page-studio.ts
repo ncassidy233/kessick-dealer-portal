@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { portalPublicBrandingSchema } from "./public-branding";
 
 export const studioPageKeySchema = z.enum([
   "home",
@@ -85,6 +86,7 @@ export const studioPageDocumentSchema = z
   .object({
     schemaVersion: z.literal(1),
     title: z.string().trim().min(1).max(160),
+    publicBranding: portalPublicBrandingSchema.optional(),
     sections: z
       .array(z.discriminatedUnion("type", [hero, text, contentGrid]))
       .max(40),

@@ -1,5 +1,29 @@
 import { expect, test } from "@playwright/test";
 
+test("legacy preview links enter the protected portal without exposing the obsolete sample", async ({ page }) => {
+  test.skip(process.env.PLAYWRIGHT_AUTH_REVIEW !== "1" || !process.env.PLAYWRIGHT_BASE_URL, "Requires a production build with the app's public Clerk browser configuration");
+  test.setTimeout(90_000);
+  const privateReads: string[] = [];
+  page.on("request", request => {
+    if (/^\/api\/(?:portal(?:-v2)?|staff)(?:\/|$)/.test(new URL(request.url()).pathname)) {
+      privateReads.push(request.url());
+    }
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /The Private Portal/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /preview/i })).toHaveCount(0);
+
+  for (const path of ["/portal/preview", "/portal/preview?selectedDealerAccountId=old-bookmark", "/admin/preview"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/sign-in(?:\?|$)/);
+    await expect(page.getByRole("heading", { name: "Welcome back.", exact: true })).toBeVisible();
+    await expect(page.locator(".dealer-preview-surface")).toHaveCount(0);
+    await expect(page.getByText("Sample data only.", { exact: false })).toHaveCount(0);
+  }
+  expect(privateReads).toEqual([]);
+});
+
 test("one neutral sign-in supports returning users without advertising privileged workspaces", async ({ page }, testInfo) => {
   test.skip(process.env.PLAYWRIGHT_AUTH_REVIEW !== "1", "Requires the app's public Clerk browser configuration");
   test.setTimeout(90_000);

@@ -28,6 +28,7 @@ export default function AdminOverview() {
       </section>
       <section><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Manage your network</h2><span className="text-xs text-[#77776f]">Staff tools</span></div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {can("users:read") && <Action href="/admin/users" icon={Users} title="Accounts & approvals" detail="Review dealers and manage your staff." />}
+        {can("content:write") && <Action href="/admin/page-studio?page=home&mode=login" icon={Paintbrush} title="Edit login page" detail="Update the sign-in text, background photo, and logo." />}
         {can("content:read") && <Action href="/admin/content" icon={FileText} title="Content & resources" detail="Forms, documents, collections, and training." />}
         {can("notifications:read") && <Action href="/admin/notifications" icon={Bell} title="Announcements & notices" detail="Keep your dealer network informed." />}
         {can("groups:read") && <Action href="/admin/groups" icon={Layers} title="Dealer groups" detail="Organize audiences and content visibility." />}

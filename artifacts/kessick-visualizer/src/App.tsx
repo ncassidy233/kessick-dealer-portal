@@ -1,6 +1,7 @@
 import { type ReactNode, lazy, Suspense, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
-import { accessRetryDelay, installSessionFocusRecovery, retryAccessRead } from '@/lib/access-recovery';
+import { accessRetryDelay, createSessionRecovery, installSessionFocusRecovery, retryAccessRead } from '@/lib/access-recovery';
+import { setSessionRecovery } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
@@ -25,6 +26,7 @@ import { PublishedPortalPage } from '@/components/studio-page';
 
 import {
   Route,
+  Redirect,
   Switch,
   useLocation,
   Router as WouterRouter,
@@ -57,7 +59,6 @@ const AdminNotifications = lazy(() => import('@/pages/admin/notifications'));
 const AdminAudit = lazy(() => import('@/pages/admin/audit'));
 const AdminOverview = lazy(() => import('@/pages/admin/overview'));
 const DealerView = lazy(() => import('@/pages/admin/dealer-view'));
-const AdminPreviewPage = lazy(() => import('@/pages/admin/preview'));
 const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
 const AdminConciergeInsights = lazy(() => import('@/pages/admin/concierge-insights'));
 const PortalProjects = lazy(() => import('@/pages/portal/projects'));
@@ -189,7 +190,7 @@ function ClerkProviderWithRouter({ children }: { children: ReactNode }) {
 
 function AuthScopedQueryProvider({ children }: { children: ReactNode }) {
   const { isLoaded, user } = useUser();
-  const { getToken } = useAuth();
+  const { getToken, sessionId } = useAuth();
   const userId = user?.id ?? null;
   const createClient = () => new QueryClient({ defaultOptions: { queries: {
     retry: retryAccessRead, retryDelay: accessRetryDelay,
@@ -206,19 +207,27 @@ function AuthScopedQueryProvider({ children }: { children: ReactNode }) {
   }, [isLoaded, scope.userId, userId]);
 
   useEffect(() => {
+    let active = true;
+    const refresh = createSessionRecovery(() => getToken({ skipCache: true }));
+    const recover = async () => active && await refresh() && active;
+    const unregisterRecovery = setSessionRecovery(recover);
     let cleanup = () => {};
     focusManager.setEventListener(onFocus => {
       cleanup = installSessionFocusRecovery({
         windowTarget: window,
         documentTarget: document,
         isVisible: () => document.visibilityState !== "hidden",
-        refreshSession: () => getToken({ skipCache: true }),
+        refreshSession: recover,
         onFocus,
       });
       return cleanup;
     });
-    return () => cleanup();
-  }, [getToken, userId]);
+    return () => {
+      active = false;
+      unregisterRecovery();
+      cleanup();
+    };
+  }, [getToken, userId, sessionId]);
 
   if (!isLoaded || scope.userId !== userId) return null;
   return (
@@ -238,10 +247,12 @@ function Router() {
           <AuthGuard><StaffGuard><DemoPresentationPage /></StaffGuard></AuthGuard>
         </Route>
         <Route path="/admin/preview">
-          <AuthGuard><StaffGuard><AdminPreviewPage /></StaffGuard></AuthGuard>
+          <AuthGuard><StaffGuard><Redirect to="/continue" /></StaffGuard></AuthGuard>
         </Route>
         <Route path="/portal/preview">
-          <DealerPortalPreview />
+          {/* Old installed apps and shared links must enter the real portal,
+              whose guards verify the account and current dealer permissions. */}
+          <Redirect to="/portal" />
         </Route>
         <Route path="/sign-in/*?">
           <SignInPage />

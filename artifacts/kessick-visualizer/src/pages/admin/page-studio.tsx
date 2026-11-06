@@ -12,6 +12,8 @@ import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { studioPageDocumentSchema } from "@workspace/api-zod";
 import { StudioPage } from "@/components/studio-page";
+import { PublicBrandingFields, PublicBrandingPreview } from "@/components/public-branding-editor";
+import { defaultPortalPublicBranding } from "@/lib/public-branding";
 import {
   Dialog,
   DialogContent,
@@ -21,12 +23,14 @@ import {
 import { usePortalSession } from "@/lib/portal-session";
 import {
   initialStudioPage,
+  studioEditingDocument,
   newSection,
   studioPages,
   studioRequest,
   studioSizes,
   type PageKey,
   type StudioDraft,
+  type StudioDraftResponse,
   type StudioHistory,
   type StudioPageDocument,
   type StudioSection,
@@ -49,7 +53,7 @@ export default function PageStudio() {
   const query = useQuery({
     queryKey: ["studio-draft", page],
     queryFn: ({ signal }) =>
-      studioRequest<{ draft: StudioDraft | null }>(
+      studioRequest<StudioDraftResponse>(
         page,
         "draft",
         "GET",
@@ -81,6 +85,7 @@ export default function PageStudio() {
       key={page}
       page={page}
       initial={query.data.draft}
+      publishedDocument={query.data.publishedDocument}
       canEdit={Boolean(session.data?.capabilities.includes("content:write"))}
       canPublish={Boolean(session.data?.capabilities.includes("pages:publish"))}
       onDirty={(value) => {
@@ -116,6 +121,7 @@ export default function PageStudio() {
 function Editor({
   page,
   initial,
+  publishedDocument,
   canEdit,
   canPublish,
   changePage,
@@ -123,18 +129,22 @@ function Editor({
 }: {
   page: PageKey;
   initial: StudioDraft | null;
+  publishedDocument?: StudioPageDocument | null;
   canEdit: boolean;
   canPublish: boolean;
   changePage: (page: PageKey) => void;
   onDirty: (dirty: boolean) => void;
   reload: () => void;
 }) {
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const brandingMode = page === "home" && new URLSearchParams(search).get("mode") === "login";
   const [document, setDocument] = useState<StudioPageDocument>(
-    () => initial?.document ?? initialStudioPage(page),
+    () => studioEditingDocument(page, { draft: initial, publishedDocument }, brandingMode),
   );
   const [revision, setRevision] = useState(initial?.revision ?? 0);
   const [saved, setSaved] = useState(
-    JSON.stringify(initial?.document ?? initialStudioPage(page)),
+    () => JSON.stringify(document),
   );
   const [selected, select] = useState<string | undefined>(
     document.sections[0]?.id,
@@ -144,13 +154,30 @@ function Editor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState(
-    initial ? "Saved draft" : "Template — save to create a draft",
+    initial ? "Saved draft" : publishedDocument ? "Published design — save to create a draft" : "Template — save to create a draft",
   );
   const [device, setDevice] = useState<keyof typeof studioSizes>(() =>
     window.innerWidth < 640 ? "Mobile" : window.innerWidth < 1100 ? "Tablet" : "Desktop",
   );
   const [rotated, rotate] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [brandingPreview, setBrandingPreview] = useState<"sign-in" | "welcome">("sign-in");
+  const branding = document.publicBranding ?? defaultPortalPublicBranding;
+  const changeMode = (login: boolean) => {
+    // Opening the login editor from an untouched Home template must not replace
+    // the existing built-in dashboard when branding is first published.
+    if (login && !initial && !publishedDocument && revision === 0 && JSON.stringify(document) === saved) {
+      const next = initialStudioPage(page, true);
+      setDocument(next);
+      setSaved(JSON.stringify(next));
+      select(undefined);
+    }
+    const params = new URLSearchParams(search);
+    params.set("page", "home");
+    if (login) params.set("mode", "login");
+    else params.delete("mode");
+    navigate(`/admin/page-studio?${params}`);
+  };
   const [panel, setPanel] = useState<"layers" | "canvas" | "settings">(
     "canvas",
   );
@@ -279,7 +306,7 @@ function Editor({
       setStatus(
         restoring
           ? `Version ${confirmation} restored as a new publication`
-          : "Published to approved dealers",
+          : page === "home" && document.publicBranding ? "Home and Login & Welcome published" : "Published to approved dealers",
       );
       await client.invalidateQueries({ queryKey: ["studio-history", page] });
       await client.invalidateQueries({
@@ -302,11 +329,11 @@ function Editor({
     )
       return;
     try {
-      const result = await studioRequest<{ draft: StudioDraft | null }>(
+      const result = await studioRequest<StudioDraftResponse>(
         page,
         "draft",
       );
-      const next = result.draft?.document ?? initialStudioPage(page);
+      const next = studioEditingDocument(page, result, brandingMode);
       setDocument(next);
       setSaved(JSON.stringify(next));
       setRevision(result.draft?.revision ?? 0);
@@ -370,7 +397,7 @@ function Editor({
           </div>
         </div>
         <p className="mt-3 text-xs text-[#171715]/70">Edit → Preview → Save Draft → Publish. {publishHint}</p>
-        <div className={`${!preview && panel === "settings" ? "hidden sm:flex" : "flex"} mt-4 flex-wrap items-center gap-2`}>
+        <div className={`${!preview && !brandingMode && panel === "settings" ? "hidden sm:flex" : "flex"} mt-4 flex-wrap items-center gap-2`}>
           <label className="flex items-center gap-2 text-xs">
             Page
             <select
@@ -451,7 +478,7 @@ function Editor({
         )}
         {!validation.success && (
           <p role="alert" className="mt-3 text-sm text-red-800">
-            {validation.error.issues[0]?.message} — check the selected section
+            {validation.error.issues[0]?.message} — check {brandingMode ? "the Login & Welcome fields" : "the selected section"}
             before saving.
           </p>
         )}
@@ -462,7 +489,14 @@ function Editor({
           </p>
         )}
       </header>
-      {!preview && (
+      {page === "home" && <div className="border-b border-black/15 bg-[#faf9f6] p-4">
+        <nav aria-label="Home and sign-in design" className="flex flex-wrap gap-2">
+          <button className={button} aria-pressed={!brandingMode} onClick={() => changeMode(false)}>Dealer home</button>
+          <button className={button} aria-pressed={brandingMode} onClick={() => changeMode(true)}>Login & Welcome</button>
+        </nav>
+        {brandingMode && <p className="mt-3 text-sm text-[#171715]/75">Login & Welcome changes are public after Publish. They share the Dealer home draft and publication; review both before publishing.</p>}
+      </div>}
+      {!preview && !brandingMode && (
         <div
           className="flex gap-2 border-b border-black/15 p-3 xl:hidden"
           aria-label="Editor panels"
@@ -483,7 +517,19 @@ function Editor({
           ))}
         </div>
       )}
-      <div
+      {brandingMode ? <div className={`grid items-start ${preview ? "" : "xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"}`}>
+        {!preview && <aside className="border-b border-black/15 p-4 xl:border-r"><PublicBrandingFields branding={branding} disabled={!canEdit || saving} onChange={patch => edit({ ...document, publicBranding: { ...branding, ...patch } })} /></aside>}
+        <main className="min-w-0 space-y-4 bg-[#f0f1f2] p-3 md:p-5">
+          <nav aria-label="Public page preview" className="flex flex-wrap items-center gap-2">
+            <button className={button} aria-pressed={brandingPreview === "sign-in"} onClick={() => setBrandingPreview("sign-in")}>Sign-in screen</button>
+            <button className={button} aria-pressed={brandingPreview === "welcome"} onClick={() => setBrandingPreview("welcome")}>Welcome screen</button>
+          </nav>
+          <p className="text-xs text-[#171715]/70">Branding preview. Sign-in controls are shown for layout and cannot be edited here.</p>
+          <PreviewFrame width={rotated ? dimensions[1] : dimensions[0]} height={rotated ? dimensions[0] : dimensions[1]}>
+            <PublicBrandingPreview branding={branding} page={brandingPreview} />
+          </PreviewFrame>
+        </main>
+      </div> : <div
         className={`grid items-start ${preview ? "" : "xl:grid-cols-[240px_minmax(0,1fr)_280px]"}`}
       >
         {!preview && (
@@ -979,7 +1025,7 @@ function Editor({
             )}
           </aside>
         )}
-      </div>
+      </div>}
       <Dialog
         open={confirmation !== null}
         onOpenChange={(open) => {
@@ -994,7 +1040,7 @@ function Editor({
           </DialogTitle>
           <DialogDescription>
             {confirmation === "publish"
-              ? `${document.sections.filter((item) => !item.hidden).length} visible sections from saved draft ${revision} will replace the page design for approved dealers. Live version: ${history.data?.publishedRevision ?? 0}.`
+              ? `${document.sections.filter((item) => !item.hidden).length} visible sections from saved draft ${revision} will replace the page design for approved dealers.${page === "home" && document.publicBranding ? " This also publishes Login & Welcome branding to the public welcome and sign-in screens." : ""} Live version: ${history.data?.publishedRevision ?? 0}.`
               : "The selected version will become a new live publication. Your working draft remains available."}
           </DialogDescription>
           <div className="flex gap-3">

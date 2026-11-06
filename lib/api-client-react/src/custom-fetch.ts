@@ -8,6 +8,7 @@ export type ErrorType<T = unknown> = ApiError<T>;
 export type BodyType<T> = T;
 
 export type AuthTokenGetter = () => Promise<string | null> | string | null;
+export type SessionRecovery = () => Promise<boolean>;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
@@ -18,6 +19,16 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _sessionRecovery: SessionRecovery | null = null;
+const SESSION_RECOVERY_READS = new Set([
+  "/api/account", "/api/portal-v2/bootstrap", "/api/dealer-portal/access",
+]);
+
+/** Register bounded cookie renewal for access reads; never supplies a bearer token. */
+export function setSessionRecovery(recover: SessionRecovery): () => void {
+  _sessionRecovery = recover;
+  return () => { if (_sessionRecovery === recover) _sessionRecovery = null; };
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -374,7 +385,24 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const recovery = _sessionRecovery;
+  let response = await fetch(input, { ...init, method, headers });
+  const signal = init.signal ?? (isRequest(input) ? input.signal : undefined);
+  const credentials = init.credentials ?? (isRequest(input) ? input.credentials : undefined);
+
+  if (response.status === 401 && recovery && recovery === _sessionRecovery
+    && (method === "GET" || method === "HEAD") && !headers.has("authorization")
+    && credentials !== "omit" && !signal?.aborted && typeof window !== "undefined") {
+    const requestUrl = new URL(requestInfo.url, window.location.href);
+    if (requestUrl.origin === window.location.origin && SESSION_RECOVERY_READS.has(requestUrl.pathname)) {
+      const refreshed = await recovery().catch(() => false);
+      // Signing out or changing accounts while renewal runs invalidates this attempt.
+      if (refreshed && recovery === _sessionRecovery && !signal?.aborted) {
+        await response.body?.cancel();
+        response = await fetch(input, { ...init, method, headers });
+      }
+    }
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

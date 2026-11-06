@@ -50,7 +50,21 @@ router.get(
       .select()
       .from(portalPageDraftsTable)
       .where(eq(portalPageDraftsTable.pageKey, key.data));
-    res.json({ draft: draft ?? null });
+    if (draft) {
+      res.json({ draft });
+      return;
+    }
+    // Editing branding must preserve an existing Home design even if its old
+    // working draft is absent. This remains a read-only, staff-only fallback;
+    // the first save still creates draft revision 1 using expectedRevision 0.
+    const [published] = await db.select({ document: portalPagePublicationsTable.document })
+      .from(portalPagePublicationsTable).where(eq(portalPagePublicationsTable.pageKey, key.data));
+    const parsed = published && studioPageDocumentSchema.safeParse(published.document);
+    if (parsed && !parsed.success) {
+      res.status(503).json({ error: "The published design is unavailable. Please retry before editing." });
+      return;
+    }
+    res.json({ draft: null, publishedDocument: parsed?.success ? parsed.data : null });
   },
 );
 
@@ -304,7 +318,9 @@ router.get("/pages/:pageKey", async (req, res) => {
     res.status(503).json({ error: "Published page is unavailable." });
     return;
   }
-  res.json({ page: { document: document.data, revision: page.revision } });
+  // Dealer documents retain their original shape. Public sign-in presentation
+  // has its own allowlisted endpoint and is not part of the dealer layout.
+  res.json({ page: { document: { schemaVersion: document.data.schemaVersion, title: document.data.title, sections: document.data.sections }, revision: page.revision } });
 });
 
 export default router;

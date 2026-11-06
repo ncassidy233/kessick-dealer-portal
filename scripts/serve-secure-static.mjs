@@ -240,6 +240,13 @@ export async function createStaticServer(
     }
     if (/^(api|__mockup|__e2e)(\/|$)/.test(relative))
       return fail(404, "Not found.");
+    // Existing bookmarks and installed copies must enter the protected app,
+    // never the retired public sample UI.
+    if (/^(portal|admin)\/preview\/?$/.test(relative)) {
+      const destination = relative.startsWith("admin/") ? "admin" : "portal";
+      res.writeHead(302, { Location: `${base}${destination}` });
+      return res.end();
+    }
     if (relative === "robots.txt") {
       res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
       return res.end(
@@ -265,6 +272,12 @@ export async function createStaticServer(
       if (!resolved.startsWith(root + path.sep)) return fail(404, "Not found.");
       const contentType = mime[path.extname(file).toLowerCase()];
       if (!contentType) return fail(404, "Not found.");
+      if (relative === "sw.js") res.setHeader("Service-Worker-Allowed", base);
+      if (relative === "sw.js" || relative === "manifest.json" || relative === "app-version.json" || contentType.startsWith("text/html")) {
+        res.setHeader("Cache-Control", "private, no-store, max-age=0");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
       res.writeHead(200, {
         "Content-Type": contentType,
         "Content-Length": metadata.size,

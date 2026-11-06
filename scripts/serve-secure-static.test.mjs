@@ -85,6 +85,39 @@ test("API_ORIGIN accepts secure origins and rejects unsafe URLs", () => {
   assert.equal(normalizeApiOrigin(undefined), null);
 });
 
+test("legacy app URLs enter protected routes and release files cannot stay cached", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "kessick-release-"));
+  await Promise.all([
+    writeFile(path.join(root, "index.html"), "<!doctype html><title>Portal</title>"),
+    writeFile(path.join(root, "sw.js"), "// current worker"),
+    writeFile(path.join(root, "manifest.json"), "{}"),
+    writeFile(path.join(root, "app-version.json"), '{"schemaVersion":1,"entry":"assets/index-new.js"}'),
+  ]);
+  const server = await createStaticServer(root, "/app/");
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}/app/`;
+  try {
+    for (const area of ["portal", "admin"]) {
+      const response = await fetch(`${base}${area}/preview?legacy=1`, { redirect: "manual" });
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get("location"), `/app/${area}`);
+      assert.match(response.headers.get("cache-control"), /no-store/);
+    }
+    for (const resource of ["", "sign-in", "index.html", "sw.js", "manifest.json", "app-version.json"]) {
+      const response = await fetch(base + resource);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("cache-control"), /no-store/);
+      assert.equal(response.headers.get("pragma"), "no-cache");
+      assert.equal(response.headers.get("expires"), "0");
+      if (resource === "sw.js") assert.equal(response.headers.get("service-worker-allowed"), "/app/");
+      assert.equal(response.headers.get("clear-site-data"), null, "updates must not erase sessions or drafts");
+    }
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("production static service proxies same-origin API requests", async () => {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "kessick-static-api-"));
   const root = path.join(tmp, "public");

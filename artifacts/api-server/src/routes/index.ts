@@ -10,9 +10,11 @@ import oauthRouter from "./oauth";
 import portalRouter from "./portal";
 import portalV2Router, { startPortalV2Scheduler } from "./portalV2";
 import dealerPreviewRouter from "./dealerPreview";
+import publicPortalBrandingRouter from "./publicPortalBranding";
 
 const router: IRouter = Router();
 
+router.use(publicPortalBrandingRouter);
 router.use(staffBoundary);
 router.use(healthRouter);
 router.use(catalogRouter);

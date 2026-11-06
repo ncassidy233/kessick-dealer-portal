@@ -9,17 +9,47 @@ export function retryAccessRead(failureCount: number, error: unknown): boolean {
 
 export const accessRetryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 2000);
 
+// Clerk refreshes can stall when a laptop wakes with a broken connection.
+// Share one attempt across focus events and access reads, but always release
+// callers so the server can report a real expired or unavailable session.
+export function createSessionRecovery(
+  refreshSession: () => Promise<unknown>,
+  timeoutMs = 5_000,
+): () => Promise<boolean> {
+  let pending: Promise<boolean> | undefined;
+  return () => {
+    if (pending) return pending;
+    pending = new Promise<boolean>(resolve => {
+      let settled = false;
+      const finish = (refreshed: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(refreshed);
+      };
+      const timer = setTimeout(() => finish(false), timeoutMs);
+      Promise.resolve().then(refreshSession).then(
+        token => finish(Boolean(token)),
+        () => finish(false),
+      );
+    }).finally(() => { pending = undefined; });
+    return pending;
+  };
+}
+
 export function installSessionFocusRecovery({
-  windowTarget, documentTarget, isVisible, refreshSession, onFocus,
+  windowTarget, documentTarget, isVisible, refreshSession, onFocus, timeoutMs,
 }: {
   windowTarget: EventTarget;
   documentTarget: EventTarget;
   isVisible: () => boolean;
   refreshSession: () => Promise<unknown>;
   onFocus: (focused: boolean) => void;
+  timeoutMs?: number;
 }) {
   let active = true;
   let pending: Promise<void> | undefined;
+  const recover = createSessionRecovery(refreshSession, timeoutMs);
 
   const resume = () => {
     if (!isVisible()) {
@@ -29,9 +59,8 @@ export function installSessionFocusRecovery({
     if (pending) return;
     // Refresh Clerk's cookie before Query refetches account/permission reads.
     onFocus(false);
-    pending = Promise.resolve().then(refreshSession).catch(() => {
-      // Let the normal server checks and bounded retries report a real failure.
-    }).then(() => {
+    pending = recover().then(() => {
+      // Even an expired or unreachable session must reach normal server checks.
       if (active && isVisible()) onFocus(true);
     }).finally(() => { pending = undefined; });
   };

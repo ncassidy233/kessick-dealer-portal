@@ -25,6 +25,10 @@ export type StudioDraft = {
   updatedAt: string;
   updatedByAccountId: string;
 };
+export type StudioDraftResponse = {
+  draft: StudioDraft | null;
+  publishedDocument?: StudioPageDocument | null;
+};
 export type StudioHistory = {
   history: {
     revision: number;
@@ -77,13 +81,13 @@ export function newSection(type: StudioSection["type"]): StudioSection {
     columns: 3,
   };
 }
-export function initialStudioPage(page: PageKey): StudioPageDocument {
+export function initialStudioPage(page: PageKey, preserveDefaultLayout = false): StudioPageDocument {
   return {
     schemaVersion: 1,
     title:
       page === "home" ? "Dealer home" : page[0].toUpperCase() + page.slice(1),
     sections:
-      page === "home"
+      page === "home" && !preserveDefaultLayout
         ? [
             {
               ...newSection("hero"),
@@ -97,6 +101,9 @@ export function initialStudioPage(page: PageKey): StudioPageDocument {
           ]
         : [],
   };
+}
+export function studioEditingDocument(page: PageKey, source: StudioDraftResponse, publicBrandingOnly = false): StudioPageDocument {
+  return source.draft?.document ?? source.publishedDocument ?? initialStudioPage(page, publicBrandingOnly);
 }
 export function parseStudioPage(value: unknown) {
   return studioPageDocumentSchema.parse(value);

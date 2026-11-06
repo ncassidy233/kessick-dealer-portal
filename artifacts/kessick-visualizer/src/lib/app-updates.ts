@@ -17,14 +17,36 @@ export function publishedEntryVersion(html: string, baseUrl: string): string | n
   return null;
 }
 
-// Read only the public entry document; never cache private portal/API data.
+export function publishedManifestVersion(value: unknown, baseUrl: string): string | null {
+  if (!value || typeof value !== "object") return null;
+  const release = value as { schemaVersion?: unknown; entry?: unknown };
+  return release.schemaVersion === 1 && typeof release.entry === "string"
+    ? appEntryVersion(release.entry, baseUrl) : null;
+}
+
+// Only idle, read-only screens can refresh themselves. Editors, authentication,
+// uploads, forms, dialogs and any screen with input always keep an explicit button.
+export function canAutomaticallyRefresh({ pathname, hasInput, hasDialog, hasFocusedField,
+  idleMs, visible, online }: {
+  pathname: string; hasInput: boolean; hasDialog: boolean; hasFocusedField: boolean;
+  idleMs: number; visible: boolean; online: boolean;
+}): boolean {
+  const readOnlyScreens = new Set([
+    "/", "/portal", "/portal/resources", "/portal/collections", "/portal/training",
+    "/portal/notifications", "/admin",
+  ]);
+  return visible && online && idleMs >= 10_000 && !hasInput && !hasDialog && !hasFocusedField
+    && readOnlyScreens.has(pathname.replace(/\/$/, "") || "/");
+}
+
+// Read only public release metadata/the entry document; never cache private data.
 export function createAppUpdateCheck({ currentVersion, baseUrl, isVisible, onUpdate,
   fetcher = fetch, now = Date.now,
 }: {
   currentVersion: string;
   baseUrl: string;
   isVisible: () => boolean;
-  onUpdate: () => void;
+  onUpdate: (version: string) => void;
   fetcher?: typeof fetch;
   now?: () => number;
 }) {
@@ -39,15 +61,30 @@ export function createAppUpdateCheck({ currentVersion, baseUrl, isVisible, onUpd
       controller = new AbortController();
       const timeout = setTimeout(() => controller?.abort(), 10_000);
       try {
-        const response = await fetcher(new URL("index.html", baseUrl), {
+        const options: RequestInit = {
           cache: "no-store", credentials: "omit", redirect: "error", signal: controller.signal,
-          headers: { Accept: "text/html" },
-        });
-        if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) return;
-        const version = publishedEntryVersion(await response.text(), baseUrl);
+        };
+        let version: string | null = null;
+        try {
+          const manifest = await fetcher(new URL("app-version.json", baseUrl), {
+            ...options, headers: { Accept: "application/json" },
+          });
+          if (manifest.ok && manifest.headers.get("content-type")?.includes("application/json")) {
+            version = publishedManifestVersion(await manifest.json(), baseUrl);
+          }
+        } catch {
+          // Older releases have only index.html; retain the migration path.
+        }
+        if (!version && !controller.signal.aborted) {
+          const response = await fetcher(new URL("index.html", baseUrl), {
+            ...options, headers: { Accept: "text/html" },
+          });
+          if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) return;
+          version = publishedEntryVersion(await response.text(), baseUrl);
+        }
         if (!stopped && version && version !== currentVersion) {
           found = true;
-          onUpdate();
+          onUpdate(version);
         }
       } catch {
         // Offline and failed checks are quiet; try again on the next resume.

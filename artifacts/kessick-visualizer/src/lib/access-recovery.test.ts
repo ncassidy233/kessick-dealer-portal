@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
-import { installSessionFocusRecovery, retryAccessRead } from "./access-recovery";
+import { createSessionRecovery, installSessionFocusRecovery, retryAccessRead } from "./access-recovery";
 import { dealerAccessState } from "./dealer-access";
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -56,6 +56,33 @@ test("a renewal failure still permits real server verification and never grants 
   win.dispatchEvent(new Event("online")); await tick();
   assert.deepEqual(states, [false, true]);
   assert.equal(dealerAccessState({ isLoading: false, isError: true }), "error"); cleanup();
+});
+
+test("a stalled wake-up refresh cannot leave account reads paused indefinitely", async () => {
+  const win = new EventTarget(), doc = new EventTarget();
+  const states: boolean[] = [];
+  const cleanup = installSessionFocusRecovery({ windowTarget: win, documentTarget: doc,
+    isVisible: () => true, onFocus: value => states.push(value), timeoutMs: 5,
+    refreshSession: () => new Promise(() => {}),
+  });
+  try {
+    win.dispatchEvent(new Event("focus"));
+    await new Promise(resolve => setTimeout(resolve, 15));
+    assert.deepEqual(states, [false, true]);
+  } finally { cleanup(); }
+});
+
+test("concurrent access failures share a bounded renewal and can recover after a timeout", async () => {
+  let attempts = 0;
+  const recover = createSessionRecovery(() => ++attempts === 1
+    ? new Promise(() => {}) : Promise.resolve("fresh-session-token"), 5);
+  const first = recover();
+  assert.equal(recover(), first);
+  assert.equal(await first, false);
+  assert.equal(attempts, 1);
+  assert.equal(await recover(), true);
+  assert.equal(attempts, 2);
+  assert.equal(await createSessionRecovery(async () => null)(), false);
 });
 
 test("read recovery is bounded and does not retry permission denials", () => {
