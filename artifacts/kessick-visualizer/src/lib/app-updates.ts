@@ -24,17 +24,33 @@ export function publishedManifestVersion(value: unknown, baseUrl: string): strin
     ? appEntryVersion(release.entry, baseUrl) : null;
 }
 
+export function appReleaseId(value: unknown): string | null {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value) ? value : null;
+}
+
+export function publishedReleaseId(html: string): string | null {
+  for (const match of html.matchAll(/<meta\b([^>]*)>/gi)) {
+    if (!/(?:^|\s)name\s*=\s*["']kessick-release["']/i.test(match[1])) continue;
+    const content = /(?:^|\s)content\s*=\s*["']([^"']+)["']/i.exec(match[1])?.[1];
+    const releaseId = appReleaseId(content);
+    if (releaseId) return releaseId;
+  }
+  return null;
+}
+
 // Read only public release metadata/the entry document; never cache private data.
-export function createAppUpdateCheck({ currentVersion, baseUrl, isVisible, onUpdate,
+export function createAppUpdateCheck({ currentVersion, currentReleaseId, baseUrl, isVisible, onUpdate,
   fetcher = fetch, now = Date.now,
 }: {
   currentVersion: string;
+  currentReleaseId?: string | null;
   baseUrl: string;
   isVisible: () => boolean;
   onUpdate: (version: string) => void;
   fetcher?: typeof fetch;
   now?: () => number;
 }) {
+  const loadedReleaseId = appReleaseId(currentReleaseId);
   let controller: AbortController | undefined;
   let stopped = false;
   let found = false;
@@ -50,12 +66,15 @@ export function createAppUpdateCheck({ currentVersion, baseUrl, isVisible, onUpd
           cache: "no-store", credentials: "omit", redirect: "error", signal: controller.signal,
         };
         let version: string | null = null;
+        let releaseId: string | null = null;
         try {
           const manifest = await fetcher(new URL("app-version.json", baseUrl), {
             ...options, headers: { Accept: "application/json" },
           });
           if (manifest.ok && manifest.headers.get("content-type")?.includes("application/json")) {
-            version = publishedManifestVersion(await manifest.json(), baseUrl);
+            const release: unknown = await manifest.json();
+            version = publishedManifestVersion(release, baseUrl);
+            if (version) releaseId = appReleaseId((release as { releaseId?: unknown }).releaseId);
           }
         } catch {
           // Older releases have only index.html; retain the migration path.
@@ -65,9 +84,12 @@ export function createAppUpdateCheck({ currentVersion, baseUrl, isVisible, onUpd
             ...options, headers: { Accept: "text/html" },
           });
           if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) return;
-          version = publishedEntryVersion(await response.text(), baseUrl);
+          const html = await response.text();
+          version = publishedEntryVersion(html, baseUrl);
+          if (version) releaseId = publishedReleaseId(html);
         }
-        if (!stopped && version && version !== currentVersion) {
+        const changed = version !== currentVersion || (loadedReleaseId && releaseId && loadedReleaseId !== releaseId);
+        if (!stopped && version && changed) {
           found = true;
           onUpdate(version);
         }
