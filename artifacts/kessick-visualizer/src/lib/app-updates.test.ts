@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { appEntryVersion, createAppUpdateCheck, publishedEntryVersion, publishedManifestVersion } from "./app-updates";
+import { appEntryVersion, appReleaseId, createAppUpdateCheck, publishedEntryVersion, publishedManifestVersion, publishedReleaseId } from "./app-updates";
 
 const baseUrl = "https://portal.example/preview/";
 const entry = (version: string) => `<html><script type="module" crossorigin src="/preview/assets/index-${version}.js"></script></html>`;
@@ -115,4 +115,37 @@ test("an unchanged valid manifest skips HTML fallback and repeated resume events
   assert.equal(calls, 1);
   time = 5000; await checker.check(); checker.stop();
   assert.equal(calls, 2); assert.equal(updates, 0);
+});
+
+test("whole-release fingerprints detect changes with an unchanged entry without breaking legacy clients", async () => {
+  const oldRelease = "a".repeat(64), newRelease = "b".repeat(64);
+  for (const [currentReleaseId, releaseId, expected] of [
+    [oldRelease, newRelease, 1], [oldRelease, oldRelease, 0],
+    [undefined, newRelease, 0], [oldRelease, undefined, 0], [oldRelease, "invalid", 0],
+  ] as const) {
+    let updates = 0;
+    const checker = createAppUpdateCheck({ currentVersion: "/preview/assets/index-same.js", currentReleaseId,
+      baseUrl, isVisible: () => true, onUpdate: () => updates++,
+      fetcher: async () => Response.json({ schemaVersion: 1, entry: "assets/index-same.js", releaseId }),
+    });
+    await checker.check(); await checker.check(); checker.stop();
+    assert.equal(updates, expected);
+  }
+});
+
+test("HTML fallback detects a whole-release change and rejects malformed fingerprint metadata", async () => {
+  const oldRelease = "a".repeat(64), newRelease = "b".repeat(64);
+  const meta = `<meta content='${newRelease}' name='kessick-release'>`;
+  assert.equal(publishedReleaseId(meta), newRelease);
+  assert.equal(publishedReleaseId(`<meta data-name='kessick-release' content='${newRelease}'>`), null);
+  assert.equal(publishedReleaseId("<meta name='kessick-release' content='invalid'>"), null);
+  for (const value of [null, 1, "a".repeat(63), "g".repeat(64)]) assert.equal(appReleaseId(value), null);
+  let updates = 0;
+  const checker = createAppUpdateCheck({ currentVersion: "/preview/assets/index-same.js", currentReleaseId: oldRelease,
+    baseUrl, isVisible: () => true, onUpdate: () => updates++,
+    fetcher: async url => String(url).endsWith("app-version.json")
+      ? new Response("Not found", { status: 404 }) : htmlResponse(meta + entry("same")),
+  });
+  await checker.check(); checker.stop();
+  assert.equal(updates, 1);
 });
