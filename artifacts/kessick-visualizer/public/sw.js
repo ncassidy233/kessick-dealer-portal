@@ -1,3 +1,32 @@
+// Always use the current online application. Remove only legacy Kessick demo
+// caches; authentication cookies, drafts and other browser storage are untouched.
+self.addEventListener('install', function(event) {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', function(event) {
+  event.waitUntil((async function() {
+    try {
+      const names = await caches.keys();
+      await Promise.allSettled(names.filter(name => name.startsWith('kessick-portal-')).map(name => caches.delete(name)));
+    } catch {
+      // Cache storage can be unavailable. It must not block the new worker.
+    }
+    await self.clients.claim();
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) client.postMessage({ type: 'KESSICK_RELEASE_READY' });
+  })());
+});
+
+self.addEventListener('fetch', function(event) {
+  const request = event.request;
+  if (request.method !== 'GET' || request.mode !== 'navigate' || new URL(request.url).origin !== self.location.origin) return;
+  event.respondWith(fetch(request, { cache: 'no-store' }).catch(() => new Response(
+    '<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kessick Portal</title><body style="margin:0;background:#121210;color:#f3f0e8;font:16px system-ui;padding:15vh 24px;text-align:center"><h1>You are offline</h1><p>Reconnect to open the latest Kessick Portal.</p><p><a href="' + self.registration.scope + '" style="color:#e2c991">Try again</a></p></body></html>',
+    { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
+  )));
+});
+
 self.addEventListener('push', function(event) {
   let data = {};
   if (event.data) {

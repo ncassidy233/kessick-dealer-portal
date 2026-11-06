@@ -60,6 +60,13 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
         >
           Try again
         </button>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="ml-3 mt-4 border border-gray-300 px-4 py-2 text-sm text-gray-900"
+        >
+          Refresh app
+        </button>
       </div>
     </div>
   );

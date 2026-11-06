@@ -30,6 +30,41 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test("staff can edit public login branding and review the shared Home publication", async ({ page }, testInfo) => {
+  let saved: { document: { publicBranding: { signInTitle: string }; sections: unknown[] }; expectedRevision: number } | undefined;
+  let publications = 0;
+  await page.route("**/api/portal-v2/admin/pages/home/**", async route => {
+    if (route.request().method() === "PUT") saved = route.request().postDataJSON();
+    if (new URL(route.request().url()).pathname.endsWith("/publish")) {
+      publications++;
+      expect(route.request().postDataJSON()).toEqual({ expectedPublishedRevision: 0, expectedDraftRevision: 1 });
+      return route.fulfill({ json: { page: { revision: 1 } } });
+    }
+    return route.fallback();
+  });
+  await page.goto("/admin/page-studio?page=home&mode=login");
+  await expect(page.getByRole("button", { name: "Login & Welcome", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("They share the Dealer home draft and publication", { exact: false })).toBeVisible();
+  await page.getByLabel("Sign-in heading", { exact: true }).fill("Welcome, Kessick partners.");
+  const frame = page.frameLocator('iframe[title="Kessick draft device preview"]');
+  await expect(frame.locator("h1")).toHaveText("Welcome, Kessick partners.");
+  expect(publications).toBe(0);
+  expect(saved).toBeUndefined();
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("All changes saved");
+  expect(saved?.document.publicBranding.signInTitle).toBe("Welcome, Kessick partners.");
+  expect(saved?.document.sections).toHaveLength(0);
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("This also publishes Login & Welcome branding to the public welcome and sign-in screens.");
+  await page.getByRole("button", { name: "Confirm Publish", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Home and Login & Welcome published");
+  expect(publications).toBe(1);
+  await page.getByRole("button", { name: "Welcome screen", exact: true }).click();
+  await expect(frame.locator("h1")).toContainText("The Private Portal");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath(`login-branding-${testInfo.project.name}.png`), animations: "disabled" });
+});
+
 test("desktop visual review covers every staff and dealer page at two desktop sizes", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "Desktop presentation review");
   test.setTimeout(180_000);

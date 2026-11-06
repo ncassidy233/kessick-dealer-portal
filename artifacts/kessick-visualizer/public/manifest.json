@@ -1,6 +1,7 @@
 {
   "name": "Kessick Dealer Portal",
   "short_name": "Kessick",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

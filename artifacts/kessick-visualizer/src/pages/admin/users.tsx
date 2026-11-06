@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -7,6 +8,7 @@ import {
   Clipboard,
   Loader2,
   MailPlus,
+  Paintbrush,
   Search,
   ShieldCheck,
   UserPlus,
@@ -295,6 +297,13 @@ export default function AdminUsers() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {hasCapability(bootstrap.data.capabilities, "content:write") && (
+              <Button asChild variant="outline" className="rounded-none border-[#121210]/20 bg-transparent">
+                <Link href="/admin/page-studio?page=home&mode=login">
+                  <Paintbrush className="mr-2 h-4 w-4" /> Edit login page
+                </Link>
+              </Button>
+            )}
             {isSuperAdmin && (
               <Button
                 variant="outline"
