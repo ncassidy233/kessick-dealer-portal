@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { studioPageDocumentSchema } from "@workspace/api-zod";
 import { StudioPage } from "@/components/studio-page";
-import { PublicBrandingFields, PublicBrandingPreview } from "@/components/public-branding-editor";
+import { FaviconEditor, PublicBrandingFields, PublicBrandingPreview } from "@/components/public-branding-editor";
 import { defaultPortalPublicBranding } from "@/lib/public-branding";
 import {
   Dialog,
@@ -142,7 +142,9 @@ function Editor({
 }) {
   const search = useSearch();
   const [, navigate] = useLocation();
-  const brandingMode = page === "home" && new URLSearchParams(search).get("mode") === "login";
+  const mode = new URLSearchParams(search).get("mode");
+  const faviconMode = page === "home" && mode === "favicon";
+  const brandingMode = faviconMode || (page === "home" && mode === "login");
   const [document, setDocument] = useState<StudioPageDocument>(
     () => studioEditingDocument(page, { draft: initial, publishedDocument }, brandingMode),
   );
@@ -167,10 +169,10 @@ function Editor({
   const [preview, setPreview] = useState(false);
   const [brandingPreview, setBrandingPreview] = useState<"sign-in" | "welcome">("sign-in");
   const branding = document.publicBranding ?? defaultPortalPublicBranding;
-  const changeMode = (login: boolean) => {
+  const changeMode = (nextMode: "login" | "favicon" | null) => {
     // Opening the login editor from an untouched Home template must not replace
     // the existing built-in dashboard when branding is first published.
-    if (login && !initial && !publishedDocument && revision === 0 && JSON.stringify(document) === saved) {
+    if (nextMode && !initial && !publishedDocument && revision === 0 && JSON.stringify(document) === saved) {
       const next = initialStudioPage(page, true);
       setDocument(next);
       setSaved(JSON.stringify(next));
@@ -178,7 +180,7 @@ function Editor({
     }
     const params = new URLSearchParams(search);
     params.set("page", "home");
-    if (login) params.set("mode", "login");
+    if (nextMode) params.set("mode", nextMode);
     else params.delete("mode");
     navigate(`/admin/page-studio?${params}`);
   };
@@ -482,7 +484,7 @@ function Editor({
         )}
         {!validation.success && (
           <p role="alert" className="mt-3 text-sm text-red-800">
-            {validation.error.issues[0]?.message} — check {brandingMode ? "the Login & Welcome fields" : "the selected section"}
+            {validation.error.issues[0]?.message} — check {brandingMode ? "the branding fields" : "the selected section"}
             before saving.
           </p>
         )}
@@ -493,11 +495,12 @@ function Editor({
         )}
       </header>
       {page === "home" && <div className="border-b border-black/15 bg-[#faf9f6] p-4">
-        <nav aria-label="Home and sign-in design" className="flex flex-wrap gap-2">
-          <button className={button} aria-pressed={!brandingMode} onClick={() => changeMode(false)}>Dealer home</button>
-          <button className={button} aria-pressed={brandingMode} onClick={() => changeMode(true)}>Login & Welcome</button>
+        <nav aria-label="Home and public branding" className="flex flex-wrap gap-2">
+          <button className={button} aria-pressed={!brandingMode} onClick={() => changeMode(null)}>Dealer home</button>
+          <button className={button} aria-pressed={brandingMode && !faviconMode} onClick={() => changeMode("login")}>Login & Welcome</button>
+          <button className={button} aria-pressed={faviconMode} onClick={() => changeMode("favicon")}>Edit favicon</button>
         </nav>
-        {brandingMode && <p className="mt-3 text-sm text-[#171715]/75">Login & Welcome changes are public after Publish. They share the Dealer home draft and publication; review both before publishing.</p>}
+        {brandingMode && <p className="mt-3 text-sm text-[#171715]/75">Login & Welcome and favicon changes go live when you publish the shared Dealer home draft.</p>}
       </div>}
       {!preview && !brandingMode && (
         <div
@@ -520,7 +523,9 @@ function Editor({
           ))}
         </div>
       )}
-      {brandingMode ? <div className={`grid items-start ${preview ? "" : "xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"}`}>
+      {faviconMode ? <FaviconEditor branding={branding} disabled={!canEdit || saving} preview={preview}
+        onChange={faviconUrl => edit({ ...document, publicBranding: { ...branding, faviconUrl } })} />
+        : brandingMode ? <div className={`grid items-start ${preview ? "" : "xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"}`}>
         {!preview && <aside className="border-b border-black/15 p-4 xl:border-r"><PublicBrandingFields branding={branding} disabled={!canEdit || saving} onChange={patch => edit({ ...document, publicBranding: { ...branding, ...patch } })} /></aside>}
         <main className="min-w-0 space-y-4 bg-[#f0f1f2] p-3 md:p-5">
           <nav aria-label="Public page preview" className="flex flex-wrap items-center gap-2">
@@ -1043,7 +1048,7 @@ function Editor({
           </DialogTitle>
           <DialogDescription>
             {confirmation === "publish"
-              ? `${document.sections.filter((item) => !item.hidden).length} visible sections from saved draft ${revision} will replace the page design for approved dealers.${page === "home" && document.publicBranding ? " This also publishes Login & Welcome branding to the public welcome and sign-in screens." : ""} Live version: ${history.data?.publishedRevision ?? 0}.`
+              ? `${document.sections.filter((item) => !item.hidden).length} visible sections from saved draft ${revision} will replace the page design for approved dealers.${page === "home" && document.publicBranding ? " This also publishes the Login & Welcome design and browser favicon." : ""} Live version: ${history.data?.publishedRevision ?? 0}.`
               : "The selected version will become a new live publication. Your working draft remains available."}
           </DialogDescription>
           <div className="flex gap-3">

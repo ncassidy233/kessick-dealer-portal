@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { defaultPortalPublicBranding, publicPortalBranding, type PortalPublicBranding } from "@workspace/api-zod";
 
 export { defaultPortalPublicBranding };
 export type { PortalPublicBranding };
 
-/** No session or private portal bootstrap is required to render the sign-in page. */
+export const PublicBrandingContext = createContext(defaultPortalPublicBranding);
+
 export function usePublicBranding(override?: PortalPublicBranding) {
+  const published = useContext(PublicBrandingContext);
+  return override ?? published;
+}
+
+/** No session or private portal bootstrap is required to load published branding. */
+export function usePublishedPortalBranding() {
   const [branding, setBranding] = useState<PortalPublicBranding>(defaultPortalPublicBranding);
   useEffect(() => {
-    if (override) return;
     const controller = new AbortController();
     let pending = false;
     const refresh = async () => {
@@ -38,6 +44,6 @@ export function usePublicBranding(override?: PortalPublicBranding) {
       window.removeEventListener("online", onFocus);
       document.removeEventListener("visibilitychange", onFocus);
     };
-  }, [override]);
-  return override ?? branding;
+  }, []);
+  return branding;
 }
