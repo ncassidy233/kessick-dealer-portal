@@ -1,4 +1,4 @@
-import { Router, type RequestHandler } from "express";
+import { Router, type Request, type RequestHandler } from "express";
 import { and, eq, desc, sql } from "drizzle-orm";
 import {
   db,
@@ -17,23 +17,26 @@ import {
   studioRestoreInputSchema,
 } from "@workspace/api-zod";
 import { getAuthorizedStaffRole } from "../middlewares/auth";
-import { hasPortalCapability } from "../lib/portalPermissions";
+import { canPublishPortalPage, hasPortalCapability, type PortalStaffRole } from "../lib/portalPermissions";
 import { isApprovedDealerAccount } from "../lib/portalDealerEligibility";
 import { dealerReadAccount, staffHasFullDealerAccess } from "../lib/staffDealerRead";
 import { canViewLegacyPortalCapability } from "../lib/portalLegacyAccess";
 
 const router = Router();
-const requireCapability =
-  (capability: string): RequestHandler =>
+const requireStudioPermission =
+  (isAllowed: (role: PortalStaffRole, req: Request) => boolean): RequestHandler =>
   async (req, res, next) => {
     const role = await getAuthorizedStaffRole(req);
-    if (!role || !hasPortalCapability(role, capability)) {
+    if (!role || !isAllowed(role, req)) {
       res.status(403).json({ error: "Page Studio staff permission required." });
       return;
     }
     res.setHeader("Cache-Control", "private, no-store");
     next();
   };
+
+const requireCapability = (capability: string) =>
+  requireStudioPermission(role => hasPortalCapability(role, capability));
 
 router.get(
   "/admin/pages/:pageKey/draft",
@@ -160,7 +163,9 @@ router.get(
 for (const operation of ["publish", "restore"] as const) {
   router.post(
     `/admin/pages/:pageKey/${operation}`,
-    requireCapability("pages:publish"),
+    operation === "publish"
+      ? requireStudioPermission((role, req) => canPublishPortalPage(role, req.params.pageKey))
+      : requireCapability("pages:publish"),
     async (req, res) => {
       const key = studioPageKeySchema.safeParse(req.params.pageKey);
       const input =

@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  canPublishPortalPage,
   hasPortalCapability,
+  portalStaffRoles,
   legacyPortalPathAllowed,
   resolvePortalBootstrapAccess,
 } from "./portalPermissions";
@@ -11,6 +13,19 @@ test("dealer and sales roles cannot gain administration privileges", () => {
   assert.equal(hasPortalCapability("sales_rep", "reps:write"), false);
   assert.equal(hasPortalCapability("content_manager", "groups:write"), false);
   assert.equal(hasPortalCapability("staff_admin", "users:write"), true);
+});
+
+test("all staff can publish Home, with other pages and restores reserved for administrators", () => {
+  for (const role of portalStaffRoles) {
+    const admin = role === "super_admin" || role === "staff_admin";
+    assert.equal(canPublishPortalPage(role, "home"), true);
+    assert.equal(canPublishPortalPage(role, "projects"), admin);
+    assert.equal(hasPortalCapability(role, "pages:publish"), admin);
+  }
+  for (const role of ["dealer", "customer"] as const) {
+    assert.equal(canPublishPortalPage(role, "home"), false);
+    assert.equal(canPublishPortalPage(role, "projects"), false);
+  }
 });
 
 test("wholesale pricebooks require a persisted pricing-capable role", () => {

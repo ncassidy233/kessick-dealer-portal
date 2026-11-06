@@ -10,8 +10,8 @@ export type PortalRole = PortalStaffRole | "dealer" | "customer";
 export const portalCapabilities: Record<PortalRole, readonly string[]> = {
   super_admin: ["pages:publish", "dealer-view:read", "admin:overview", "users:read", "users:write", "groups:read", "groups:write", "reps:write", "content:read", "content:write", "notifications:read", "notifications:write", "notifications:history", "pricebooks:read", "pricing:read", "pricing:write"],
   staff_admin: ["pages:publish", "dealer-view:read", "admin:overview", "users:read", "users:write", "groups:read", "groups:write", "reps:write", "content:read", "content:write", "notifications:read", "notifications:write", "notifications:history", "pricebooks:read", "pricing:read", "pricing:write"],
-  sales_rep: ["users:read", "groups:read", "content:read", "notifications:read", "pricebooks:read"],
-  content_manager: ["content:read", "content:write", "notifications:read", "notifications:write"],
+  sales_rep: ["pages:publish-home", "users:read", "groups:read", "content:read", "notifications:read", "pricebooks:read"],
+  content_manager: ["pages:publish-home", "content:read", "content:write", "notifications:read", "notifications:write"],
   dealer: ["content:read", "notifications:read"],
   customer: [],
 };
@@ -21,6 +21,11 @@ export function hasPortalCapability(
   capability: string,
 ): boolean {
   return portalCapabilities[role].includes(capability);
+}
+
+export function canPublishPortalPage(role: PortalRole, pageKey: unknown): boolean {
+  return hasPortalCapability(role, "pages:publish") ||
+    (pageKey === "home" && hasPortalCapability(role, "pages:publish-home"));
 }
 
 export function resolvePortalBootstrapAccess(

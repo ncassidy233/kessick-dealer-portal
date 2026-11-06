@@ -21,7 +21,7 @@ The tested changes are uploaded to `codex/finish-page-studio` in PR #14. The upl
 - Text, image URL/alt text, focal point, fit, alignment, buttons, background and spacing controls. Existing Kessick styling is the default.
 - Server draft saves with optimistic revision checks, autosave after first save, and visible save/validation/conflict failures. Edits remain open after a failed save.
 - Mobile 390×844, Tablet 820×1180, Desktop 1440×900 previews with actual iframe CSS viewports, visual scaling, rotate, full-screen workspace, and small-screen panel switching.
-- Separate explicit Publish confirmation; `pages:publish` is granted to staff administrators. Content managers can edit but cannot publish or restore. Server APIs recheck the authorized staff identity and capability.
+- Separate explicit Publish confirmation; `pages:publish` is granted to staff administrators. All approved staff can publish the shared Dealer Home and Login & Welcome draft. Publishing other pages and restoring versions require a staff administrator. Server APIs recheck the authorized staff identity and capability.
 - Atomic, serialized publication and immutable version history. Restore creates a new published version, preserving the current draft and recording the actor and source version in audit events.
 - Approved dealers fetch only published page documents. Staff Dealer View uses the same renderer through selected-account read-only endpoints, with response-field allowlisting and account-specific query caches.
 - The supplied Kessick headquarters photo is packaged locally and used for the authenticated homepage hero and initial home template.
