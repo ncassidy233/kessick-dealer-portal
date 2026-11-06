@@ -15,6 +15,7 @@ export const portalPublicBrandingSchema = z.object({
   imageUrl,
   imageAlt: z.string().trim().min(1).max(250),
   logoUrl: imageUrl,
+  faviconUrl: imageUrl.optional(),
   sideHeading: z.string().trim().min(1).max(160),
   sideDescription: z.string().trim().max(400),
 }).strict();
