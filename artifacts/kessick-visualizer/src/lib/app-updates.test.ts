@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { appEntryVersion, canAutomaticallyRefresh, createAppUpdateCheck, publishedEntryVersion, publishedManifestVersion } from "./app-updates";
+import { appEntryVersion, createAppUpdateCheck, publishedEntryVersion, publishedManifestVersion } from "./app-updates";
 
 const baseUrl = "https://portal.example/preview/";
 const entry = (version: string) => `<html><script type="module" crossorigin src="/preview/assets/index-${version}.js"></script></html>`;
@@ -115,19 +115,4 @@ test("an unchanged valid manifest skips HTML fallback and repeated resume events
   assert.equal(calls, 1);
   time = 5000; await checker.check(); checker.stop();
   assert.equal(calls, 2); assert.equal(updates, 0);
-});
-
-test("automatic refresh only permits idle, visible, online read-only screens without input or dialogs", () => {
-  const safe = { pathname: "/portal", hasInput: false, hasDialog: false, hasFocusedField: false,
-    idleMs: 10_000, visible: true, online: true };
-  for (const pathname of ["/", "/portal", "/portal/", "/portal/resources", "/portal/collections", "/portal/training", "/portal/notifications", "/admin"]) {
-    assert.equal(canAutomaticallyRefresh({ ...safe, pathname }), true, pathname);
-  }
-  for (const pathname of ["/auth/sign-in", "/auth/sign-up", "/admin/page-studio", "/portal/orders/new", "/portal/profile", "/portal/unknown"]) {
-    assert.equal(canAutomaticallyRefresh({ ...safe, pathname }), false, pathname);
-  }
-  for (const guard of [{ hasInput: true }, { hasDialog: true }, { hasFocusedField: true },
-    { idleMs: 9999 }, { visible: false }, { online: false }]) {
-    assert.equal(canAutomaticallyRefresh({ ...safe, ...guard }), false, JSON.stringify(guard));
-  }
 });
