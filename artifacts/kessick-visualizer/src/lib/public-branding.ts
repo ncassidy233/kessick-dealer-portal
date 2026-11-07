@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { defaultPortalPublicBranding, publicPortalBranding, type PortalPublicBranding } from "@workspace/api-zod";
+import { installPublishedBrandingRefresh } from "./public-branding-refresh";
 
 export { defaultPortalPublicBranding };
+export { notifyPublishedPortalBranding } from "./public-branding-refresh";
 export type { PortalPublicBranding };
 
 export const PublicBrandingContext = createContext(defaultPortalPublicBranding);
@@ -14,36 +16,21 @@ export function usePublicBranding(override?: PortalPublicBranding) {
 /** No session or private portal bootstrap is required to load published branding. */
 export function usePublishedPortalBranding() {
   const [branding, setBranding] = useState<PortalPublicBranding>(defaultPortalPublicBranding);
-  useEffect(() => {
-    const controller = new AbortController();
-    let pending = false;
-    const refresh = async () => {
-      if (pending || document.visibilityState === "hidden") return;
-      pending = true;
-      try {
-        const response = await fetch("/api/public/portal-branding", {
-          cache: "no-store", credentials: "omit", signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) return;
-        const result: unknown = await response.json();
-        if (!result || typeof result !== "object" || !("branding" in result)) return;
-        const next = publicPortalBranding(result.branding) ?? defaultPortalPublicBranding;
-        if (!controller.signal.aborted) setBranding(next);
-      } catch { /* The existing Kessick design remains usable during an outage. */ }
-      finally { pending = false; }
-    };
-    void refresh();
-    const onFocus = () => { void refresh(); };
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("online", onFocus);
-    document.addEventListener("visibilitychange", onFocus);
-    return () => {
-      controller.abort();
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("online", onFocus);
-      document.removeEventListener("visibilitychange", onFocus);
-    };
-  }, []);
+  useEffect(() => installPublishedBrandingRefresh({
+    windowTarget: window,
+    documentTarget: document,
+    isVisible: () => document.visibilityState !== "hidden",
+    onValue: setBranding,
+    read: async (signal) => {
+      const response = await fetch("/api/public/portal-branding", {
+        cache: "no-store", credentials: "omit", signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return;
+      const result: unknown = await response.json();
+      if (!result || typeof result !== "object" || !("branding" in result)) return;
+      return publicPortalBranding(result.branding) ?? defaultPortalPublicBranding;
+    },
+  }), []);
   return branding;
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { appEntryVersion, appReleaseId, createAppUpdateCheck, publishedEntryVersion, publishedManifestVersion, publishedReleaseId } from "./app-updates";
+import { appEntryVersion, appReleaseId, createAppUpdateCheck, freshAppUrl, prepareAppUpdate, publishedEntryVersion, publishedManifestVersion, publishedReleaseId } from "./app-updates";
 
 const baseUrl = "https://portal.example/preview/";
 const entry = (version: string) => `<html><script type="module" crossorigin src="/preview/assets/index-${version}.js"></script></html>`;
@@ -148,4 +148,74 @@ test("HTML fallback detects a whole-release change and rejects malformed fingerp
   });
   await checker.check(); checker.stop();
   assert.equal(updates, 1);
+});
+
+test("Update now uses a fresh same-origin document and preserves the current route and filters", () => {
+  assert.equal(freshAppUrl("https://portal.example/preview/admin/page-studio?section=login#draft", baseUrl, "new"),
+    "https://portal.example/preview/admin/page-studio?section=login&_kessick_update=new#draft");
+  assert.equal(freshAppUrl("https://portal.example/preview/portal?_kessick_update=old", baseUrl, "new"),
+    "https://portal.example/preview/portal?_kessick_update=new");
+  for (const href of ["https://other.example/preview/portal", "https://portal.example/outside"]) {
+    assert.equal(freshAppUrl(href, baseUrl, "new"), "https://portal.example/preview/?_kessick_update=new");
+  }
+});
+
+test("a removed lazy chunk can force a check immediately after an unchanged release check", async () => {
+  let calls = 0, updates = 0;
+  const checker = createAppUpdateCheck({ currentVersion: "/preview/assets/index-old.js", baseUrl,
+    now: () => 0, isVisible: () => true, onUpdate: () => updates++,
+    fetcher: async () => manifestResponse(++calls === 1 ? "old" : "new"),
+  });
+  await checker.check();
+  await checker.check();
+  assert.equal(calls, 1);
+  await checker.check({ force: true });
+  assert.equal(calls, 2);
+  assert.equal(updates, 1);
+  checker.stop();
+});
+
+test("disposing a check releases a stalled request even when the network ignores its abort signal", async () => {
+  let calls = 0, updates = 0;
+  const checker = createAppUpdateCheck({ currentVersion: "/preview/assets/index-old.js", baseUrl,
+    isVisible: () => true, onUpdate: () => updates++,
+    fetcher: async () => { calls++; return new Promise<Response>(() => {}); },
+  });
+  const pending = checker.check();
+  checker.stop();
+  await pending;
+  assert.equal(calls, 1);
+  assert.equal(updates, 0);
+});
+
+test("Update now waits for the replacement worker to activate and removes its listener", async () => {
+  let listener: (() => void) | undefined;
+  let workerState = "installed";
+  let updates = 0;
+  const worker = {
+    get state() { return workerState; },
+    addEventListener(_type: string, value: () => void) { listener = value; },
+    removeEventListener(_type: string, value: () => void) { if (listener === value) listener = undefined; },
+  };
+  const ready = prepareAppUpdate({ register: async (url, options) => {
+    assert.equal(url, "https://portal.example/preview/sw.js");
+    assert.deepEqual(options, { scope: "/preview/", updateViaCache: "none" });
+    return { installing: worker, waiting: null, update: async () => { updates++; } } as unknown as ServiceWorkerRegistration;
+  } }, baseUrl);
+  await Promise.resolve(); await Promise.resolve();
+  assert.ok(listener);
+  workerState = "activated";
+  listener();
+  await ready;
+  assert.equal(listener, undefined);
+  assert.equal(updates, 1);
+});
+
+test("a blocked or stalled service worker cannot indefinitely block an explicit update", async () => {
+  await prepareAppUpdate(undefined, baseUrl);
+  await prepareAppUpdate({ register: async () => { throw new Error("Workers blocked"); } }, baseUrl);
+  await prepareAppUpdate({ register: async () => new Promise<ServiceWorkerRegistration>(() => {}) }, baseUrl, 1);
+  await prepareAppUpdate({ register: async () => ({
+    update: () => new Promise(() => {}),
+  }) as unknown as ServiceWorkerRegistration }, baseUrl, 1);
 });
