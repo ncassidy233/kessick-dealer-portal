@@ -269,7 +269,7 @@ export async function createStaticServer(
         // them with no JavaScript capable of offering an update. Recover only
         // the old application entry; missing chunks and other files stay 404.
         if (/^assets\/index-[\w-]+\.js$/.test(relative)) {
-          const recovery = `const update = new URL(${JSON.stringify(`${base}app-update.html`)}, window.location.origin);\nupdate.searchParams.set("returnTo", window.location.pathname + window.location.search + window.location.hash);\nwindow.location.replace(update.href);\n`;
+          const recovery = `const missingPath = ${JSON.stringify(`${base}${relative}`)};\nconst isEntry = Array.from(document.querySelectorAll('script[type="module"][src]')).some(script => {\n  const source = new URL(script.src);\n  return source.origin === window.location.origin && source.pathname === missingPath;\n});\nif (!isEntry) throw new Error("This portal module is no longer available. Update the portal to continue.");\nconst update = new URL(${JSON.stringify(`${base}app-update.html`)}, window.location.origin);\nupdate.searchParams.set("returnTo", window.location.pathname + window.location.search);\nupdate.hash = window.location.hash;\nwindow.location.replace(update.href);\n`;
           res.writeHead(200, {
             "Content-Type": "text/javascript; charset=utf-8",
             "Content-Length": Buffer.byteLength(recovery),

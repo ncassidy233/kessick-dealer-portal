@@ -105,14 +105,25 @@ test("removed app entries recover cached old HTML without clearing saved work", 
     const pathname = "/app/portal/projects";
     const search = "?project=abc&filter=active";
     const hash = "#saved-view";
-    vm.runInNewContext(await response.text(), {
+    const recovery = await response.text();
+    const context = {
       URL,
+      document: { querySelectorAll() { return [{ src: `${origin}/app/assets/index-REMOVED_123.js` }]; } },
       window: { location: { origin, pathname, search, hash, replace(value) { destination = value; } } },
-    });
+    };
+    vm.runInNewContext(recovery, context);
     const update = new URL(destination);
     assert.equal(update.origin, origin);
     assert.equal(update.pathname, "/app/app-update.html");
-    assert.equal(update.searchParams.get("returnTo"), pathname + search + hash);
+    assert.equal(update.searchParams.get("returnTo"), pathname + search);
+    assert.equal(update.hash, hash, "fragments stay client-side during recovery");
+    assert.ok(!update.search.includes("saved-view"));
+    // Vite may also name lazy chunks index-HASH.js. A failed lazy import must
+    // stay in the active editor and let its in-app update notice handle it.
+    destination = undefined;
+    context.document.querySelectorAll = () => [{ src: `${origin}/app/assets/index-current.js` }];
+    assert.throws(() => vm.runInNewContext(recovery, { ...context }), /module is no longer available/);
+    assert.equal(destination, undefined);
     assert.equal((await fetch(update)).status, 200);
     const head = await fetch(`${origin}/app/assets/index-REMOVED_123.js`, { method: "HEAD" });
     assert.equal(head.status, 200);
