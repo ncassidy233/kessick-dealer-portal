@@ -264,6 +264,21 @@ export async function createStaticServer(
         if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error;
       }
       if (!metadata?.isFile()) {
+        // An installed copy can retain HTML whose hashed entry was removed by
+        // a later deploy. Those copies may predate app-start.js, so a 404 leaves
+        // them with no JavaScript capable of offering an update. Recover only
+        // the old application entry; missing chunks and other files stay 404.
+        if (/^assets\/index-[\w-]+\.js$/.test(relative)) {
+          const recovery = `const update = new URL(${JSON.stringify(`${base}app-update.html`)}, window.location.origin);\nupdate.searchParams.set("returnTo", window.location.pathname + window.location.search + window.location.hash);\nwindow.location.replace(update.href);\n`;
+          res.writeHead(200, {
+            "Content-Type": "text/javascript; charset=utf-8",
+            "Content-Length": Buffer.byteLength(recovery),
+            "Cache-Control": "private, no-store, max-age=0",
+            Pragma: "no-cache",
+            Expires: "0",
+          });
+          return res.end(req.method === "HEAD" ? undefined : recovery);
+        }
         if (path.extname(relative)) return fail(404, "Not found.");
         file = path.join(root, "index.html");
         metadata = await stat(file);
@@ -273,7 +288,7 @@ export async function createStaticServer(
       const contentType = mime[path.extname(file).toLowerCase()];
       if (!contentType) return fail(404, "Not found.");
       if (relative === "sw.js") res.setHeader("Service-Worker-Allowed", base);
-      if (relative === "sw.js" || relative === "manifest.json" || relative === "app-version.json" || relative === "app-start.js" || contentType.startsWith("text/html")) {
+      if (relative === "sw.js" || relative === "manifest.json" || relative === "app-version.json" || relative === "app-start.js" || relative === "app-update.js" || contentType.startsWith("text/html")) {
         res.setHeader("Cache-Control", "private, no-store, max-age=0");
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");

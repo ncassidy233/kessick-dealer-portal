@@ -4,6 +4,7 @@ import http from "node:http";
 import { mkdtemp, writeFile, mkdir, symlink, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import vm from "node:vm";
 import {
   createStaticServer,
   normalizeApiOrigin,
@@ -83,6 +84,47 @@ test("API_ORIGIN accepts secure origins and rejects unsafe URLs", () => {
     assert.throws(() => normalizeApiOrigin(value), /API_ORIGIN/);
   }
   assert.equal(normalizeApiOrigin(undefined), null);
+});
+
+test("removed app entries recover cached old HTML without clearing saved work", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "kessick-old-entry-"));
+  await mkdir(path.join(root, "assets"));
+  await writeFile(path.join(root, "assets", "index-current.js"), "// current application");
+  await writeFile(path.join(root, "app-update.html"), "<!doctype html><title>Portal update ready</title>");
+  const server = await createStaticServer(root, "/app/");
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const response = await fetch(`${origin}/app/assets/index-REMOVED_123.js`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /text\/javascript/);
+    assert.match(response.headers.get("cache-control"), /no-store/);
+    assert.equal(response.headers.get("clear-site-data"), null);
+    assert.match(response.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+    let destination;
+    const pathname = "/app/portal/projects";
+    const search = "?project=abc&filter=active";
+    const hash = "#saved-view";
+    vm.runInNewContext(await response.text(), {
+      URL,
+      window: { location: { origin, pathname, search, hash, replace(value) { destination = value; } } },
+    });
+    const update = new URL(destination);
+    assert.equal(update.origin, origin);
+    assert.equal(update.pathname, "/app/app-update.html");
+    assert.equal(update.searchParams.get("returnTo"), pathname + search + hash);
+    assert.equal((await fetch(update)).status, 200);
+    const head = await fetch(`${origin}/app/assets/index-REMOVED_123.js`, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), "");
+    assert.equal(await (await fetch(`${origin}/app/assets/index-current.js`)).text(), "// current application");
+    for (const file of ["assets/missing.js", "assets/index-old.css", "assets/index-old.js.map", "assets/chunk-old.js", "other/index-old.js"]) {
+      assert.equal((await fetch(`${origin}/app/${file}`)).status, 404, file);
+    }
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("legacy app URLs enter protected routes and release files cannot stay cached", async () => {
