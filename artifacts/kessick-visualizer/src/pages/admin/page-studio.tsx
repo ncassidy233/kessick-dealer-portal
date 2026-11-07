@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { studioPageDocumentSchema } from "@workspace/api-zod";
 import { StudioPage } from "@/components/studio-page";
 import { FaviconEditor, PublicBrandingFields, PublicBrandingPreview } from "@/components/public-branding-editor";
-import { defaultPortalPublicBranding } from "@/lib/public-branding";
+import { defaultPortalPublicBranding, notifyPublishedPortalBranding } from "@/lib/public-branding";
 import {
   Dialog,
   DialogContent,
@@ -309,6 +309,7 @@ function Editor({
           ? { revision: confirmation }
           : { expectedDraftRevision: revision }),
       });
+      if (page === "home") notifyPublishedPortalBranding();
       setStatus(
         restoring
           ? `Version ${confirmation} restored as a new publication`
